@@ -28,7 +28,7 @@ export function putCursor(line: number, index: number) {
     actualLine = 0
   }
 
-  let text = lines.value[actualLine]
+  const text = lines.value[actualLine]
 
   let actualIndex: number
 
@@ -47,8 +47,6 @@ export function putCursor(line: number, index: number) {
   cursor.index = actualIndex
   cursor.offsetX = size.width
   cursor.offsetY = size.height * actualLine
-
-  console.log(cursor)
 }
 
 function insert(text: string) {
@@ -84,8 +82,6 @@ function backspace(alt: boolean = false) {
 
   if (cursor.index > 0) {
     const consumption = alt ? consumeBackwards(line, cursor.index) : 1
-
-    console.log({alt, consumption})
 
     const leading = line.substring(0, cursor.index - consumption)
     const trailing = line.substring(cursor.index)
@@ -143,8 +139,6 @@ function moveUp() {
 }
 
 export function handleKey(event: KeyboardEvent) {
-  console.log(event.key)
-
   switch (event.key) {
     case 'ArrowLeft':
       moveLeft(event.altKey)
@@ -179,4 +173,21 @@ export function handleKey(event: KeyboardEvent) {
 
       break
   }
+}
+
+const defaultCursorPush = 4
+export function dropCursor(x: number, y: number) {
+  const { height } = regular.calculate('')
+
+  if (lines.value.length <= 0) {
+    return
+  }
+
+  const lineIndex = Math.floor(y / height)
+  const line = Math.min(Math.max(lineIndex, 0), lines.value.length - 1)
+  const text = lines.value[line]
+
+  const index = regular.position(text, x, defaultCursorPush)
+
+  putCursor(line, index)
 }

@@ -45,8 +45,6 @@ function loadFile() {
 
   const reader = new FileReader()
   reader.addEventListener('load', () => {
-    console.log(reader.result)
-
     if (reader.result instanceof ArrayBuffer) {
       loadElf(file.name, reader.result)
         .then(() => console.log('Disassembled!'))

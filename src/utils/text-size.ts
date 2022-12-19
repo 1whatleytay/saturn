@@ -10,6 +10,43 @@ export class SizeCalculator {
     }
   }
 
+  position(text: string, position: number, push: number = 0): number {
+    // Let's do some BST
+    let startOffset = 0
+    let leadingSize = 0 // here for centering the character at the end
+    let start = 0
+    let end = text.length
+
+    let width = this.calculate(text).width
+
+    if (position < start) {
+      return 0
+    }
+
+    if (position > width) {
+      return text.length
+    }
+
+    do {
+      const mid = Math.floor((end + start) / 2)
+
+      const leading = text.substring(start, mid)
+      leadingSize = this.calculate(leading).width
+
+      if (startOffset + leadingSize < position) {
+        // region misses
+        startOffset += leadingSize
+        start = mid
+      } else {
+        end = mid
+      }
+    } while (start + 1 < end)
+
+    const offset = Math.round((position + 2 - startOffset) / leadingSize)
+
+    return start + Math.min(offset, 1)
+  }
+
   constructor(classes: string) {
     this.element = document.createElement('div')
 
@@ -20,7 +57,3 @@ export class SizeCalculator {
 }
 
 export const regular = new SizeCalculator('h-6 text-sm font-mono font-bold absolute whitespace-pre')
-
-export function findPosition(text: string, classes: string, position: number): number {
-  return 0
-}
