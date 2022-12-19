@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use tauri::api::shell::Program;
 use crate::cpu::decoder::Decoder;
 use crate::cpu::disassemble::Disassembler;
-use crate::elf::program::{HEADER_FLAG_EXECUTABLE, ProgramHeader};
+use crate::elf::program::{ProgramHeader, ProgramHeaderFlags};
 
 mod cpu;
 mod elf;
@@ -23,7 +23,7 @@ fn greet(name: &str) -> String {
 
 fn select_executable(entry: u32, headers: &[ProgramHeader]) -> Option<&ProgramHeader> {
     let executables: Vec<&ProgramHeader> = headers.iter()
-        .filter(|header| header.flags & HEADER_FLAG_EXECUTABLE != 0)
+        .filter(|header| header.flags.contains(ProgramHeaderFlags::EXECUTABLE))
         .collect();
 
     executables.iter()

@@ -2210,6 +2210,7 @@ name = "saturn"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "bitflags",
  "byteorder",
  "num",
  "num-derive",
