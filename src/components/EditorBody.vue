@@ -20,8 +20,11 @@
         spellcheck="false"
         :value="''"
         tabindex="0"
-        class="opacity-0 pointer-events-none absolute top-0 left-0 peer"
+        class="opacity-0 pointer-events-none fixed top-0 left-0 peer"
         @keydown="handleKey"
+        @copy.prevent="handleCopy"
+        @cut.prevent="handleCut"
+        @paste.prevent="handlePaste"
       />
 
       <div v-for="(line, index) in lines" :key="index" class="h-6 flex items-center">
@@ -72,7 +75,8 @@ import {
   handleKey,
   dropCursor,
   dragTo,
-  clearSelection
+  getSelection,
+  clearSelection, dropSelection, paste
 } from '../state/editor-cursor'
 
 const scroll = ref(null as HTMLElement | null)
@@ -166,31 +170,52 @@ function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   return { x: 0, y: 0 }
 }
 
-const mouseDown = ref(false)
-
 function handleDown(event: MouseEvent) {
   focusHandler()
 
   const { x, y } = editorCoordinates(event)
-  mouseDown.value = true
 
   dropCursor(x, y)
 }
 
 const handleMove = (event: MouseEvent) => {
-  if (mouseDown.value) {
+  if ((event.buttons & 1) > 0) {
     const { x, y } = editorCoordinates(event)
     dragTo(x, y)
   }
 }
 
-const handleUp = (event: MouseEvent) => {
-  mouseDown.value = false
+function handleCopy(event: ClipboardEvent) {
+  if (!event.clipboardData) {
+    return
+  }
+
+  const selection = getSelection()
+
+  if (selection) {
+    event.clipboardData.setData('text/plain', selection)
+  }
 }
 
-function handlePaste(event: Event) {
-  console.log(event)
-  alert('bro')
+function handleCut(event: ClipboardEvent) {
+  if (!event.clipboardData) {
+    return
+  }
+
+  const selection = getSelection()
+  dropSelection()
+
+  if (selection) {
+    event.clipboardData.setData('text/plain', selection)
+  }
+}
+
+function handlePaste(event: ClipboardEvent) {
+  if (event.clipboardData) {
+    const value = event.clipboardData.getData('text/plain')
+
+    paste(value)
+  }
 }
 
 onMounted(() => {
@@ -198,13 +223,11 @@ onMounted(() => {
 
   window.addEventListener('focus', focusHandler)
   window.addEventListener('mousemove', handleMove)
-  window.addEventListener('mouseup', handleUp)
 })
 
 onUnmounted(() => {
   window.removeEventListener('focus', focusHandler)
   window.removeEventListener('mousemove', handleMove)
-  window.removeEventListener('mouseup', handleUp)
 })
 
 const bottomCursorSpace = 42

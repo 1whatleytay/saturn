@@ -83,31 +83,56 @@ export function setSelection(selection: boolean) {
   }
 }
 
-export function dropSelection() {
+export function getSelection(): string | null {
   const range = selectionRange()
+
+  if (!range) {
+    return null
+  }
 
   const all = lines.value
 
-  if (range) {
-    // assert range.startLine >= range.endLine
-    if (range.startLine == range.endLine) {
-      const text = all[range.startLine]
+  // assert range.startLine >= range.endLine
+  if (range.startLine == range.endLine) {
+    const text = all[range.startLine]
 
-      all[range.startLine] = text.substring(0, range.startIndex) + text.substring(range.endIndex)
-    } else {
-      const leading = all[range.startLine].substring(0, range.startIndex)
-      const trailing = all[range.endLine].substring(range.endIndex)
-      all[range.startLine] = leading + trailing
+    return text.substring(range.startIndex, range.endIndex)
+  } else {
+    const leading = all[range.startLine].substring(range.startIndex)
+    const middle = all.slice(range.startLine + 1, range.endLine)
+    const trailing = all[range.endLine].substring(0, range.endIndex)
 
-      // splice with multiple deleteCount seems bugged
-      for (let a = range.startLine + 1; a <= range.endLine; a++) {
-        all.splice(range.startLine + 1, 1)
-      }
-    }
-
-    clearSelection()
-    putCursor(range.startLine, range.startIndex)
+    return [leading, ...middle, trailing].join('\n')
   }
+}
+
+export function dropSelection() {
+  const range = selectionRange()
+
+  if (!range) {
+    return
+  }
+
+  const all = lines.value
+
+  // assert range.startLine >= range.endLine
+  if (range.startLine == range.endLine) {
+    const text = all[range.startLine]
+
+    all[range.startLine] = text.substring(0, range.startIndex) + text.substring(range.endIndex)
+  } else {
+    const leading = all[range.startLine].substring(0, range.startIndex)
+    const trailing = all[range.endLine].substring(range.endIndex)
+    all[range.startLine] = leading + trailing
+
+    // splice with multiple deleteCount seems bugged
+    for (let a = range.startLine + 1; a <= range.endLine; a++) {
+      all.splice(range.startLine + 1, 1)
+    }
+  }
+
+  clearSelection()
+  putCursor(range.startLine, range.startIndex)
 }
 
 export function putCursor(line: number, index: number) {
@@ -145,8 +170,6 @@ export function putCursor(line: number, index: number) {
     cursor.highlight = null
   }
 
-  console.log()
-
   cursor.line = actualLine
   cursor.index = actualIndex
   cursor.offsetX = size.width
@@ -154,7 +177,6 @@ export function putCursor(line: number, index: number) {
 }
 
 function insert(text: string) {
-  console.log('test')
   dropSelection()
 
   const all = lines.value
@@ -166,6 +188,39 @@ function insert(text: string) {
   // Mutate
   all[cursor.line] = leading + text + trailing
   putCursor(cursor.line, cursor.index + text.length)
+}
+
+// Technical Debt: insert vs paste (concern: speed for splitting by \n)
+export function paste(text: string) {
+  dropSelection()
+
+  const textLines = text.split('\n')
+
+  if (!textLines.length) {
+    return
+  }
+
+  if (textLines.length === 1) {
+    return insert(text)
+  }
+
+  // at least two lines
+
+  const all = lines.value
+
+  const line = all[cursor.line]
+  const leading = line.substring(0, cursor.index)
+  const trailing = line.substring(cursor.index)
+
+  const first = textLines[0]
+  const rest = textLines.slice(1)
+  const last = textLines[textLines.length - 1]
+  rest[rest.length - 1] += trailing
+
+  // Mutate
+  all[cursor.line] = leading + first
+  all.splice(cursor.line + 1, 0, ...rest)
+  putCursor(cursor.line + rest.length, last.length)
 }
 
 function newline() {
@@ -277,8 +332,6 @@ function handleActionKey(event: KeyboardEvent) {
 }
 
 export function handleKey(event: KeyboardEvent) {
-  console.log(event)
-
   switch (event.key) {
     case 'ArrowLeft':
       moveLeft(event.altKey, event.shiftKey)
