@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    @apply overflow-hidden;
+    @apply h-full;
+}
+
+body {
+    @apply h-full;
+
+    @apply overflow-auto;
+
+    @apply bg-neutral-900;
+    @apply text-slate-100;
+}
+
+#app {
+    @apply h-full;
+}
