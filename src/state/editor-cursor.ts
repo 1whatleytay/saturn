@@ -277,6 +277,8 @@ function handleActionKey(event: KeyboardEvent) {
 }
 
 export function handleKey(event: KeyboardEvent) {
+  console.log(event)
+
   switch (event.key) {
     case 'ArrowLeft':
       moveLeft(event.altKey, event.shiftKey)

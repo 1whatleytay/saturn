@@ -10,12 +10,20 @@
     </div>
 
     <div
-      tabindex="0"
-      ref="handler"
+      ref="code"
       class="flex-grow cursor-text text-sm relative outline-none whitespace-pre group"
-      @mousedown="handleDown"
-      @keydown.prevent="handleKey"
+      @mousedown.prevent="handleDown"
     >
+      <input
+        type="text"
+        ref="input"
+        spellcheck="false"
+        :value="''"
+        tabindex="0"
+        class="opacity-0 pointer-events-none absolute top-0 left-0 peer"
+        @keydown="handleKey"
+      />
+
       <div v-for="(line, index) in lines" :key="index" class="h-6 flex items-center">
         {{ line }}
       </div>
@@ -43,7 +51,7 @@
       </div>
 
       <div
-        class="w-0.5 h-6 bg-orange-400 hidden group-focus:block absolute mx-[-0.08rem]"
+        class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
         :style="{
           left: `${cursor.offsetX}px`,
           top: `${cursor.offsetY}px`
@@ -68,7 +76,8 @@ import {
 } from '../state/editor-cursor'
 
 const scroll = ref(null as HTMLElement | null)
-const handler = ref(null as HTMLElement | null)
+const code = ref(null as HTMLElement | null)
+const input = ref(null as HTMLElement | null)
 
 interface SelectionPartsResult {
   leading: string,
@@ -142,14 +151,15 @@ function bodySelection(line: string, index: number) {
 }
 
 const focusHandler = () => {
-  handler?.value?.focus()
+  console.log(input)
+  input?.value?.focus()
 }
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
-  if (handler.value) {
+  if (code.value) {
     return {
-      x: event.pageX - handler.value.offsetLeft,
-      y: event.pageY - handler.value.offsetTop + (scroll?.value?.scrollTop ?? 0)
+      x: event.pageX - code.value.offsetLeft,
+      y: event.pageY - code.value.offsetTop + (scroll?.value?.scrollTop ?? 0)
     }
   }
 
