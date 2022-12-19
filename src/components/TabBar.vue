@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="font-mono flex items-center overflow-x-scroll items-start bg-neutral-900 w-full">
+    <div class="flex items-center overflow-x-scroll items-start bg-neutral-900 w-full">
       <input type="file" class="hidden" ref="input" @change="loadFile" />
 
       <Tab

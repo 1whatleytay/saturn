@@ -1,4 +1,4 @@
-import { watch, reactive } from 'vue'
+import { reactive } from 'vue'
 
 import { tauri } from '@tauri-apps/api'
 
@@ -16,7 +16,16 @@ export interface EditorState {
 }
 
 const defaultTabs = [
-  { uuid: uuid(), title: 'One', lines: ['a', 'b', 'c', 'd'] },
+  {
+    uuid: uuid(),
+    title: 'One',
+    lines: [
+      'aaaaaaaaa',
+      'ddddddddddddddddd',
+      'd×××ddddddddddddd',
+      'd×××ddd😀ddd😀ddd'
+    ]
+  },
   { uuid: uuid(), title: 'Two', lines: ['e', 'fg', 'h', 'i'] },
   { uuid: uuid(), title: 'Three', lines: ['j', 'k', 'l', 'm'] }
 ] as EditorTab[]

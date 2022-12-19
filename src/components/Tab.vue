@@ -1,6 +1,6 @@
 <template>
   <button @click="emit('select')" class="
-        hover:bg-slate-800
+        hover:bg-neutral-800
         text-slate-300
         flex items-center
         transition-[border-color]
@@ -20,7 +20,7 @@
 
     <button
       @click.stop="emit('delete')"
-      class="ml-2 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center"
+      class="ml-3 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center"
     >
       <XMarkIcon class="w-3 h-3" />
     </button>
