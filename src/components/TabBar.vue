@@ -15,6 +15,7 @@
       <button class="w-10 h-10
           hover:bg-slate-800
           text-slate-300
+          shrink-0
           flex items-center justify-center
           font-black
         " @click="input?.click()">
