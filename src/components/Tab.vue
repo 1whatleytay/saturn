@@ -9,7 +9,7 @@
         h-10
         px-6
         text-xs
-        font-bold
+        font-medium
         max-w-xs
         border-b-2
       " :class="{
