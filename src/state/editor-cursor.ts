@@ -7,12 +7,21 @@ import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 
 export const lines = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
+export interface CursorPosition {
+  line: number
+  index: number
+  offsetX: number
+  offsetY: number
+}
+
 export const cursor = reactive({
   line: 0,
   index: 0,
   offsetX: 0,
-  offsetY: 0
-})
+  offsetY: 0,
+
+  highlight: null
+} as CursorPosition & { highlight: CursorPosition | null })
 
 export function putCursor(line: number, index: number) {
   let underflow = false
@@ -42,6 +51,14 @@ export function putCursor(line: number, index: number) {
 
   const leading = text.substring(0, actualIndex)
   const size = regular.calculate(leading)
+
+  if (cursor.highlight
+    && cursor.highlight.line === actualLine
+    && cursor.highlight.index === actualIndex) {
+    cursor.highlight = null
+  }
+
+  console.log()
 
   cursor.line = actualLine
   cursor.index = actualIndex
@@ -102,11 +119,38 @@ function backspace(alt: boolean = false) {
   }
 }
 
-function moveLeft(alt: boolean = false) {
-  const consume = alt ? consumeBackwards(lines.value[cursor.line], cursor.index) : 1
+export function makeSelection() {
+  if (!cursor.highlight) {
+    cursor.highlight = {
+      line: cursor.line,
+      index: cursor.index,
+      offsetX: cursor.offsetX,
+      offsetY: cursor.offsetY
+    }
+  }
+}
+
+export function clearSelection() {
+  cursor.highlight = null
+}
+
+export function setSelection(selection: boolean) {
+  if (selection) {
+    makeSelection()
+  } else {
+    clearSelection()
+  }
+}
+
+function moveLeft(alt: boolean = false, shift: boolean = false) {
+  const consume = alt
+    ? consumeBackwards(lines.value[cursor.line], cursor.index)
+    : 1
 
   let line = cursor.line
   let move = cursor.index - consume
+
+  setSelection(shift)
 
   if (move < 0) {
     line -= 1
@@ -116,11 +160,15 @@ function moveLeft(alt: boolean = false) {
   putCursor(line, move)
 }
 
-function moveRight(alt: boolean = false) {
-  const consume = alt ? consumeForwards(lines.value[cursor.line], cursor.index) : 1
+function moveRight(alt: boolean = false, shift: boolean = false) {
+  const consume = alt
+    ? consumeForwards(lines.value[cursor.line], cursor.index)
+    : 1
 
   let line = cursor.line
   let move = cursor.index + consume
+
+  setSelection(shift)
 
   if (lines.value[cursor.line].length < move) {
     line += 1
@@ -139,13 +187,15 @@ function moveUp() {
 }
 
 export function handleKey(event: KeyboardEvent) {
+  console.log(event)
+
   switch (event.key) {
     case 'ArrowLeft':
-      moveLeft(event.altKey)
+      moveLeft(event.altKey, event.shiftKey)
       break
 
     case 'ArrowRight':
-      moveRight(event.altKey)
+      moveRight(event.altKey, event.shiftKey)
       break
 
     case 'ArrowDown':
@@ -157,10 +207,12 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Backspace':
+      clearSelection()
       backspace(event.altKey)
       break
 
     case 'Enter':
+      clearSelection()
       newline()
       break
 
@@ -168,6 +220,7 @@ export function handleKey(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey) {
         /* handle meta */
       } else if (event.key.length === 1) {
+        clearSelection()
         insert(event.key)
       }
 
@@ -176,12 +229,12 @@ export function handleKey(event: KeyboardEvent) {
 }
 
 const defaultCursorPush = 4
-export function dropCursor(x: number, y: number) {
-  const { height } = regular.calculate('')
-
+function putCursorAtCoordinates(x: number, y: number) {
   if (lines.value.length <= 0) {
     return
   }
+
+  const { height } = regular.calculate('')
 
   const lineIndex = Math.floor(y / height)
   const line = Math.min(Math.max(lineIndex, 0), lines.value.length - 1)
@@ -190,4 +243,15 @@ export function dropCursor(x: number, y: number) {
   const index = regular.position(text, x, defaultCursorPush)
 
   putCursor(line, index)
+}
+
+export function dropCursor(x: number, y: number) {
+  cursor.highlight = null
+
+  putCursorAtCoordinates(x, y)
+}
+
+export function dragTo(x: number, y: number) {
+  makeSelection()
+  putCursorAtCoordinates(x, y)
 }
