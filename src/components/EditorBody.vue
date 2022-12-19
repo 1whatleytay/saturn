@@ -2,7 +2,7 @@
   <div ref="scroll" class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2">
     <div class="w-10 mr-5 text-xs text-slate-600">
       <div
-        v-for="(_, index) in lines"
+        v-for="(_, index) in lines" :key="index"
         class="w-full h-6 text-right flex items-center justify-end"
       >
         {{ index + 1 }}
@@ -12,11 +12,11 @@
     <div
       tabindex="0"
       ref="handler"
-      class="flex-grow cursor-text text-sm relative outline-none whitespace-pre"
+      class="flex-grow cursor-text text-sm relative outline-none whitespace-pre group"
       @mousedown="handleDown"
       @keydown.prevent="handleKey"
     >
-      <div v-for="line in lines" class="h-6 flex items-center">
+      <div v-for="(line, index) in lines" :key="index" class="h-6 flex items-center">
         {{ line }}
       </div>
 
@@ -25,6 +25,7 @@
       <div class="absolute top-0 pointer-events-none" v-if="cursor.highlight">
         <div
           v-for="(line, index) in lines"
+          :key="index"
           class="h-6 flex items-center"
         >
           <div v-if="hasSelection(index)">
@@ -32,7 +33,7 @@
               {{ leadingSelection(line, index) }}
             </span>
 
-            <span class="rounded opacity-30 bg-blue-400">
+            <span class="rounded opacity-30 px-1 -mx-1 bg-blue-500">
               <span class="opacity-0">
                 {{ bodySelection(line, index) }}
               </span>
@@ -42,7 +43,7 @@
       </div>
 
       <div
-        class="w-0.5 h-6 bg-orange-400 absolute mx-[-0.08rem]"
+        class="w-0.5 h-6 bg-orange-400 hidden group-focus:block absolute mx-[-0.08rem]"
         :style="{
           left: `${cursor.offsetX}px`,
           top: `${cursor.offsetY}px`
@@ -175,6 +176,11 @@ const handleMove = (event: MouseEvent) => {
 
 const handleUp = (event: MouseEvent) => {
   mouseDown.value = false
+}
+
+function handlePaste(event: Event) {
+  console.log(event)
+  alert('bro')
 }
 
 onMounted(() => {

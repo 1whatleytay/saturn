@@ -12,12 +12,14 @@
   "dependencies": {
     "@heroicons/vue": "^2.0.13",
     "@tauri-apps/api": "^1.1.0",
+    "ua-parser-js": "^1.0.32",
     "uuid": "^9.0.0",
     "vue": "^3.2.37"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.1.0",
     "@types/node": "^18.7.10",
+    "@types/ua-parser-js": "^0.7.36",
     "@types/uuid": "^9.0.0",
     "@vitejs/plugin-vue": "^3.0.1",
     "autoprefixer": "^10.4.13",

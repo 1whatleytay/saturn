@@ -4,6 +4,7 @@ import { tab } from './editor-state'
 
 import { regular } from '../utils/text-size'
 import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
+import { hasActionKey } from '../utils/shortcut-key'
 
 export const lines = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
@@ -22,6 +23,92 @@ export const cursor = reactive({
 
   highlight: null
 } as CursorPosition & { highlight: CursorPosition | null })
+
+interface SelectionRange {
+  startLine: number
+  startIndex: number
+  endLine: number
+  endIndex: number
+}
+
+export function selectionRange(): SelectionRange | null {
+  if (!cursor.highlight) {
+     return null
+  }
+
+  // Took out technical debt here and the methods in EditorBody for selection.
+  const highlightBeforeLine = cursor.highlight.line < cursor.line
+  const highlightBeforeIndex = cursor.highlight.line === cursor.line
+    && cursor.highlight.index < cursor.index
+
+  if (highlightBeforeLine || highlightBeforeIndex) {
+    console.assert(cursor.highlight.line <= cursor.line)
+    return {
+      startLine: cursor.highlight.line,
+      startIndex: cursor.highlight.index,
+      endLine: cursor.line,
+      endIndex: cursor.index
+    }
+  } else {
+    console.assert(cursor.highlight.line >= cursor.line)
+    return {
+      startLine: cursor.line,
+      startIndex: cursor.index,
+      endLine: cursor.highlight.line,
+      endIndex: cursor.highlight.index
+    }
+  }
+}
+
+export function makeSelection() {
+  if (!cursor.highlight) {
+    cursor.highlight = {
+      line: cursor.line,
+      index: cursor.index,
+      offsetX: cursor.offsetX,
+      offsetY: cursor.offsetY
+    }
+  }
+}
+
+export function clearSelection() {
+  cursor.highlight = null
+}
+
+export function setSelection(selection: boolean) {
+  if (selection) {
+    makeSelection()
+  } else {
+    clearSelection()
+  }
+}
+
+export function dropSelection() {
+  const range = selectionRange()
+
+  const all = lines.value
+
+  if (range) {
+    // assert range.startLine >= range.endLine
+    if (range.startLine == range.endLine) {
+      const text = all[range.startLine]
+
+      all[range.startLine] = text.substring(0, range.startIndex) + text.substring(range.endIndex)
+    } else {
+      const leading = all[range.startLine].substring(0, range.startIndex)
+      const trailing = all[range.endLine].substring(range.endIndex)
+      all[range.startLine] = leading + trailing
+
+      // splice with multiple deleteCount seems bugged
+      for (let a = range.startLine + 1; a <= range.endLine; a++) {
+        all.splice(range.startLine + 1, 1)
+      }
+    }
+
+    clearSelection()
+    putCursor(range.startLine, range.startIndex)
+  }
+}
 
 export function putCursor(line: number, index: number) {
   let underflow = false
@@ -67,6 +154,9 @@ export function putCursor(line: number, index: number) {
 }
 
 function insert(text: string) {
+  console.log('test')
+  dropSelection()
+
   const all = lines.value
 
   const line = all[cursor.line]
@@ -79,6 +169,8 @@ function insert(text: string) {
 }
 
 function newline() {
+  dropSelection()
+
   const all = lines.value
 
   const line = all[cursor.line]
@@ -97,7 +189,9 @@ function backspace(alt: boolean = false) {
 
   const line = all[cursor.line]
 
-  if (cursor.index > 0) {
+  if (cursor.highlight) {
+    dropSelection()
+  } else if (cursor.index > 0) {
     const consumption = alt ? consumeBackwards(line, cursor.index) : 1
 
     const leading = line.substring(0, cursor.index - consumption)
@@ -116,29 +210,6 @@ function backspace(alt: boolean = false) {
     all.splice(cursor.line, 1)
 
     putCursor(cursor.line - 1, leading.length)
-  }
-}
-
-export function makeSelection() {
-  if (!cursor.highlight) {
-    cursor.highlight = {
-      line: cursor.line,
-      index: cursor.index,
-      offsetX: cursor.offsetX,
-      offsetY: cursor.offsetY
-    }
-  }
-}
-
-export function clearSelection() {
-  cursor.highlight = null
-}
-
-export function setSelection(selection: boolean) {
-  if (selection) {
-    makeSelection()
-  } else {
-    clearSelection()
   }
 }
 
@@ -178,17 +249,34 @@ function moveRight(alt: boolean = false, shift: boolean = false) {
   putCursor(line, move)
 }
 
-function moveDown() {
+function moveDown(shift: boolean = false) {
+  setSelection(shift)
+
   putCursor(cursor.line + 1, cursor.index)
 }
 
-function moveUp() {
+function moveUp(shift: boolean = false) {
+  setSelection(shift)
+
   putCursor(cursor.line - 1, cursor.index)
 }
 
-export function handleKey(event: KeyboardEvent) {
-  console.log(event)
+function handleActionKey(event: KeyboardEvent) {
+  // assert hasActionKey(event)
 
+  switch (event.key) {
+    case 'a':
+      if (lines.value.length) {
+        const end = lines.value.length - 1
+        putCursor(0, 0)
+        makeSelection()
+        putCursor(end, lines.value[end].length)
+      }
+      break
+  }
+}
+
+export function handleKey(event: KeyboardEvent) {
   switch (event.key) {
     case 'ArrowLeft':
       moveLeft(event.altKey, event.shiftKey)
@@ -199,28 +287,29 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'ArrowDown':
-      moveDown()
+      moveDown(event.shiftKey)
       break
 
     case 'ArrowUp':
-      moveUp()
+      moveUp(event.shiftKey)
       break
 
     case 'Backspace':
-      clearSelection()
       backspace(event.altKey)
       break
 
     case 'Enter':
-      clearSelection()
       newline()
       break
 
     default:
       if (event.metaKey || event.ctrlKey) {
+        // Nested if here...
+        if (hasActionKey(event)) {
+           handleActionKey(event)
+        }
         /* handle meta */
       } else if (event.key.length === 1) {
-        clearSelection()
         insert(event.key)
       }
 
