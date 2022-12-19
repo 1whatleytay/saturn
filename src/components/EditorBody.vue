@@ -1,5 +1,5 @@
 <template>
-  <div class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2">
+  <div ref="scroll" class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2">
     <div class="w-10 mr-5 text-xs text-slate-600">
       <div
         v-for="(_, index) in lines"
@@ -14,11 +14,13 @@
       ref="handler"
       class="flex-grow cursor-text text-sm relative outline-none whitespace-pre"
       @mousedown="handleDown"
-      @keydown="handleKey"
+      @keydown.prevent="handleKey"
     >
       <div v-for="line in lines" class="h-6 flex items-center">
         {{ line }}
       </div>
+
+      <div class="h-32" />
 
       <div class="absolute top-0 pointer-events-none" v-if="cursor.highlight">
         <div
@@ -46,15 +48,6 @@
           top: `${cursor.offsetY}px`
         }"
       />
-
-<!--      <div-->
-<!--        v-if="cursor.highlight"-->
-<!--        class="w-0.5 h-6 bg-blue-400 absolute mx-[-0.08rem]"-->
-<!--        :style="{-->
-<!--          left: `${cursor.highlight.offsetX}px`,-->
-<!--          top: `${cursor.highlight.offsetY}px`-->
-<!--        }"-->
-<!--      />-->
     </div>
   </div>
 </template>
@@ -63,8 +56,17 @@
 import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { tab } from '../state/editor-state'
-import { lines, cursor, putCursor, handleKey, dropCursor, dragTo, clearSelection } from '../state/editor-cursor'
+import {
+  lines,
+  cursor,
+  putCursor,
+  handleKey,
+  dropCursor,
+  dragTo,
+  clearSelection
+} from '../state/editor-cursor'
 
+const scroll = ref(null as HTMLElement | null)
 const handler = ref(null as HTMLElement | null)
 
 interface SelectionPartsResult {
@@ -146,7 +148,7 @@ function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (handler.value) {
     return {
       x: event.pageX - handler.value.offsetLeft,
-      y: event.pageY - handler.value.offsetTop
+      y: event.pageY - handler.value.offsetTop + (scroll?.value?.scrollTop ?? 0)
     }
   }
 
@@ -187,6 +189,18 @@ onUnmounted(() => {
   window.removeEventListener('focus', focusHandler)
   window.removeEventListener('mousemove', handleMove)
   window.removeEventListener('mouseup', handleUp)
+})
+
+const bottomCursorSpace = 42
+
+watch(() => cursor.offsetY, (value) => {
+  if (scroll.value) {
+    if (value < scroll.value.scrollTop) {
+      scroll.value.scrollTop = value
+    } else if (value > scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace) {
+      scroll.value.scrollTop = value - scroll.value.clientHeight + bottomCursorSpace
+    }
+  }
 })
 
 watch(() => tab()?.uuid, () => {
