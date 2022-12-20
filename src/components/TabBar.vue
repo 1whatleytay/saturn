@@ -18,8 +18,18 @@
           shrink-0
           flex items-center justify-center
           font-black
-        " @click="input?.click()">
+        " @click="create">
         <PlusIcon class="w-4 h-4" />
+      </button>
+
+      <button class="w-10 h-10
+          hover:bg-slate-800
+          text-slate-300
+          shrink-0
+          flex items-center justify-center
+          font-black
+        " @click="input?.click()">
+        <ArrowDownTrayIcon class="w-4 h-4" />
       </button>
     </div>
 
@@ -33,11 +43,15 @@
 import { ref } from 'vue'
 
 import Tab from './Tab.vue'
-import { PlusIcon } from '@heroicons/vue/24/solid'
+import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
-import { loadElf, remove, state } from '../state/editor-state'
+import { loadElf, remove, createTab, state } from '../state/editor-state'
 
 const input = ref(null as HTMLInputElement | null)
+
+function create() {
+  createTab('Untitled', [''])
+}
 
 function loadFile() {
   const files = input.value?.files

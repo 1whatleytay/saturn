@@ -1,8 +1,7 @@
 import { reactive } from 'vue'
 
-import { tauri } from '@tauri-apps/api'
-
 import { v4 as uuid } from 'uuid'
+import { disassembleElf } from '../utils/disassemble'
 
 export interface EditorTab {
   uuid: string,
@@ -15,23 +14,8 @@ export interface EditorState {
   selected: string | null
 }
 
-const defaultTabs = [
-  {
-    uuid: uuid(),
-    title: 'One',
-    lines: [
-      'aaaaaaaaa',
-      'ddddddddddddddddd',
-      'd×××ddddddddddddd',
-      'd×××ddd😀ddd😀ddd'
-    ]
-  },
-  { uuid: uuid(), title: 'Two', lines: ['e', 'fg', 'h', 'i'] },
-  { uuid: uuid(), title: 'Three', lines: ['j', 'k', 'l', 'm'] }
-] as EditorTab[]
-
 export const state = reactive({
-  tabs: defaultTabs,
+  tabs: [],
   selected: null
 } as EditorState)
 
@@ -51,28 +35,22 @@ export function remove(uuid: string) {
   }
 }
 
-export async function disassembleElf(elf: ArrayBuffer): Promise<string[]> {
-  const bytes = Array.from(new Uint8Array(elf))
-
-  return tauri.invoke('disassemble', { bytes })
-}
-
-export async function loadElf(named: string, elf: ArrayBuffer) {
+export function createTab(named: string, content: string[]) {
   const id = uuid()
 
   state.tabs.push({
     uuid: id,
     title: named,
-    lines: await disassembleElf(elf)
+    lines: content
   })
 
   state.selected = id
 }
 
-// export function listen(state: EditorState, key: string = 'editor', storage: Storage = localStorage) {
-//   watch(() => state, (value) => {
-//     storage.setItem(key, JSON.stringify(value))
-//   })
-// }
-//
-// listen(state)
+export async function loadElf(named: string, elf: ArrayBuffer) {
+  createTab(named, await disassembleElf(elf))
+}
+
+if (!state.tabs.length) {
+  createTab('Untitled', [''])
+}
