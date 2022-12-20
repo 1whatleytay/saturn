@@ -9,7 +9,8 @@ module.exports = {
     extend: {
       colors: {
         'saturn-background': '#2C3350',
-        'saturn-highlight': '#FFC35D'
+        'saturn-highlight': '#FFC35D',
+        'breakpoint-neutral': '#1a1212'
       },
 
       keyframes: {

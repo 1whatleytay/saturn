@@ -5,18 +5,25 @@
     @scroll="handleScroll"
   >
     <div
-      class="w-12 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900"
+      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900"
+      @wheel.stop
       :style="{ top: `${linesOffset}px` }"
     >
       <div
         v-for="(_, index) in lines" :key="index"
-        class="w-full h-6 text-right flex items-center justify-end"
+        @click="setBreakpoint(index)"
+        class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto"
       >
+        <div
+          v-if="hasBreakpoint(index)"
+          class="rounded-full bg-red-700 w-3 h-3 mr-auto ml-3"
+        />
+
         {{ index + 1 }}
       </div>
     </div>
 
-    <div class="w-12 pr-2 mr-2 shrink-0">
+    <div class="w-16 pr-2 mr-2 shrink-0">
     </div>
 
     <div
@@ -37,7 +44,12 @@
         @paste.prevent="handlePaste"
       />
 
-      <div v-for="(line, index) in lines" :key="index" class="h-6 flex items-center">
+      <div
+        v-for="(line, index) in lines"
+        :key="index"
+        class="h-6 flex items-center pr-16"
+        :class="{ 'bg-breakpoint-neutral': hasBreakpoint(index) }"
+      >
         {{ line }}
       </div>
 
@@ -183,27 +195,58 @@ const focusHandler = () => {
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
     return {
-      x: event.pageX - code.value.offsetLeft,
-      y: event.pageY - code.value.offsetTop + (scroll?.value?.scrollTop ?? 0)
+      x: event.pageX - code.value.offsetLeft + (scroll.value?.scrollLeft ?? 0),
+      y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0)
     }
   }
 
   return { x: 0, y: 0 }
 }
 
+function hasBreakpoint(index: number): boolean {
+  return tab()?.breakpoints.includes(index) ?? false
+}
+
+function setBreakpoint(index: number) {
+  const state = tab()
+
+  if (!state) {
+    return
+  }
+
+  if (state.breakpoints.includes(index)) {
+    state.breakpoints = state.breakpoints.filter(point => point !== index)
+  } else {
+    state.breakpoints.push(index)
+  }
+}
+
+const mouseDown = ref(false)
+
 function handleDown(event: MouseEvent) {
   focusHandler()
 
   const { x, y } = editorCoordinates(event)
 
+  mouseDown.value = true
+  console.log('add')
   dropCursor(x, y)
 }
 
 const handleMove = (event: MouseEvent) => {
-  if ((event.buttons & 1) > 0) {
+  if ((event.buttons & 1) > 0 && mouseDown.value) {
+    console.log('drag')
     const { x, y } = editorCoordinates(event)
     dragTo(x, y)
+  } else {
+    console.log('remove')
+    mouseDown.value = false
   }
+}
+
+const handleUp = (event: MouseEvent) => {
+  console.log('remove')
+  mouseDown.value = false
 }
 
 function handleCopy(event: ClipboardEvent) {
@@ -245,11 +288,13 @@ onMounted(() => {
 
   window.addEventListener('focus', focusHandler)
   window.addEventListener('mousemove', handleMove)
+  window.addEventListener('mouseup', handleMove)
 })
 
 onUnmounted(() => {
   window.removeEventListener('focus', focusHandler)
   window.removeEventListener('mousemove', handleMove)
+  window.removeEventListener('mouseup', handleMove)
 })
 
 const bottomCursorSpace = 42

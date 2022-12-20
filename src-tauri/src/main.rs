@@ -55,7 +55,7 @@ fn disassemble(bytes: Vec<u8>) -> Vec<String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, disassemble])
+        .invoke_handler(tauri::generate_handler![disassemble])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

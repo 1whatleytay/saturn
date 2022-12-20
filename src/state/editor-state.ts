@@ -6,7 +6,8 @@ import { disassembleElf } from '../utils/disassemble'
 export interface EditorTab {
   uuid: string,
   title: string,
-  lines: string[]
+  lines: string[],
+  breakpoints: number[]
 }
 
 export interface EditorState {
@@ -41,7 +42,8 @@ export function createTab(named: string, content: string[]) {
   state.tabs.push({
     uuid: id,
     title: named,
-    lines: content
+    lines: content,
+    breakpoints: []
   })
 
   state.selected = id
