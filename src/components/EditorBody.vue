@@ -177,18 +177,11 @@ function bodySelection(line: string, index: number) {
 }
 
 const focusHandler = () => {
-  console.log(input)
   input?.value?.focus()
 }
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
-    console.log({
-      scroll: code.value.scrollLeft,
-      offset: code.value.offsetLeft,
-      client: code.value.clientLeft
-    })
-
     return {
       x: event.pageX - code.value.offsetLeft,
       y: event.pageY - code.value.offsetTop + (scroll?.value?.scrollTop ?? 0)

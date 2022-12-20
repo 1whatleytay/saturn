@@ -3,8 +3,6 @@ import { UAParser } from 'ua-parser-js'
 function metaKeyPlatform(): boolean {
   const os = new UAParser(navigator.userAgent).getOS()
 
-  console.log(os)
-
   return true
 }
 

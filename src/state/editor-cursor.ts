@@ -5,6 +5,7 @@ import { tab } from './editor-state'
 import { regular } from '../utils/text-size'
 import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 import { hasActionKey } from '../utils/shortcut-key'
+import { settings } from './editor-settings'
 
 export const lines = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
@@ -135,7 +136,7 @@ export function dropSelection() {
   putCursor(range.startLine, range.startIndex)
 }
 
-export function putCursor(line: number, index: number) {
+export function putCursor(line: number, index: number, set: CursorPosition = cursor) {
   let underflow = false
   let overflow = false
 
@@ -164,16 +165,10 @@ export function putCursor(line: number, index: number) {
   const leading = text.substring(0, actualIndex)
   const size = regular.calculate(leading)
 
-  if (cursor.highlight
-    && cursor.highlight.line === actualLine
-    && cursor.highlight.index === actualIndex) {
-    cursor.highlight = null
-  }
-
-  cursor.line = actualLine
-  cursor.index = actualIndex
-  cursor.offsetX = size.width
-  cursor.offsetY = size.height * actualLine
+  set.line = actualLine
+  set.index = actualIndex
+  set.offsetX = size.width
+  set.offsetY = size.height * actualLine
 }
 
 function insert(text: string) {
@@ -232,11 +227,20 @@ function newline() {
   const leading = line.substring(0, cursor.index)
   const trailing = line.substring(cursor.index)
 
+  const leadingSpacing = /^\s*/g
+  const match = line.match(leadingSpacing)
+  const endMatch = trailing.match(leadingSpacing)
+
+  const spacing = match && match.length ? match[0] : ''
+  const noSpace = endMatch && endMatch.length ? trailing.substring(endMatch[0].length) : trailing
+
+  console.log(match, spacing)
+
   // Mutate
   all[cursor.line] = leading
-  all.splice(cursor.line + 1, 0, trailing)
+  all.splice(cursor.line + 1, 0, spacing + noSpace)
 
-  putCursor(cursor.line + 1, 0)
+  putCursor(cursor.line + 1, spacing.length)
 }
 
 function backspace(alt: boolean = false) {
@@ -316,6 +320,71 @@ function moveUp(shift: boolean = false) {
   putCursor(cursor.line - 1, cursor.index)
 }
 
+function dropTab(line: number): number {
+  const regex = new RegExp(`^\\s{0,${settings.tabSize}}`, 'g')
+  const match = lines.value[line].match(regex)
+
+  if (match && match.length) {
+    const text = match[0]
+
+    lines.value[line] = lines.value[line].substring(text.length)
+
+    return text.length
+  }
+
+  return 0
+}
+
+function addTab(line: number): number {
+  const align = ' '.repeat(settings.tabSize)
+
+  lines.value[line] = align + lines.value[line]
+
+  return align.length
+}
+
+function hitTab(shift: boolean = false) {
+  const region = selectionRange()
+
+  if (shift) {
+    if (region) {
+      for (let line = region.startLine; line <= region.endLine; line++) {
+        const alignment = dropTab(line)
+
+        if (line === cursor.line) {
+          putCursor(cursor.line, cursor.index - alignment)
+        }
+
+        if (cursor.highlight && line == cursor.highlight.line) {
+          putCursor(cursor.highlight.line, cursor.highlight.index - alignment, cursor.highlight)
+        }
+      }
+    } else {
+      const alignment = dropTab(cursor.line)
+
+      putCursor(cursor.line, cursor.index - alignment)
+    }
+  } else {
+    if (region) {
+      for (let line = region.startLine; line <= region.endLine; line++) {
+        const alignment = addTab(line)
+
+        if (line === cursor.line) {
+          putCursor(cursor.line, cursor.index + alignment)
+        }
+
+        if (cursor.highlight && line == cursor.highlight.line) {
+          putCursor(cursor.highlight.line, cursor.highlight.index + alignment, cursor.highlight)
+        }
+      }
+    } else {
+      const alignment = addTab(cursor.line)
+
+      putCursor(cursor.line, cursor.index + alignment)
+    }
+  }
+}
+
 function handleActionKey(event: KeyboardEvent) {
   // assert hasActionKey(event)
 
@@ -327,6 +396,7 @@ function handleActionKey(event: KeyboardEvent) {
         makeSelection()
         putCursor(end, lines.value[end].length)
       }
+
       break
   }
 }
@@ -347,6 +417,11 @@ export function handleKey(event: KeyboardEvent) {
 
     case 'ArrowUp':
       moveUp(event.shiftKey)
+      break
+
+    case 'Tab':
+      hitTab(event.shiftKey)
+      event.preventDefault()
       break
 
     case 'Backspace':
@@ -398,4 +473,10 @@ export function dropCursor(x: number, y: number) {
 export function dragTo(x: number, y: number) {
   makeSelection()
   putCursorAtCoordinates(x, y)
+
+  if (cursor.highlight
+    && cursor.highlight.line === cursor.line
+    && cursor.highlight.index === cursor.index) {
+    cursor.highlight = null
+  }
 }
