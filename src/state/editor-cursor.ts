@@ -6,6 +6,7 @@ import { regular } from '../utils/text-size'
 import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 import { hasActionKey } from '../utils/shortcut-key'
 import { settings } from './editor-settings'
+import { UndoHistory } from './editor-undo'
 
 export const lines = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
@@ -24,6 +25,16 @@ export const cursor = reactive({
 
   highlight: null
 } as CursorPosition & { highlight: CursorPosition | null })
+
+export const history = new UndoHistory(
+  () => tab() ?? { lines: [] },
+  () => cursor,
+  (value) => {
+    putCursor(value.line, value.index)
+
+    cursor.highlight = null
+  }
+)
 
 interface SelectionRange {
   startLine: number
@@ -189,6 +200,8 @@ function insert(text: string) {
 export function paste(text: string) {
   dropSelection()
 
+  history.frame()
+
   const textLines = text.split('\n')
 
   if (!textLines.length) {
@@ -219,6 +232,8 @@ export function paste(text: string) {
 }
 
 function newline() {
+  history.frame()
+
   dropSelection()
 
   const all = lines.value
@@ -247,6 +262,8 @@ function backspace(alt: boolean = false) {
   const all = lines.value
 
   const line = all[cursor.line]
+
+  history.frame()
 
   if (cursor.highlight) {
     dropSelection()
@@ -346,6 +363,8 @@ function addTab(line: number): number {
 function hitTab(shift: boolean = false) {
   const region = selectionRange()
 
+  history.frame()
+
   if (shift) {
     if (region) {
       for (let line = region.startLine; line <= region.endLine; line++) {
@@ -398,6 +417,10 @@ function handleActionKey(event: KeyboardEvent) {
       }
 
       break
+
+    case 'z':
+      history.undo()
+      break
   }
 }
 
@@ -440,6 +463,9 @@ export function handleKey(event: KeyboardEvent) {
         }
         /* handle meta */
       } else if (event.key.length === 1) {
+        // Not in insert!
+        history.frame()
+
         insert(event.key)
       }
 
