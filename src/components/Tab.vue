@@ -1,21 +1,25 @@
 <template>
-  <button @click="emit('select')" class="
-        hover:bg-neutral-800
-        text-slate-300
-        flex items-center
-        transition-[border-color]
-        duration-200
-        space-x-4
-        h-10
-        px-6
-        text-xs
-        font-medium
-        max-w-xs
-        border-b-2
-      " :class="{
-        'border-orange-400 bg-neutral-800': selected ?? false,
-        'border-transparent': !(selected ?? false),
-      }">
+  <button
+    @click="emit('select')"
+    class="
+      hover:bg-neutral-800
+      text-slate-300
+      flex items-center
+      transition-[border-color]
+      duration-200
+      space-x-4
+      h-10
+      px-6
+      text-xs
+      font-medium
+      max-w-xs
+      border-b-2
+    "
+    :class="{
+      'border-orange-400 bg-neutral-800': selected ?? false,
+      'border-transparent': !(selected ?? false),
+    }"
+  >
     {{ tab.title }}
 
     <button

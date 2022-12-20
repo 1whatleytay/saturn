@@ -37,8 +37,6 @@ export class UndoHistory {
     this.uncommitted = 0
 
     if (this.current) {
-      console.log('committing')
-
       this.operations.push(this.current)
 
       if (this.operations.length > this.backlog) {

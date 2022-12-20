@@ -249,8 +249,6 @@ function newline() {
   const spacing = match && match.length ? match[0] : ''
   const noSpace = endMatch && endMatch.length ? trailing.substring(endMatch[0].length) : trailing
 
-  console.log(match, spacing)
-
   // Mutate
   all[cursor.line] = leading
   all.splice(cursor.line + 1, 0, spacing + noSpace)

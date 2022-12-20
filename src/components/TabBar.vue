@@ -31,21 +31,22 @@
         " @click="input?.click()">
         <ArrowDownTrayIcon class="w-4 h-4" />
       </button>
+
+      <TabBarItems class="ml-auto" />
     </div>
 
-    <div class="w-full h-10 border-b-1 opacity-0">
-
-    </div>
+    <div class="w-full h-10 border-b-2 opacity-0" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
 import { loadElf, remove, createTab, state } from '../state/editor-state'
+import TabBarItems from './TabBarItems.vue'
 
 const input = ref(null as HTMLInputElement | null)
 

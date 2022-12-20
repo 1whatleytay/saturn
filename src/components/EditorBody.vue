@@ -229,23 +229,19 @@ function handleDown(event: MouseEvent) {
   const { x, y } = editorCoordinates(event)
 
   mouseDown.value = true
-  console.log('add')
   dropCursor(x, y)
 }
 
 const handleMove = (event: MouseEvent) => {
   if ((event.buttons & 1) > 0 && mouseDown.value) {
-    console.log('drag')
     const { x, y } = editorCoordinates(event)
     dragTo(x, y)
   } else {
-    console.log('remove')
     mouseDown.value = false
   }
 }
 
 const handleUp = (event: MouseEvent) => {
-  console.log('remove')
   mouseDown.value = false
 }
 
