@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="flex items-center overflow-x-scroll items-start bg-neutral-900 w-full">
+  <div @click.stop>
+    <div class="h-12 flex items-center overflow-x-scroll items-start bg-neutral-900 w-full fixed z-20 top-0">
       <input type="file" class="hidden" ref="input" @change="loadFile" />
 
       <Tab
@@ -21,6 +21,10 @@
         " @click="input?.click()">
         <PlusIcon class="w-4 h-4" />
       </button>
+    </div>
+
+    <div class="w-full h-10 border-b-1 opacity-0">
+
     </div>
   </div>
 </template>

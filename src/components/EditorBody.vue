@@ -1,6 +1,13 @@
 <template>
-  <div ref="scroll" class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2">
-    <div class="w-10 mr-5 text-xs text-slate-600">
+  <div
+    ref="scroll"
+    class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2"
+    @scroll="handleScroll"
+  >
+    <div
+      class="w-12 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900"
+      :style="{ top: `${linesOffset}px` }"
+    >
       <div
         v-for="(_, index) in lines" :key="index"
         class="w-full h-6 text-right flex items-center justify-end"
@@ -9,9 +16,12 @@
       </div>
     </div>
 
+    <div class="w-12 pr-2 mr-2 shrink-0">
+    </div>
+
     <div
       ref="code"
-      class="flex-grow cursor-text text-sm relative outline-none whitespace-pre group"
+      class="flex-grow cursor-text text-sm relative outline-none whitespace-pre"
       @mousedown.prevent="handleDown"
     >
       <input
@@ -79,9 +89,21 @@ import {
   clearSelection, dropSelection, paste
 } from '../state/editor-cursor'
 
+const linesOffset = ref(0)
+
 const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)
 const input = ref(null as HTMLElement | null)
+
+function handleScroll() {
+  if (!scroll.value) {
+    return
+  }
+
+  const point = scroll.value.scrollTop - scroll.value.offsetTop
+
+  linesOffset.value = -point
+}
 
 interface SelectionPartsResult {
   leading: string,
@@ -161,6 +183,12 @@ const focusHandler = () => {
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
+    console.log({
+      scroll: code.value.scrollLeft,
+      offset: code.value.offsetLeft,
+      client: code.value.clientLeft
+    })
+
     return {
       x: event.pageX - code.value.offsetLeft,
       y: event.pageY - code.value.offsetTop + (scroll?.value?.scrollTop ?? 0)
@@ -220,6 +248,7 @@ function handlePaste(event: ClipboardEvent) {
 
 onMounted(() => {
   putCursor(0, 0)
+  handleScroll()
 
   window.addEventListener('focus', focusHandler)
   window.addEventListener('mousemove', handleMove)
