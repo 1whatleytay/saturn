@@ -8,12 +8,11 @@ use byteorder::{LittleEndian, ReadBytesExt};
 
 use anyhow::{anyhow, Result};
 use tauri::api::shell::Program;
-use crate::cpu::decoder::Decoder;
-use crate::cpu::disassemble::Disassembler;
-use crate::elf::program::{ProgramHeader, ProgramHeaderFlags};
 
-mod cpu;
-mod elf;
+use titan::elf::Elf;
+use titan::cpu::decoder::Decoder;
+use titan::elf::program::{ ProgramHeader, ProgramHeaderFlags };
+use titan::cpu::disassemble::Disassembler;
 
 fn select_executable(entry: u32, headers: &[ProgramHeader]) -> Option<&ProgramHeader> {
     let executables: Vec<&ProgramHeader> = headers.iter()
@@ -26,8 +25,8 @@ fn select_executable(entry: u32, headers: &[ProgramHeader]) -> Option<&ProgramHe
         .map(|x| x.clone())
 }
 
-fn disassemble_raw(bytes: Vec<u8>) -> Result<Vec<String>> {
-    let elf = elf::Elf::read(&mut Cursor::new(bytes))?;
+fn disassemble_raw(bytes: Vec<u8>) -> anyhow::Result<Vec<String>> {
+    let elf = Elf::read(&mut Cursor::new(bytes))?;
     let entry = elf.header.program_entry;
 
     let Some(header) = select_executable(entry, &elf.program_headers) else {
