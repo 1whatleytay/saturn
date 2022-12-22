@@ -54,7 +54,11 @@ export function createTab(named: string, content: string[], profile: ExecutionPr
 }
 
 export async function loadElf(named: string, elf: ArrayBuffer) {
-  createTab(named, await disassembleElf(elf), { elf })
+  const value = await disassembleElf(named, elf)
+
+  const lines = value.error ? [value.error] : value.lines
+
+  createTab(named, lines, { elf, breakpoints: new Map() })
 }
 
 if (!state.tabs.length) {

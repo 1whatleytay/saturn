@@ -3,53 +3,38 @@
     windows_subsystem = "windows"
 )]
 
+use std::collections::HashMap;
 use std::io::Cursor;
-use byteorder::{LittleEndian, ReadBytesExt};
-
-use anyhow::{anyhow, Result};
-use tauri::api::shell::Program;
+use serde::{Serialize};
 
 use titan::elf::Elf;
-use titan::cpu::decoder::Decoder;
-use titan::elf::program::{ ProgramHeader, ProgramHeaderFlags };
-use titan::cpu::disassemble::Disassembler;
+use titan::debug::elf::inspection::Inspection;
 
-fn select_executable(entry: u32, headers: &[ProgramHeader]) -> Option<&ProgramHeader> {
-    let executables: Vec<&ProgramHeader> = headers.iter()
-        .filter(|header| header.flags.contains(ProgramHeaderFlags::EXECUTABLE))
-        .collect();
+#[derive(Serialize)]
+struct DisassembleResult {
+    error: Option<String>,
 
-    executables.iter()
-        .find(|header| header.virtual_address == entry)
-        .or_else(|| executables.first())
-        .map(|x| x.clone())
-}
-
-fn disassemble_raw(bytes: Vec<u8>) -> anyhow::Result<Vec<String>> {
-    let elf = Elf::read(&mut Cursor::new(bytes))?;
-    let entry = elf.header.program_entry;
-
-    let Some(header) = select_executable(entry, &elf.program_headers) else {
-        return Err(anyhow!("No executable header (with elf entry: {:08x})", entry))
-    };
-
-    let mut instructions = Cursor::new(&header.data);
-    let mut disassembler = Disassembler { };
-
-    let mut result = vec![];
-
-    // Can't think of a way to stream this.
-    while let Ok(instruction) = instructions.read_u32::<LittleEndian>() {
-        result.push(disassembler.dispatch(instruction)
-            .unwrap_or_else(|| "INVALID".to_string()))
-    }
-
-    Ok(result)
+    lines: Vec<String>,
+    breakpoints: HashMap<usize, u32>
 }
 
 #[tauri::command]
-fn disassemble(bytes: Vec<u8>) -> Vec<String> {
-    disassemble_raw(bytes).unwrap_or_else(|err| vec![err.to_string()])
+fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
+    let elf = match Elf::read(&mut Cursor::new(bytes)) {
+        Ok(elf) => elf,
+        Err(error) => return DisassembleResult {
+            error: Some(error.to_string()),
+            lines: vec![], breakpoints: HashMap::new()
+        }
+    };
+
+    let inspection = Inspection::new(named, &elf);
+
+    DisassembleResult {
+        error: None,
+        lines: inspection.lines,
+        breakpoints: inspection.breakpoints
+    }
 }
 
 fn main() {
