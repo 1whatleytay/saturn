@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { tab } from '../state/editor-state'
 import {
@@ -97,8 +97,10 @@ import {
   handleKey,
   dropCursor,
   dragTo,
+  paste,
   getSelection,
-  clearSelection, dropSelection, paste
+  clearSelection,
+  dropSelection
 } from '../state/editor-cursor'
 
 const linesOffset = ref(0)
