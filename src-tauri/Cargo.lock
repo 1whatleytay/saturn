@@ -2214,6 +2214,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "titan",
+ "tokio",
 ]
 
 [[package]]
@@ -2950,7 +2951,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+ssh://git@github.com/1whatleytay/titan.git?branch=main#f09986b148f1a24c7a363f30a4e832c9b49bd36f"
+source = "git+ssh://git@github.com/1whatleytay/titan.git?branch=main#08d4a6c681d275f555fcb126efe71d4bdd26932f"
 dependencies = [
  "bitflags",
  "byteorder",

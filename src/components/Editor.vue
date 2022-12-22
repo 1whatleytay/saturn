@@ -3,10 +3,13 @@
     <TabBar />
 
     <EditorBody />
+
+    <DebugWindow />
   </div>
 </template>
 
 <script setup lang="ts">
 import TabBar from './TabBar.vue'
 import EditorBody from './EditorBody.vue'
+import DebugWindow from './DebugWindow.vue'
 </script>

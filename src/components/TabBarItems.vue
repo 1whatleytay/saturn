@@ -58,17 +58,7 @@ async function run() {
 
     const result = await state.execution.run(tab()?.breakpoints ?? [])
 
-    switch (result) {
-      case ExecutionResult.Finished:
-      case ExecutionResult.Error:
-        await state.execution.close()
-        state.execution = null
-        break
-
-      case ExecutionResult.Breakpoint:
-        // not sure yet, I think execution result will get revamped
-        break
-    }
+    state.debug = JSON.stringify(result, null, 2)
   }
 }
 

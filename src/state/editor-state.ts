@@ -14,13 +14,15 @@ export interface EditorTab {
 export interface EditorState {
   tabs: EditorTab[],
   selected: string | null,
-  execution: ExecutionState | null
+  execution: ExecutionState | null,
+  debug: string | null
 }
 
 export const state = reactive({
   tabs: [],
   selected: null,
-  execution: null
+  execution: null,
+  debug: null
 } as EditorState)
 
 export function tab(): EditorTab | null {
@@ -58,7 +60,7 @@ export async function loadElf(named: string, elf: ArrayBuffer) {
 
   const lines = value.error ? [value.error] : value.lines
 
-  createTab(named, lines, { elf, breakpoints: new Map() })
+  createTab(named, lines, { elf, breakpoints: value.breakpoints })
 }
 
 if (!state.tabs.length) {
