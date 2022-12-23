@@ -29,16 +29,20 @@
 
         <Tab
           title="Registers"
-          :deletable="false"
           :selected="properties.tab === DebugTab.Registers"
           @select="properties.tab = DebugTab.Registers"
         />
 
         <Tab
           title="Memory"
-          :deletable="false"
           :selected="properties.tab === DebugTab.Memory"
           @select="properties.tab = DebugTab.Memory"
+        />
+
+        <Tab
+          title="Console"
+          :selected="properties.tab === DebugTab.Console"
+          @select="properties.tab = DebugTab.Console"
         />
 
         <button class="w-10 h-10 ml-auto
@@ -52,7 +56,10 @@
         </button>
       </div>
 
-      <div v-if="properties.tab === DebugTab.Registers" class="font-mono text-sm overflow-scroll flex flex-col flex-wrap grow content-start">
+      <div
+        v-if="properties.tab === DebugTab.Registers"
+        class="font-mono text-sm overflow-scroll flex flex-col flex-wrap grow content-start"
+      >
         <div
           v-for="values in registersMap" :key="values[0]"
           class="flex border-b border-neutral-700 w-52"
@@ -67,11 +74,21 @@
         </div>
       </div>
 
-      <div v-if="properties.tab === DebugTab.Memory" class="text-sm overflow-scroll flex flex-col flex-wrap grow content-start">
+      <div
+        v-if="properties.tab === DebugTab.Memory"
+        class="text-sm overflow-scroll flex flex-col flex-wrap grow content-start"
+      >
         <div class="flex items-center text-md">
           <label for="address" class="font-bold px-4 py-2">Address</label>
           <input id="address" type="text" class="bg-neutral-800 text-neutral-300 px-4 py-2 w-48" />
         </div>
+      </div>
+
+      <div
+        v-if="properties.tab === DebugTab.Console"
+        class="text-sm font-mono overflow-scroll flex flex-col flex-wrap grow whitespace-pre content-start"
+      >
+        Debug Console
       </div>
     </div>
   </div>
@@ -133,7 +150,8 @@ const registersMap = computed(() => {
 
 enum DebugTab {
   Registers,
-  Memory
+  Memory,
+  Console
 }
 
 const properties = reactive({

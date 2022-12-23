@@ -8,6 +8,7 @@
         :key="tab.uuid"
         :title="tab.title"
         :selected="state.selected === tab.uuid"
+        :deletable="true"
         @select="state.selected = tab.uuid"
         @delete="remove(tab.uuid)"
       />
