@@ -1,7 +1,5 @@
 import { tauri } from '@tauri-apps/api'
 
-import { v4 as uuid } from 'uuid'
-
 export interface ExecutionProfile {
   elf: ArrayBuffer // not sure what to do here
   breakpoints: Record<number, number>
@@ -22,11 +20,11 @@ export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<D
   return value as DisassembleResult
 }
 
-enum ExecutionMode {
+export enum ExecutionMode {
   Running = 'Running',
   Invalid = 'Invalid',
   Paused = 'Paused',
-  Breakpoint = 'Breakpoint',
+  Breakpoint = 'Breakpoint'
 }
 
 export interface ExecutionResult {
@@ -35,7 +33,17 @@ export interface ExecutionResult {
   pc: number,
   registers: number[],
   lo: number,
-  hi: number
+  hi: number,
+}
+
+export function defaultResult(mode: ExecutionMode): ExecutionResult {
+  return {
+    mode,
+    pc: 0,
+    registers: Array(32).fill(0),
+    lo: 0,
+    hi: 0
+  }
 }
 
 export class ExecutionState {
@@ -57,7 +65,7 @@ export class ExecutionState {
     }
   }
 
-  public async run(breakpoints: number[]): Promise<ExecutionResult> {
+  public async resume(breakpoints: number[]): Promise<ExecutionResult> {
     await this.configure()
 
     const result = await tauri.invoke('resume', {
@@ -69,8 +77,12 @@ export class ExecutionState {
     return result as ExecutionResult
   }
 
-  public async close() {
+  public async pause() {
     await tauri.invoke('pause')
+  }
+
+  public async stop() {
+    await tauri.invoke('stop')
   }
 
   public constructor(

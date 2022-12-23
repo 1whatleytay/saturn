@@ -1,11 +1,11 @@
 <template>
   <div
     ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-scroll flex mt-2"
+    class="font-mono text-sm flex-auto flex-grow overflow-scroll flex pt-2"
     @scroll="handleScroll"
   >
     <div
-      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900"
+      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900 pt-2"
       @wheel.stop
       :style="{ top: `${linesOffset}px` }"
     >
@@ -48,7 +48,10 @@
         v-for="(line, index) in lines"
         :key="index"
         class="h-6 flex items-center pr-16"
-        :class="{ 'bg-breakpoint-neutral': hasBreakpoint(index) }"
+        :class="{
+          'bg-breakpoint-neutral': hasBreakpoint(index) && index !== stoppedIndex,
+          'bg-breakpoint-stopped': index === stoppedIndex
+        }"
       >
         {{ line }}
       </div>
@@ -87,9 +90,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { tab } from '../state/editor-state'
+import { state, tab } from '../state/editor-state'
 import {
   lines,
   cursor,
@@ -109,6 +112,28 @@ const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)
 const input = ref(null as HTMLElement | null)
 
+const stoppedIndex = computed(() => {
+  const profile = tab()?.profile
+  const debug = state.debug
+
+  if (!profile || !debug || !state.execution) {
+    return null
+  }
+
+  const point = Object.entries(profile.breakpoints)
+    .find(([key, value]) => value === debug.pc)
+
+  if (!point) {
+    return null
+  }
+
+  try {
+    return parseInt(point[0])
+  } catch {
+    return null
+  }
+})
+
 function handleScroll() {
   if (!scroll.value) {
     return
@@ -117,12 +142,6 @@ function handleScroll() {
   const point = scroll.value.scrollTop - scroll.value.offsetTop
 
   linesOffset.value = -point
-}
-
-interface SelectionPartsResult {
-  leading: string,
-  selected: string,
-  trailing: string
 }
 
 function hasSelection(index: number): boolean {
@@ -243,7 +262,7 @@ const handleMove = (event: MouseEvent) => {
   }
 }
 
-const handleUp = (event: MouseEvent) => {
+const handleUp = () => {
   mouseDown.value = false
 }
 
@@ -286,13 +305,13 @@ onMounted(() => {
 
   window.addEventListener('focus', focusHandler)
   window.addEventListener('mousemove', handleMove)
-  window.addEventListener('mouseup', handleMove)
+  window.addEventListener('mouseup', handleUp)
 })
 
 onUnmounted(() => {
   window.removeEventListener('focus', focusHandler)
   window.removeEventListener('mousemove', handleMove)
-  window.removeEventListener('mouseup', handleMove)
+  window.removeEventListener('mouseup', handleUp)
 })
 
 const bottomCursorSpace = 42

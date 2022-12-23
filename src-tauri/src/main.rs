@@ -4,10 +4,8 @@
 )]
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use serde::{Serialize};
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
@@ -79,7 +77,7 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
         pointer.clone()
     };
 
-    let frame = tokio::spawn(async move {
+    let frame: DebugFrame = tokio::spawn(async move {
         let breakpoints_set = HashSet::from_iter(breakpoints.iter().cloned());
 
         Debugger::run(&debugger, &breakpoints_set)
@@ -96,10 +94,58 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
 
 #[tauri::command]
 fn pause(state: tauri::State<'_, DebuggerState>) {
-    let Some(debugger) = &*state.lock().unwrap() else { return };
+    let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    let mut other = debugger.lock().unwrap();
-    other.pause()
+    let mut debugger = pointer.lock().unwrap();
+    debugger.pause()
+}
+
+#[tauri::command]
+fn stop(state: tauri::State<'_, DebuggerState>) {
+    let debugger = &mut *state.lock().unwrap();
+
+    *debugger = None;
+}
+
+#[tauri::command]
+fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerState>) -> Option<Vec<Option<u8>>> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
+
+    let mut debugger = pointer.lock().unwrap();
+    let memory = debugger.memory();
+
+    let value = (address .. count)
+        .map(|a| memory.get(a).ok())
+        .collect();
+
+    Some(value)
+}
+
+#[tauri::command]
+fn write_bytes(address: u32, bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
+
+    let mut debugger = pointer.lock().unwrap();
+    let memory = debugger.memory();
+
+    for (index, byte) in bytes.iter().enumerate() {
+        memory.set(address + index as u32, *byte).ok();
+    }
+}
+
+#[tauri::command]
+fn set_register(register: u32, value: u32, state: tauri::State<'_, DebuggerState>) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
+
+    let mut debugger = pointer.lock().unwrap();
+    let state = debugger.state();
+
+    match register {
+        0 ..= 31 => state.registers[register as usize] = value,
+        32 => state.hi = value,
+        33 => state.lo = value,
+        _ => { }
+    }
 }
 
 fn main() {
@@ -109,7 +155,11 @@ fn main() {
             disassemble,
             configure,
             resume,
-            pause
+            pause,
+            stop,
+            read_bytes,
+            write_bytes,
+            set_register
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

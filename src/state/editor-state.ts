@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 
 import { v4 as uuid } from 'uuid'
-import { disassembleElf, ExecutionProfile, ExecutionState } from '../utils/mips'
+import { disassembleElf, ExecutionProfile, ExecutionResult, ExecutionState } from '../utils/mips'
 
 export interface EditorTab {
   uuid: string,
@@ -15,7 +15,7 @@ export interface EditorState {
   tabs: EditorTab[],
   selected: string | null,
   execution: ExecutionState | null,
-  debug: string | null
+  debug: ExecutionResult | null
 }
 
 export const state = reactive({

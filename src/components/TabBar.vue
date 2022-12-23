@@ -6,7 +6,7 @@
       <Tab
         v-for="tab in state.tabs"
         :key="tab.uuid"
-        :tab="tab"
+        :title="tab.title"
         :selected="state.selected === tab.uuid"
         @select="state.selected = tab.uuid"
         @delete="remove(tab.uuid)"

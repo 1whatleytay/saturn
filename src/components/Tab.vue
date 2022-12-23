@@ -20,9 +20,10 @@
       'border-transparent': !(selected ?? false),
     }"
   >
-    {{ tab.title }}
+    {{ title }}
 
     <button
+      v-if="deletable ?? true"
       @click.stop="emit('delete')"
       class="ml-3 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center"
     >
@@ -34,11 +35,10 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/20/solid'
 
-import { EditorTab } from '../state/editor-state'
-
-const { tab, selected } = defineProps<{
-  tab: EditorTab,
-  selected?: boolean
+const { title, selected, closable } = defineProps<{
+  title: string,
+  selected?: boolean,
+  deletable?: boolean
 }>()
 
 const emit = defineEmits(['select', 'delete'])

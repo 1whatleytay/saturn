@@ -18,9 +18,9 @@
       font-black
       text-green-300
     " :class="{
-      'text-gray-300 cursor-default bg-neutral-800': !!state.execution,
-      'hover:bg-slate-800': !state.execution
-    }" @click="run()" :disabled="!!state.execution">
+      'text-gray-300 cursor-default bg-neutral-800': !allowResume,
+      'hover:bg-slate-800': allowResume
+    }" @click="resume()" :disabled="!allowResume">
       <PlayIcon class="w-4 h-4" />
     </button>
 
@@ -33,7 +33,7 @@
       max-w-xs
       text-neutral-600
     ">
-      ELF Target
+      ELF Debug
     </div>
   </div>
 </template>
@@ -44,27 +44,40 @@ import { state, tab } from '../state/editor-state'
 
 import { PlayIcon, StopIcon } from '@heroicons/vue/24/solid'
 
-import { ExecutionResult, ExecutionState } from '../utils/mips'
+import { defaultResult, ExecutionMode, ExecutionState } from '../utils/mips'
 
 const profile = computed(() => tab()?.profile)
 
-async function run() {
-  if (state.execution) {
-    await state.execution.close()
+const allowResume = computed(() => !state.execution || state.debug?.mode !== ExecutionMode.Running)
+
+async function resume() {
+  const usedProfile = tab()?.profile
+  const usedBreakpoints = tab()?.breakpoints ?? []
+
+  if (!usedProfile) {
+    return
   }
 
-  if (profile.value) {
-    state.execution = new ExecutionState(profile.value)
-
-    const result = await state.execution.run(tab()?.breakpoints ?? [])
-
-    state.debug = JSON.stringify(result, null, 2)
+  if (!state.execution) {
+    state.execution = new ExecutionState(usedProfile)
   }
+
+  // TODO: On set breakpoint while execution is non-null:
+  //  - await state.execution.pause()
+  //  - await state.execution.resume(newBreakpoints)
+
+  state.execution.resume(usedBreakpoints)
+    .then(result => {
+      state.debug = result
+    })
+
+  state.debug = defaultResult(ExecutionMode.Running)
 }
 
 async function stop() {
   if (state.execution) {
-    await state.execution.close()
+    await state.execution.stop()
+
     state.execution = null
   }
 }
