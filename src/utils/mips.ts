@@ -54,6 +54,8 @@ export class ExecutionState {
       return
     }
 
+    console.log('configure')
+
     this.started = true
 
     const result = await tauri.invoke('configure', {

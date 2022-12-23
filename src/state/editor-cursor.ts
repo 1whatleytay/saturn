@@ -504,3 +504,9 @@ export function dragTo(x: number, y: number) {
     cursor.highlight = null
   }
 }
+
+export function lineStart(line: number): number {
+  const { height } = regular.calculate('')
+
+  return line * height
+}

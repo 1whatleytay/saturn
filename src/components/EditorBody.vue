@@ -103,7 +103,7 @@ import {
   paste,
   getSelection,
   clearSelection,
-  dropSelection
+  dropSelection, lineStart
 } from '../state/editor-cursor'
 
 const linesOffset = ref(0)
@@ -316,18 +316,30 @@ onUnmounted(() => {
 
 const bottomCursorSpace = 42
 
-watch(() => cursor.offsetY, (value) => {
+function makeVisible(offset: number) {
   if (scroll.value) {
-    if (value < scroll.value.scrollTop) {
-      scroll.value.scrollTop = value
-    } else if (value > scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace) {
-      scroll.value.scrollTop = value - scroll.value.clientHeight + bottomCursorSpace
+    if (offset < scroll.value.scrollTop) {
+      scroll.value.scrollTop = offset
+    } else if (offset > scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace) {
+      scroll.value.scrollTop = offset - scroll.value.clientHeight + bottomCursorSpace
     }
   }
+}
+
+watch(() => cursor.offsetY, (value) => {
+  makeVisible(value)
 })
 
 watch(() => tab()?.uuid, () => {
   clearSelection()
   putCursor(0, 0)
+})
+
+watch(() => stoppedIndex.value, (index) => {
+  if (index) {
+    const start = lineStart(index)
+
+    makeVisible(start)
+  }
 })
 </script>
