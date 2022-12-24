@@ -12,7 +12,7 @@ use titan::debug::debugger::DebugFrame;
 
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
-use titan::debug::elf::setup::{create_simple_state, SMALL_HEAP_SIZE};
+use titan::debug::elf::setup::{create_simple_state};
 
 #[derive(Serialize)]
 struct DisassembleResult {
@@ -30,6 +30,18 @@ struct ResumeResult {
     registers: [u32; 32],
     lo: u32,
     hi: u32
+}
+
+impl ResumeResult {
+    fn from_frame(frame: DebugFrame) -> ResumeResult {
+        ResumeResult {
+            mode: format!("{:?}", frame.mode),
+            pc: frame.pc,
+            registers: frame.registers,
+            lo: frame.lo,
+            hi: frame.hi,
+        }
+    }
 }
 
 #[tauri::command]
@@ -58,7 +70,9 @@ type DebuggerState = Mutex<Option<DebuggerPointer>>;
 fn configure(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
-    let cpu_state = create_simple_state(&elf, SMALL_HEAP_SIZE);
+    let cpu_state = create_simple_state(&elf, 0x100000);
+
+    println!("{:?}", cpu_state.registers);
 
     let mut value = state.lock().unwrap();
     let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));
@@ -83,13 +97,19 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
         Debugger::run(&debugger, &breakpoints_set)
     }).await.unwrap();
 
-    Ok(ResumeResult {
-        mode: format!("{:?}", frame.mode),
-        pc: frame.pc,
-        registers: frame.registers,
-        lo: frame.lo,
-        hi: frame.hi,
-    })
+    Ok(ResumeResult::from_frame(frame))
+}
+
+#[tauri::command]
+fn step(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
+
+    let mut debugger = pointer.lock().unwrap();
+
+    let frame = debugger.cycle(&HashSet::new(), true)
+        .unwrap_or_else(|| debugger.frame());
+
+    Some(ResumeResult::from_frame(frame))
 }
 
 #[tauri::command]
@@ -156,6 +176,7 @@ fn main() {
             configure,
             resume,
             pause,
+            step,
             stop,
             read_bytes,
             write_bytes,

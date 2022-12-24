@@ -1,6 +1,10 @@
 <template>
   <div v-if="state.debug">
-    <div class="w-full" :style="{ height: `${properties.height}px` }" />
+    <div
+      v-if="properties.height > closingHeight"
+      class="w-full"
+      :style="{ height: `${properties.height}px` }"
+    />
 
     <div
       ref="grabber"

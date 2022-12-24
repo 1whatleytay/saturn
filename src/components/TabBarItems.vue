@@ -11,6 +11,17 @@
       <StopIcon class="w-4 h-4" />
     </button>
 
+    <button v-if="!!state.execution" class="w-10 h-10
+      hover:bg-slate-800
+      text-slate-300
+      shrink-0
+      flex items-center justify-center
+      font-black
+      text-teal-300
+    " @click="step()">
+      <ChevronRightIcon class="w-4 h-4" />
+    </button>
+
     <button class="w-10 h-10
       text-slate-300
       shrink-0
@@ -42,7 +53,7 @@
 import { computed } from 'vue'
 import { state, tab } from '../state/editor-state'
 
-import { PlayIcon, StopIcon } from '@heroicons/vue/24/solid'
+import { ChevronRightIcon, PlayIcon, StopIcon } from '@heroicons/vue/24/solid'
 
 import { defaultResult, ExecutionMode, ExecutionState } from '../utils/mips'
 
@@ -72,6 +83,12 @@ async function resume() {
     })
 
   state.debug = defaultResult(ExecutionMode.Running)
+}
+
+async function step() {
+  if (state.execution) {
+    state.debug = await state.execution.step()
+  }
 }
 
 async function stop() {

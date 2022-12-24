@@ -83,6 +83,12 @@ export class ExecutionState {
     await tauri.invoke('pause')
   }
 
+  public async step(): Promise<ExecutionResult> {
+    const result = await tauri.invoke('step')
+    
+    return result as ExecutionResult
+  }
+  
   public async stop() {
     await tauri.invoke('stop')
   }
