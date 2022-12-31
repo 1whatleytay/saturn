@@ -7,6 +7,8 @@ use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 use serde::{Serialize};
+use titan::cpu::Memory;
+use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 
@@ -63,7 +65,7 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
     }
 }
 
-type DebuggerPointer = Arc<Mutex<Debugger>>;
+type DebuggerPointer = Arc<Mutex<Debugger<SectionMemory>>>;
 type DebuggerState = Mutex<Option<DebuggerPointer>>;
 
 #[tauri::command]
@@ -113,11 +115,13 @@ fn step(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
 }
 
 #[tauri::command]
-fn pause(state: tauri::State<'_, DebuggerState>) {
-    let Some(pointer) = &*state.lock().unwrap() else { return };
+fn pause(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
 
     let mut debugger = pointer.lock().unwrap();
-    debugger.pause()
+    debugger.pause();
+
+    Some(ResumeResult::from_frame(debugger.frame()))
 }
 
 #[tauri::command]
