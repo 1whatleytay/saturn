@@ -135,7 +135,7 @@ const modeClass = computed(() => {
   switch (state.debug?.mode) {
     case ExecutionMode.Running: return 'bg-teal-900'
     case ExecutionMode.Breakpoint: return 'bg-red-900'
-    case ExecutionMode.Paused: return 'bg-teal-900'
+    case ExecutionMode.Paused: return 'bg-yellow-900'
     case ExecutionMode.Invalid: return 'bg-red-900'
     default: return 'bg-teal-900'
   }

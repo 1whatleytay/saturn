@@ -8,6 +8,7 @@ use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 use serde::{Serialize};
 use titan::cpu::Memory;
+use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
@@ -72,9 +73,12 @@ type DebuggerState = Mutex<Option<DebuggerPointer>>;
 fn configure(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
-    let cpu_state = create_simple_state(&elf, 0x100000);
+    let screen = Region { start: 0x10008000, data: vec![0; 0x40000] };
+    let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
 
-    println!("{:?}", cpu_state.registers);
+    let mut cpu_state = create_simple_state(&elf, 0x100000);
+    cpu_state.memory.mount(screen);
+    cpu_state.memory.mount(keyboard);
 
     let mut value = state.lock().unwrap();
     let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));

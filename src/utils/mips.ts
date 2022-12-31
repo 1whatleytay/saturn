@@ -15,7 +15,6 @@ export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<D
   const bytes = Array.from(new Uint8Array(elf))
 
   const value = await tauri.invoke('disassemble', { named, bytes })
-  console.log(value)
 
   return value as DisassembleResult
 }
@@ -79,16 +78,18 @@ export class ExecutionState {
     return result as ExecutionResult
   }
 
-  public async pause() {
-    await tauri.invoke('pause')
+  public async pause(): Promise<ExecutionResult> {
+    const result = await tauri.invoke('pause')
+
+    return result as ExecutionResult
   }
 
   public async step(): Promise<ExecutionResult> {
     const result = await tauri.invoke('step')
-    
+
     return result as ExecutionResult
   }
-  
+
   public async stop() {
     await tauri.invoke('stop')
   }

@@ -37,8 +37,8 @@ import { XMarkIcon } from '@heroicons/vue/20/solid'
 
 const props = withDefaults(defineProps<{
   title: string,
-  selected: boolean,
-  deletable: boolean
+  selected?: boolean,
+  deletable?: boolean
 }>(), {
   selected: false,
   deletable: false

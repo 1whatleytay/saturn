@@ -71,6 +71,11 @@ function loadFile() {
         .then(() => console.log('Disassembled!'))
     }
   })
+  reader.addEventListener('loadend', () => {
+    if (input.value) {
+      input.value.value = input.value.defaultValue
+    }
+  })
 
   reader.readAsArrayBuffer(file)
 }
