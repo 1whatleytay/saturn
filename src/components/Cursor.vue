@@ -2,17 +2,17 @@
   <div class="absolute top-0 pointer-events-none" v-if="range">
     <div class="absolute" :style="{ top: `${range.top}px` }">
       <div
-        v-for="(range, index) in range.ranges"
+        v-for="(text, index) in range.ranges"
         :key="index"
         class="line"
       >
         <span class="opacity-0">
-          {{ range.leading }}
+          {{ text.leading }}
         </span>
 
         <span class="selection">
           <span class="opacity-0">
-            {{ range.body }}
+            {{ text.body }}
           </span>
         </span>
       </div>
