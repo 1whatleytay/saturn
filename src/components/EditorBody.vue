@@ -58,33 +58,7 @@
 
       <div class="h-32" />
 
-      <div class="absolute top-0 pointer-events-none" v-if="cursor.highlight">
-        <div
-          v-for="(line, index) in lines"
-          :key="index"
-          class="h-6 flex items-center"
-        >
-          <div v-if="hasSelection(index)">
-            <span class="opacity-0">
-              {{ leadingSelection(line, index) }}
-            </span>
-
-            <span class="rounded opacity-30 px-1 -mx-1 bg-blue-500">
-              <span class="opacity-0">
-                {{ bodySelection(line, index) }}
-              </span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
-        :style="{
-          left: `${cursor.offsetX}px`,
-          top: `${cursor.offsetY}px`
-        }"
-      />
+      <Cursor />
     </div>
   </div>
 </template>
@@ -105,6 +79,7 @@ import {
   clearSelection,
   dropSelection, lineStart
 } from '../state/editor-cursor'
+import Cursor from './Cursor.vue'
 
 const linesOffset = ref(0)
 
@@ -142,71 +117,6 @@ function handleScroll() {
   const point = scroll.value.scrollTop - scroll.value.offsetTop
 
   linesOffset.value = -point
-}
-
-function hasSelection(index: number): boolean {
-  // assert cursor.highlight !== null
-
-  const min = Math.min(cursor.highlight!.line, cursor.line)
-  const max = Math.max(cursor.highlight!.line, cursor.line)
-
-  return min <= index && index <= max
-}
-
-function lineIndices(index: number): number[] {
-  // assert cursor.highlight !== null
-
-  return [
-    ...(cursor.highlight!.line == index ? [cursor.highlight!.index] : []),
-    ...(cursor.line == index ? [cursor.index] : []),
-  ]
-}
-
-function leadingSelection(line: string, index: number) {
-  // assert cursor.highlight !== null
-
-  const indices = lineIndices(index)
-  if (!indices.length) {
-    return ''
-  }
-
-  const min = Math.min(...indices)
-
-  if (indices.length === 2 || (cursor.highlight!.line === index) != (cursor.highlight!.line > cursor.line)) {
-    return line.substring(0, min)
-  } else {
-    return ''
-  }
-}
-
-function bodySelection(line: string, index: number) {
-  // assert cursor.highlight !== null
-
-  const indices = lineIndices(index)
-  if (!indices.length) {
-    return line
-  }
-
-  if (indices.length === 2) {
-    const min = Math.min(...indices)
-    const max = Math.max(...indices)
-
-    return line.substring(min, max)
-  }
-
-  if (cursor.highlight!.line > cursor.line) {
-    if (cursor.highlight!.line === index) {
-      return line.substring(0, cursor.highlight!.index)
-    } else {
-      return line.substring(cursor.index)
-    }
-  } else {
-    if (cursor.highlight!.line === index) {
-      return line.substring(cursor.highlight!.index)
-    } else {
-      return line.substring(0, cursor.index)
-    }
-  }
 }
 
 const focusHandler = () => {
