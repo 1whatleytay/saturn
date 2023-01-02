@@ -26,7 +26,7 @@
         @mousedown="handleDown"
       />
 
-      <div class="h-10 mb-2 flex items-center text-sm font-bold text-neutral-400">
+      <div class="h-10 flex items-center text-sm font-bold text-neutral-400">
         <div class="rounded-full py-0.5 px-4 text-white text-gray-300 mx-4" :class="[modeClass]">
           {{ modeString }}
         </div>
@@ -54,7 +54,6 @@
             text-slate-300
             shrink-0
             flex items-center justify-center
-            font-black
           " @click="close">
           <XMarkIcon class="w-4 h-4" />
         </button>
@@ -80,11 +79,67 @@
 
       <div
         v-if="properties.tab === DebugTab.Memory"
-        class="text-sm overflow-scroll flex flex-col flex-wrap grow content-start"
+        class="text-sm overflow-scroll flex flex-col grow content-start relative"
       >
-        <div class="flex items-center text-md">
-          <label for="address" class="font-bold px-4 py-2">Address</label>
-          <input id="address" type="text" class="bg-neutral-800 text-neutral-300 px-4 py-2 w-48" />
+        <div class="flex items-center h-12 border-b border-neutral-700 fixed bg-neutral-900 w-full">
+          <label for="address" class="text-xs font-bold px-4 py-2">Address</label>
+          <input
+            id="address"
+            type="text"
+            class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+            v-model="memory.address"
+          />
+
+          <div class="flex px-2 space-x-1">
+            <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(+1)">
+              <ArrowUpIcon class="w-4 h-4" />
+            </button>
+
+            <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(-1)">
+              <ArrowDownIcon class="w-4 h-4" />
+            </button>
+          </div>
+
+          <label for="data-type" class="text-xs font-bold px-4 py-2">Type</label>
+          <select
+            id="data-type"
+            class="appearance-none text-xs bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+            :value="memory.mode"
+            @input="mode => memory.mode = parseInt(mode.target.value)"
+          >
+            <option :value="AddressingMode.Byte">Byte</option>
+            <option :value="AddressingMode.Half">Half</option>
+            <option :value="AddressingMode.Word">Word</option>
+          </select>
+        </div>
+
+        <!-- Height is ignored? -->
+        <div class="mb-16" />
+
+        <div class="text-right">
+          <div class="flex font-bold text-neutral-500">
+            <div class="w-32 px-2 py-1">Address</div>
+
+            <div
+              v-for="(item, index) in table?.header"
+              :key="index"
+              class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1"
+            >
+              {{ item }}
+            </div>
+          </div>
+
+          <div v-for="(row, index) in table?.rows" :key="index" class="flex font-mono">
+            <div class="w-32 px-2 py-1 text-neutral-500">{{ row.header }}</div>
+
+            <div
+              v-for="(item, index) in row.items"
+              :key="index"
+              class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1"
+            >
+              {{ item }}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -103,12 +158,135 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { state } from '../state/editor-state'
 
-import { XMarkIcon } from '@heroicons/vue/24/solid'
+import { ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { ExecutionMode } from '../utils/mips.js'
 import Tab from './Tab.vue'
 
 const closingHeight = 90
 const defaultHeight = 320
+
+enum AddressingMode {
+  Byte,
+  Half,
+  Word,
+}
+
+function addressingModeSize(mode: AddressingMode) {
+  switch (mode) {
+    case AddressingMode.Byte: return 1
+    case AddressingMode.Half: return 2
+    case AddressingMode.Word: return 4
+  }
+}
+
+function shift(bytes: number[]): string {
+  let result = ''
+
+  for (const byte of bytes) {
+    result = byte.toString(16).padStart(2, '0') + result
+  }
+
+  return result
+}
+
+function parseAddress(address: string): number | null {
+  if (address.startsWith('0x')) {
+    address = address.substring(2)
+  }
+
+  try {
+    return parseInt(address, 16)
+  } catch {
+    return null
+  }
+}
+
+function addressString(value: number): string {
+  return `0x${value.toString(16).padStart(8, '0')}`
+}
+
+const targetRows = 32
+const targetColumns = 8
+const defaultAddress = 0x10010000
+
+const memory = reactive({
+  address: addressString(defaultAddress),
+  data: Array(256).fill(0),
+  mode: AddressingMode.Word
+})
+
+function pageSize() {
+  const unitSize = addressingModeSize(memory.mode)
+
+  return targetRows * targetColumns * unitSize
+}
+
+function moveAddress(direction: number) {
+  const value = parseAddress(memory.address) ?? defaultAddress
+  const section = pageSize()
+
+  memory.address = addressString(value + section * direction)
+}
+
+interface MemoryRow {
+  header: string,
+  items: string[]
+}
+
+interface MemoryTable {
+  header: string[]
+  rows: MemoryRow[]
+}
+
+const table = computed((): MemoryTable | null => {
+  const address = parseAddress(memory.address)
+
+  const unitSize = addressingModeSize(memory.mode)
+
+  const data = memory.data
+  let index = 0
+
+  const result = [] as MemoryRow[]
+
+  for (let row = 0; row < targetRows; row++) {
+    if (!address) {
+      result.push({
+        header: '',
+        items: Array(targetColumns).fill('')
+      })
+      continue
+    }
+
+    const start = address + row * targetColumns * unitSize
+
+    const element = {
+      header: addressString(start),
+      items: []
+    } as MemoryRow
+
+    for (let column = 0; column < targetColumns; column++) {
+      const bytes = data.slice(index, index + unitSize)
+      const paddingCount = unitSize - bytes.length
+      bytes.push(...Array(paddingCount).fill(0xCC))
+      element.items.push(shift(bytes))
+
+      index += unitSize
+    }
+
+    result.push(element)
+  }
+
+  const header = []
+
+  for (let column = 0; column < targetColumns; column++) {
+    header.push(`Value +${(column * unitSize).toString(16)}`)
+  }
+
+  return {
+    header,
+    rows: result
+  }
+})
 
 const registers = [
   '$zero', '$at', '$v0', '$v1',
@@ -121,7 +299,6 @@ const registers = [
   '$gp', '$sp', '$fp', '$ra',
 ]
 
-const running = computed(() => state.debug?.mode === ExecutionMode.Running)
 const modeString = computed(() => {
   switch (state.debug?.mode) {
     case ExecutionMode.Running: return 'Running'
@@ -140,6 +317,7 @@ const modeClass = computed(() => {
     default: return 'bg-teal-900'
   }
 })
+
 const registersMap = computed(() => {
   const core = registers.map((name, index) => [name, state.debug?.registers[index] ?? 0]) as [string, number][]
   const other = [['hi', state.debug?.hi ?? 0], ['lo', state.debug?.lo ?? 0]] as [string, number][]
@@ -246,4 +424,40 @@ watch(() => properties.height, height => {
 watch(() => properties.resizing, resizing => {
   watchHeight(properties.height, !!resizing)
 })
+
+async function updateMemoryData() {
+  const address = parseAddress(memory.address)
+
+  if (!address) {
+    memory.data = []
+
+    return
+  }
+
+  if (!state.execution) {
+    return
+  }
+
+  const maxUnitSize = 4
+  const page = targetColumns * targetRows * maxUnitSize
+
+  memory.data = []
+  const data = await state.execution.memoryAt(address, page)
+
+  if (!data) {
+    return
+  }
+
+  memory.data = data.map(x => x ?? 0xCC)
+}
+
+const checkMemory = () => {
+  if (properties.tab === DebugTab.Memory) {
+    updateMemoryData()
+  }
+}
+
+watch(() => memory.address, checkMemory)
+watch(() => properties.tab, checkMemory)
+watch(() => state.debug, checkMemory)
 </script>

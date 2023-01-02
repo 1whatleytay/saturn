@@ -142,7 +142,7 @@ fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerState>) 
     let mut debugger = pointer.lock().unwrap();
     let memory = debugger.memory();
 
-    let value = (address .. count)
+    let value = (address .. address + count)
         .map(|a| memory.get(a).ok())
         .collect();
 

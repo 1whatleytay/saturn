@@ -94,6 +94,12 @@ export class ExecutionState {
     await tauri.invoke('stop')
   }
 
+  public async memoryAt(address: number, count: number): Promise<(number | null)[] | null> {
+    const result = await tauri.invoke('read_bytes', { address, count })
+
+    return result as (number | null)[] | null
+  }
+
   public constructor(
     private profile: ExecutionProfile
   ) { }
