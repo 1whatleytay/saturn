@@ -105,7 +105,7 @@
             id="data-type"
             class="appearance-none text-xs bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
             :value="memory.mode"
-            @input="mode => memory.mode = parseInt(mode.target.value)"
+            @input="setMode"
           >
             <option :value="AddressingMode.Byte">Byte</option>
             <option :value="AddressingMode.Half">Half</option>
@@ -118,24 +118,24 @@
 
         <div class="text-right">
           <div class="flex font-bold text-neutral-500">
-            <div class="w-32 px-2 py-1">Address</div>
+            <div class="w-32 px-2 py-1 shrink-0">Address</div>
 
             <div
               v-for="(item, index) in table?.header"
               :key="index"
-              class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1"
+              class="w-28 flex items-center px-2 py-1 shrink-0"
             >
               {{ item }}
             </div>
           </div>
 
           <div v-for="(row, index) in table?.rows" :key="index" class="flex font-mono">
-            <div class="w-32 px-2 py-1 text-neutral-500">{{ row.header }}</div>
+            <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">{{ row.header }}</div>
 
             <div
               v-for="(item, index) in row.items"
               :key="index"
-              class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1"
+              class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0"
             >
               {{ item }}
             </div>
@@ -177,6 +177,14 @@ function addressingModeSize(mode: AddressingMode) {
     case AddressingMode.Half: return 2
     case AddressingMode.Word: return 4
   }
+}
+
+function setMode(event: Event) {
+  const input = event.target as HTMLInputElement
+
+  try {
+    memory.mode = parseInt(input.value) as AddressingMode
+  } catch { }
 }
 
 function shift(bytes: number[]): string {
@@ -257,6 +265,10 @@ const table = computed((): MemoryTable | null => {
       continue
     }
 
+    if (index >= data.length) {
+      break
+    }
+
     const start = address + row * targetColumns * unitSize
 
     const element = {
@@ -265,6 +277,10 @@ const table = computed((): MemoryTable | null => {
     } as MemoryRow
 
     for (let column = 0; column < targetColumns; column++) {
+      if (index >= data.length) {
+        break
+      }
+
       const bytes = data.slice(index, index + unitSize)
       const paddingCount = unitSize - bytes.length
       bytes.push(...Array(paddingCount).fill(0xCC))

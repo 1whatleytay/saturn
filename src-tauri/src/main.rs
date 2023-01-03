@@ -142,7 +142,12 @@ fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerState>) 
     let mut debugger = pointer.lock().unwrap();
     let memory = debugger.memory();
 
-    let value = (address .. address + count)
+    let end = address
+        .checked_add(count)
+        .map_or(None, |value| value.checked_sub(1))
+        .unwrap_or(u32::MAX);
+
+    let value: Vec<Option<u8>> = (address ..= end)
         .map(|a| memory.get(a).ok())
         .collect();
 
