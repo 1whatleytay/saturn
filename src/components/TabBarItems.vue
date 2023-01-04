@@ -46,7 +46,7 @@
       <PlayIcon class="w-4 h-4" />
     </button>
 
-    <div v-if="profile?.elf" class="
+    <div v-if="profileText" class="
       h-10
       px-4
       flex items-center
@@ -55,14 +55,14 @@
       max-w-xs
       text-neutral-600
     ">
-      ELF Debug
+      {{ profileText }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { state, tab } from '../state/editor-state'
+import { collectLines, state, tab } from '../state/editor-state'
 
 import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
 
@@ -72,16 +72,26 @@ const profile = computed(() => tab()?.profile)
 
 const allowResume = computed(() => !state.execution || state.debug?.mode !== ExecutionMode.Running)
 
+const profileText = computed((): string | null => {
+  switch (profile.value?.kind) {
+    case 'asm': return 'MIPS Assembly'
+    case 'elf': return 'ELF Debug'
+  }
+
+  return null
+})
+
 async function resume() {
   const usedProfile = tab()?.profile
   const usedBreakpoints = tab()?.breakpoints ?? []
+  const text = collectLines(tab()?.lines ?? [])
 
   if (!usedProfile) {
     return
   }
 
   if (!state.execution) {
-    state.execution = new ExecutionState(usedProfile)
+    state.execution = new ExecutionState(text, usedProfile)
   }
 
   // TODO: On set breakpoint while execution is non-null:

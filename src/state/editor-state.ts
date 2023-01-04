@@ -11,6 +11,10 @@ export interface EditorTab {
   profile: ExecutionProfile | null
 }
 
+export function collectLines(lines: string[]): string {
+  return lines.join('\n')
+}
+
 export interface EditorState {
   tabs: EditorTab[],
   selected: string | null,
