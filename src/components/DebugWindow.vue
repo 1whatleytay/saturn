@@ -79,9 +79,9 @@
 
       <div
         v-if="properties.tab === DebugTab.Memory"
-        class="text-sm overflow-scroll flex flex-col grow content-start relative"
+        class="text-sm flex flex-col grow overflow-clip content-start"
       >
-        <div class="flex items-center h-12 border-b border-neutral-700 fixed bg-neutral-900 w-full">
+        <div class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full">
           <label for="address" class="text-xs font-bold px-4 py-2">Address</label>
           <input
             id="address"
@@ -113,10 +113,7 @@
           </select>
         </div>
 
-        <!-- Height is ignored? -->
-        <div class="mb-16" />
-
-        <div class="text-right">
+        <div class="text-right pt-4 overflow-scroll grow shrink flex flex-col">
           <div class="flex font-bold text-neutral-500">
             <div class="w-32 px-2 py-1 shrink-0">Address</div>
 
