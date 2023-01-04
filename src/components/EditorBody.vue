@@ -95,7 +95,8 @@ const stoppedIndex = computed(() => {
     return null
   }
 
-  const point = Object.entries(profile.breakpoints)
+  // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
+  const point = Object.entries(state.execution.breakpointMap())
     .find(([key, value]) => value === debug.pc)
 
   if (!point) {

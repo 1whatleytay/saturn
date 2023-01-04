@@ -9,7 +9,6 @@ export interface ElfExecutionProfile {
 // should only be set after building
 export interface AssemblyExecutionProfile {
   kind: 'asm'
-  breakpoints: Record<number, number>
 }
 
 export type ExecutionProfile = ElfExecutionProfile | AssemblyExecutionProfile;
@@ -120,14 +119,24 @@ export class ExecutionState {
     }
   }
 
+  public breakpointMap(): Record<number, number> {
+    switch (this.profile.kind) {
+      case 'asm': return this.breakpoints ?? { }
+      case 'elf': return this.profile.breakpoints
+      default: return { }
+    }
+  }
+
   public async resume(breakpoints: number[]): Promise<ExecutionResult> {
     if (!await this.configure()) {
       return defaultResult(ExecutionMode.BuildFailed)
     }
 
+    const map = this.breakpointMap()
+
     const result = await tauri.invoke('resume', {
       breakpoints: breakpoints
-        .map(point => this.profile.breakpoints[point])
+        .map(point => map[point])
         .filter(point => !!point)
     })
 

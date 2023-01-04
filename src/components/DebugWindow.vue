@@ -158,7 +158,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { state } from '../state/editor-state'
 
-import { ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/vue/24/solid'
+import { ArrowDownIcon, ArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { ExecutionMode } from '../utils/mips.js'
 import Tab from './Tab.vue'
 
@@ -321,6 +321,7 @@ const modeString = computed(() => {
     case ExecutionMode.Breakpoint: return 'Breakpoint'
     case ExecutionMode.Paused: return 'Paused'
     case ExecutionMode.Invalid: return 'Exception'
+    case ExecutionMode.BuildFailed: return 'Build Failed'
     default: return 'Debug'
   }
 })
@@ -330,6 +331,7 @@ const modeClass = computed(() => {
     case ExecutionMode.Breakpoint: return 'bg-red-900'
     case ExecutionMode.Paused: return 'bg-yellow-900'
     case ExecutionMode.Invalid: return 'bg-red-900'
+    case ExecutionMode.BuildFailed: return 'bg-orange-900'
     default: return 'bg-teal-900'
   }
 })

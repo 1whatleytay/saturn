@@ -1,7 +1,13 @@
 import { reactive } from 'vue'
 
 import { v4 as uuid } from 'uuid'
-import { disassembleElf, ExecutionProfile, ExecutionResult, ExecutionState } from '../utils/mips'
+import {
+  AssemblyExecutionProfile,
+  disassembleElf,
+  ExecutionProfile,
+  ExecutionResult,
+  ExecutionState
+} from '../utils/mips'
 
 export interface EditorTab {
   uuid: string,
@@ -45,7 +51,15 @@ export function remove(uuid: string) {
   }
 }
 
-export function createTab(named: string, content: string[], profile: ExecutionProfile | null = null) {
+function defaultAssemblyProfile(): AssemblyExecutionProfile  {
+  return { kind: 'asm' }
+}
+
+export function createTab(
+  named: string,
+  content: string[],
+  profile: ExecutionProfile | null = defaultAssemblyProfile()
+) {
   const id = uuid()
 
   state.tabs.push({
