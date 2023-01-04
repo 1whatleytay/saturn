@@ -1,9 +1,18 @@
 import { tauri } from '@tauri-apps/api'
 
-export interface ExecutionProfile {
+export interface ElfExecutionProfile {
+  kind: 'elf',
   elf: ArrayBuffer // not sure what to do here
   breakpoints: Record<number, number>
 }
+
+// should only be set after building
+export interface AssemblyExecutionProfile {
+  kind: 'assembly',
+  breakpoints: Record<number, number>
+}
+
+export type ExecutionProfile = ElfExecutionProfile; // | AssemblyExecutionProfile
 
 interface DisassembleResult {
   error: string | null,
@@ -53,11 +62,9 @@ export class ExecutionState {
       return
     }
 
-    console.log('configure')
-
     this.started = true
 
-    const result = await tauri.invoke('configure', {
+    const result = await tauri.invoke('configure_elf', {
       bytes: Array.from(new Uint8Array(this.profile.elf))
     })
 

@@ -60,7 +60,7 @@ export async function loadElf(named: string, elf: ArrayBuffer) {
 
   const lines = value.error ? [value.error] : value.lines
 
-  createTab(named, lines, { elf, breakpoints: value.breakpoints })
+  createTab(named, lines, { kind: 'elf', elf, breakpoints: value.breakpoints })
 }
 
 if (!state.tabs.length) {
