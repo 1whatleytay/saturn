@@ -43,6 +43,7 @@ enum AssemblerResult {
 }
 
 #[derive(Serialize)]
+#[serde(tag="error", content="value")]
 enum ResumeError {
     MemoryAlign(u32),
     MemoryUnmapped(u32),
