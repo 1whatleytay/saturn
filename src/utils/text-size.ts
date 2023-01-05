@@ -10,7 +10,7 @@ export class SizeCalculator {
     }
   }
 
-  position(text: string, position: number, push: number = 0): number {
+  position(text: string, position: number): number {
     // Let's do some BST
     let startOffset = 0
     let leadingSize = 0 // here for centering the character at the end

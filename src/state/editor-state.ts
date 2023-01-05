@@ -4,9 +4,7 @@ import { v4 as uuid } from 'uuid'
 import {
   AssemblyExecutionProfile,
   disassembleElf,
-  ExecutionProfile,
-  ExecutionResult,
-  ExecutionState
+  ExecutionProfile
 } from '../utils/mips'
 
 export interface EditorTab {

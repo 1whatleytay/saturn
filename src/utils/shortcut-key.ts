@@ -3,7 +3,10 @@ import { UAParser } from 'ua-parser-js'
 function metaKeyPlatform(): boolean {
   const os = new UAParser(navigator.userAgent).getOS()
 
-  return true
+  switch (os.name) {
+    case 'Mac OS': return true
+    default: return false
+  }
 }
 
 export const isMetaKey = metaKeyPlatform()

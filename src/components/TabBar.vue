@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'

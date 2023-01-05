@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { editor, tab } from '../state/editor-state'
+import { tab } from '../state/editor-state'
 import { consoleData } from '../state/console-data'
 import { resume, step, pause, stop } from '../utils/editor-debug'
 
