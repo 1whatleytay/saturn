@@ -41,20 +41,24 @@ export async function resume() {
 
   consoleData.execution.resume(usedBreakpoints)
     .then(result => {
+      consoleData.showConsole = true
       consoleData.debug = result
     })
 
+  consoleData.showConsole = true
   consoleData.debug = defaultResult(ExecutionMode.Running)
 }
 
 export async function pause() {
   if (consoleData.execution) {
+    consoleData.showConsole = true
     consoleData.debug = await consoleData.execution.pause()
   }
 }
 
 export async function step() {
   if (consoleData.execution) {
+    consoleData.showConsole = true
     consoleData.debug = await consoleData.execution.step()
   }
 }

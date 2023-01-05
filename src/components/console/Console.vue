@@ -33,20 +33,20 @@
 
         <Tab
           title="Registers"
-          :selected="properties.tab === DebugTab.Registers"
-          @select="properties.tab = DebugTab.Registers"
+          :selected="consoleData.tab === DebugTab.Registers"
+          @select="consoleData.tab = DebugTab.Registers"
         />
 
         <Tab
           title="Memory"
-          :selected="properties.tab === DebugTab.Memory"
-          @select="properties.tab = DebugTab.Memory"
+          :selected="consoleData.tab === DebugTab.Memory"
+          @select="consoleData.tab = DebugTab.Memory"
         />
 
         <Tab
           title="Console"
-          :selected="properties.tab === DebugTab.Console"
-          @select="properties.tab = DebugTab.Console"
+          :selected="consoleData.tab === DebugTab.Console"
+          @select="consoleData.tab = DebugTab.Console"
         />
 
         <button class="w-10 h-10 ml-auto
@@ -60,7 +60,7 @@
       </div>
 
       <div
-        v-if="properties.tab === DebugTab.Registers"
+        v-if="consoleData.tab === DebugTab.Registers"
         class="font-mono text-sm overflow-scroll flex flex-col flex-wrap grow content-start"
       >
         <div
@@ -78,7 +78,7 @@
       </div>
 
       <div
-        v-if="properties.tab === DebugTab.Memory"
+        v-if="consoleData.tab === DebugTab.Memory"
         class="text-sm flex flex-col grow overflow-clip content-start"
       >
         <div class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full">
@@ -141,10 +141,16 @@
       </div>
 
       <div
-        v-if="properties.tab === DebugTab.Console"
-        class="text-sm font-mono overflow-scroll flex flex-col flex-wrap grow whitespace-pre content-start"
+        v-if="consoleData.tab === DebugTab.Console"
+        class="text-xs font-mono overflow-scroll flex flex-col flex-wrap grow whitespace-pre content-start p-2"
       >
-        Debug Console
+        <div v-if="consoleData.console.length">
+          {{ consoleData.console }}
+        </div>
+
+        <div v-else class="text-neutral-500">
+          Nothing yet.
+        </div>
       </div>
     </div>
   </div>
@@ -153,12 +159,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
-import { editor } from '../state/editor-state'
-import { consoleData } from '../state/console-data'
+import { consoleData, DebugTab } from '../../state/console-data'
 
 import { ArrowDownIcon, ArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
-import { ExecutionMode } from '../utils/mips.js'
-import Tab from './Tab.vue'
+import { ExecutionMode } from '../../utils/mips'
+import Tab from '../Tab.vue'
 
 const closingHeight = 90
 const defaultHeight = 320
@@ -314,7 +319,11 @@ const registers = [
 ]
 
 const modeString = computed(() => {
-  switch (consoleData.debug?.mode) {
+  if (!consoleData.execution) {
+    return 'Debug'
+  }
+
+  switch (consoleData.debug?.mode ?? ExecutionMode.Running) {
     case ExecutionMode.Running: return 'Running'
     case ExecutionMode.Breakpoint: return 'Breakpoint'
     case ExecutionMode.Paused: return 'Paused'
@@ -324,7 +333,13 @@ const modeString = computed(() => {
   }
 })
 const modeClass = computed(() => {
-  switch (consoleData.debug?.mode) {
+  if (!consoleData.execution) {
+    return 'bg-transparent'
+  }
+
+  console.log(consoleData.debug?.mode)
+
+  switch (consoleData.debug?.mode ?? ExecutionMode.Running) {
     case ExecutionMode.Running: return 'bg-teal-900'
     case ExecutionMode.Breakpoint: return 'bg-red-900'
     case ExecutionMode.Paused: return 'bg-yellow-900'
@@ -350,23 +365,16 @@ const registersMap = computed(() => {
   return result
 })
 
-enum DebugTab {
-  Registers,
-  Memory,
-  Console
-}
-
 const properties = reactive({
   lastHeight: defaultHeight,
   height: defaultHeight,
-  resizing: null as number | null,
-  tab: DebugTab.Registers
+  resizing: null as number | null
 })
 
 const grabber = ref(null as HTMLElement | null)
 
 function close() {
-  consoleData.debug = null
+  consoleData.showConsole = false
 }
 
 function grabberPosition(event: MouseEvent): { x: number, y: number } {
@@ -409,7 +417,7 @@ const handleMove = (event: MouseEvent) => {
   properties.height += difference
 }
 
-const handleUp = (event: MouseEvent) => {
+const handleUp = () => {
   properties.resizing = null
 }
 
@@ -472,13 +480,13 @@ async function updateMemoryData() {
 }
 
 const checkMemory = () => {
-  if (properties.tab === DebugTab.Memory) {
+  if (consoleData.tab === DebugTab.Memory) {
     updateMemoryData()
   }
 }
 
 watch(() => memory.address, checkMemory)
-watch(() => properties.tab, checkMemory)
+watch(() => consoleData.tab, checkMemory)
 watch(() => consoleData.showConsole, checkMemory)
 watch(() => consoleData.debug, checkMemory)
 </script>
