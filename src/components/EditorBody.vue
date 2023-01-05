@@ -79,8 +79,8 @@ import {
   clearSelection,
   dropSelection,
   lineStart
-} from '../state/editor-cursor'
-import { setBreakpoint } from '../state/editor-debug'
+} from '../utils/editor-cursor'
+import { setBreakpoint } from '../utils/editor-debug'
 import Cursor from './Cursor.vue'
 
 const linesOffset = ref(0)

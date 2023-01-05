@@ -63,7 +63,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { state, tab } from '../state/editor-state'
-import { resume, step, pause, stop } from '../state/editor-debug'
+import { resume, step, pause, stop } from '../utils/editor-debug'
 
 import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
 

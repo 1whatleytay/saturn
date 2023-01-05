@@ -1,11 +1,11 @@
 import { computed, reactive } from 'vue'
 
-import { tab } from './editor-state'
+import { tab } from '../state/editor-state'
 
-import { regular } from '../utils/text-size'
-import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
-import { hasActionKey } from '../utils/shortcut-key'
-import { settings } from './editor-settings'
+import { regular } from './text-size'
+import { consumeBackwards, consumeForwards } from './alt-consume'
+import { hasActionKey } from './shortcut-key'
+import { settings } from '../state/settings-state'
 import { UndoHistory } from './editor-undo'
 
 export const lines = computed(() => tab()?.lines ?? ['Nothing yet.'])

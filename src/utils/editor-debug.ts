@@ -1,5 +1,5 @@
-import { collectLines, state, tab } from './editor-state'
-import { defaultResult, ExecutionMode, ExecutionState } from '../utils/mips'
+import { collectLines, state, tab } from '../state/editor-state'
+import { defaultResult, ExecutionMode, ExecutionState } from './mips'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
