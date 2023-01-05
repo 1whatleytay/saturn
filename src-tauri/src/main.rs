@@ -6,15 +6,16 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::source::{assemble_from, SourceError};
 use titan::cpu::{Memory, State};
+use titan::cpu::error::Error;
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
-use titan::debug::debugger::DebugFrame;
+use titan::debug::debugger::{DebugFrame, DebuggerMode};
 
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
@@ -42,8 +43,50 @@ enum AssemblerResult {
 }
 
 #[derive(Serialize)]
+enum ResumeError {
+    MemoryAlign(u32),
+    MemoryUnmapped(u32),
+    MemoryBoundary(u32),
+    CpuInvalid(u32),
+    CpuTrap,
+}
+
+impl From<Error> for ResumeError {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::MemoryAlign(address) => ResumeError::MemoryAlign(address),
+            Error::MemoryUnmapped(address) => ResumeError::MemoryUnmapped(address),
+            Error::MemoryBoundary(address) => ResumeError::MemoryBoundary(address),
+            Error::CpuInvalid(address) => ResumeError::CpuInvalid(address),
+            Error::CpuTrap => ResumeError::CpuTrap,
+        }
+    }
+}
+
+#[derive(Serialize)]
+enum ResumeMode {
+    Running,
+    Invalid(ResumeError),
+    Paused,
+    Breakpoint,
+    Finished(u32),
+}
+
+impl From<DebuggerMode> for ResumeMode {
+    fn from(value: DebuggerMode) -> Self {
+        match value {
+            DebuggerMode::Running => ResumeMode::Running,
+            DebuggerMode::Invalid(error) => ResumeMode::Invalid(error.into()),
+            DebuggerMode::Paused => ResumeMode::Paused,
+            DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
+            DebuggerMode::Finished(address) => ResumeMode::Finished(address),
+        }
+    }
+}
+
+#[derive(Serialize)]
 struct ResumeResult {
-    mode: String,
+    mode: ResumeMode,
 
     pc: u32,
     registers: [u32; 32],
@@ -91,7 +134,7 @@ impl AssemblerResult {
 impl ResumeResult {
     fn from_frame(frame: DebugFrame) -> ResumeResult {
         ResumeResult {
-            mode: format!("{:?}", frame.mode),
+            mode: frame.mode.into(),
             pc: frame.pc,
             registers: frame.registers,
             lo: frame.lo,
@@ -194,13 +237,25 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
         pointer.clone()
     };
 
-    let frame: DebugFrame = tokio::spawn(async move {
-        let breakpoints_set = HashSet::from_iter(breakpoints.iter().cloned());
+    let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
-        Debugger::run(&debugger, &breakpoints_set)
+    debugger.lock().unwrap().set_breakpoints(breakpoints_set);
+
+    let frame: DebugFrame = tokio::spawn(async move {
+
+        Debugger::run(&debugger)
     }).await.unwrap();
 
     Ok(ResumeResult::from_frame(frame))
+}
+
+#[tauri::command]
+fn swap_breakpoints(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
+
+    let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
+
+    pointer.lock().unwrap().set_breakpoints(breakpoints_set);
 }
 
 #[tauri::command]
@@ -209,7 +264,7 @@ fn step(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
 
     let mut debugger = pointer.lock().unwrap();
 
-    let frame = debugger.cycle(&HashSet::new(), true)
+    let frame = debugger.cycle(true)
         .unwrap_or_else(|| debugger.frame());
 
     Some(ResumeResult::from_frame(frame))
@@ -299,7 +354,8 @@ fn main() {
             read_bytes,
             write_bytes,
             set_register,
-            assemble
+            assemble,
+            swap_breakpoints
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

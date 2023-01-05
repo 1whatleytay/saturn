@@ -11,7 +11,7 @@
     >
       <div
         v-for="(_, index) in lines" :key="index"
-        @click="setBreakpoint(index)"
+        @click="toggleBreakpoint(index)"
         class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto"
       >
         <div
@@ -77,8 +77,10 @@ import {
   paste,
   getSelection,
   clearSelection,
-  dropSelection, lineStart
+  dropSelection,
+  lineStart
 } from '../state/editor-cursor'
+import { setBreakpoint } from '../state/editor-debug'
 import Cursor from './Cursor.vue'
 
 const linesOffset = ref(0)
@@ -96,15 +98,14 @@ const stoppedIndex = computed(() => {
   }
 
   // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
-  const point = Object.entries(state.execution.breakpointMap())
-    .find(([key, value]) => value === debug.pc)
+  const point = state.execution.breakpoints?.pcToLine.get(debug.pc)
 
   if (!point) {
     return null
   }
 
   try {
-    return parseInt(point[0])
+    return point
   } catch {
     return null
   }
@@ -139,18 +140,16 @@ function hasBreakpoint(index: number): boolean {
   return tab()?.breakpoints.includes(index) ?? false
 }
 
-function setBreakpoint(index: number) {
+async function toggleBreakpoint(index: number) {
   const state = tab()
 
   if (!state) {
     return
   }
 
-  if (state.breakpoints.includes(index)) {
-    state.breakpoints = state.breakpoints.filter(point => point !== index)
-  } else {
-    state.breakpoints.push(index)
-  }
+  const remove = state.breakpoints.includes(index)
+
+  await setBreakpoint(index, remove)
 }
 
 const mouseDown = ref(false)

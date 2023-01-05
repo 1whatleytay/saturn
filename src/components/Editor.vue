@@ -11,5 +11,5 @@
 <script setup lang="ts">
 import TabBar from './TabBar.vue'
 import EditorBody from './EditorBody.vue'
-import DebugWindow from './DebugWindow.vue'
+import DebugWindow from './Console.vue'
 </script>

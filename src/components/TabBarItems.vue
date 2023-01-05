@@ -62,11 +62,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { collectLines, state, tab } from '../state/editor-state'
+import { state, tab } from '../state/editor-state'
+import { resume, step, pause, stop } from '../state/editor-debug'
 
 import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
 
-import { defaultResult, ExecutionMode, ExecutionState } from '../utils/mips'
+import { ExecutionMode } from '../utils/mips'
 
 const profile = computed(() => tab()?.profile)
 
@@ -80,49 +81,4 @@ const profileText = computed((): string | null => {
 
   return null
 })
-
-async function resume() {
-  const usedProfile = tab()?.profile
-  const usedBreakpoints = tab()?.breakpoints ?? []
-  const text = collectLines(tab()?.lines ?? [])
-
-  if (!usedProfile) {
-    return
-  }
-
-  if (!state.execution) {
-    state.execution = new ExecutionState(text, usedProfile)
-  }
-
-  // TODO: On set breakpoint while execution is non-null:
-  //  - await state.execution.pause()
-  //  - await state.execution.resume(newBreakpoints)
-
-  state.execution.resume(usedBreakpoints)
-    .then(result => {
-      state.debug = result
-    })
-
-  state.debug = defaultResult(ExecutionMode.Running)
-}
-
-async function pause() {
-  if (state.execution) {
-    state.debug = await state.execution.pause()
-  }
-}
-
-async function step() {
-  if (state.execution) {
-    state.debug = await state.execution.step()
-  }
-}
-
-async function stop() {
-  if (state.execution) {
-    await state.execution.stop()
-
-    state.execution = null
-  }
-}
 </script>

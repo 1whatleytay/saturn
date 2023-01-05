@@ -73,9 +73,32 @@ export function defaultResult(mode: ExecutionMode): ExecutionResult {
   }
 }
 
+class Breakpoints {
+  public lineToPc: Map<number, number>
+  public pcToLine: Map<number, number>
+
+  public mapLines(lines: number[]): number[] {
+    return lines
+      .map(line => this.lineToPc.get(line))
+      .filter(point => !!point) as number[]
+  }
+
+  constructor(breakpoints: Record<number, number>) {
+    this.lineToPc = new Map()
+    this.pcToLine = new Map()
+
+    for (const [line, pc] of Object.entries(breakpoints)) {
+      const lineNumber = parseInt(line)
+
+      this.lineToPc.set(lineNumber, pc)
+      this.pcToLine.set(pc, lineNumber)
+    }
+  }
+}
+
 export class ExecutionState {
   configured: boolean = false
-  breakpoints: Record<number, number> | null = null
+  public breakpoints: Breakpoints | null
 
   async configure(): Promise<boolean> {
     if (this.configured) {
@@ -104,7 +127,7 @@ export class ExecutionState {
 
         switch (result.status) {
           case 'Success':
-            this.breakpoints = result.breakpoints
+            this.breakpoints = new Breakpoints(result.breakpoints)
 
             return true
 
@@ -119,28 +142,29 @@ export class ExecutionState {
     }
   }
 
-  public breakpointMap(): Record<number, number> {
-    switch (this.profile.kind) {
-      case 'asm': return this.breakpoints ?? { }
-      case 'elf': return this.profile.breakpoints
-      default: return { }
-    }
-  }
-
   public async resume(breakpoints: number[]): Promise<ExecutionResult> {
     if (!await this.configure()) {
       return defaultResult(ExecutionMode.BuildFailed)
     }
 
-    const map = this.breakpointMap()
-
     const result = await tauri.invoke('resume', {
-      breakpoints: breakpoints
-        .map(point => map[point])
-        .filter(point => !!point)
+      breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
     })
 
     return result as ExecutionResult
+  }
+
+  // For setting new breakpoints WHILE the machine is running.
+  // There's a distinction for some weird technical reason.
+  public async setBreakpoints(breakpoints: number[]) {
+    if (!this.configured) {
+      // Have to invoke resume() with breakpoints anyway.
+      return
+    }
+
+    await tauri.invoke('set_breakpoints', {
+      breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
+    })
   }
 
   public async pause(): Promise<ExecutionResult> {
@@ -168,5 +192,15 @@ export class ExecutionState {
   public constructor(
     private text: string,
     private profile: ExecutionProfile
-  ) { }
+  ) {
+    switch (profile.kind) {
+      case 'elf':
+        this.breakpoints = new Breakpoints(profile.breakpoints)
+        break
+
+      default:
+        this.breakpoints = null
+        break
+    }
+  }
 }
