@@ -4,12 +4,12 @@
       <input type="file" class="hidden" ref="input" @change="loadFile" />
 
       <Tab
-        v-for="tab in state.tabs"
+        v-for="tab in editor.tabs"
         :key="tab.uuid"
         :title="tab.title"
-        :selected="state.selected === tab.uuid"
+        :selected="editor.selected === tab.uuid"
         :deletable="true"
-        @select="state.selected = tab.uuid"
+        @select="editor.selected = tab.uuid"
         @delete="remove(tab.uuid)"
       />
 
@@ -46,7 +46,7 @@ import { computed, ref } from 'vue'
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
-import { loadElf, remove, createTab, state } from '../state/editor-state'
+import { loadElf, remove, createTab, editor } from '../state/editor-state'
 import TabBarItems from './TabBarItems.vue'
 
 const input = ref(null as HTMLInputElement | null)

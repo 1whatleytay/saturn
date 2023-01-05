@@ -1,5 +1,5 @@
 <template>
-  <div v-if="state.debug">
+  <div v-if="consoleData.showConsole">
     <div
       v-if="properties.height > closingHeight"
       class="w-full"
@@ -153,7 +153,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
-import { state } from '../state/editor-state'
+import { editor } from '../state/editor-state'
+import { consoleData } from '../state/console-data'
 
 import { ArrowDownIcon, ArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { ExecutionMode } from '../utils/mips.js'
@@ -313,7 +314,7 @@ const registers = [
 ]
 
 const modeString = computed(() => {
-  switch (state.debug?.mode) {
+  switch (consoleData.debug?.mode) {
     case ExecutionMode.Running: return 'Running'
     case ExecutionMode.Breakpoint: return 'Breakpoint'
     case ExecutionMode.Paused: return 'Paused'
@@ -323,7 +324,7 @@ const modeString = computed(() => {
   }
 })
 const modeClass = computed(() => {
-  switch (state.debug?.mode) {
+  switch (consoleData.debug?.mode) {
     case ExecutionMode.Running: return 'bg-teal-900'
     case ExecutionMode.Breakpoint: return 'bg-red-900'
     case ExecutionMode.Paused: return 'bg-yellow-900'
@@ -334,11 +335,15 @@ const modeClass = computed(() => {
 })
 
 const registersMap = computed(() => {
-  const core = registers.map((name, index) => [name, state.debug?.registers[index] ?? 0]) as [string, number][]
-  const other = [['hi', state.debug?.hi ?? 0], ['lo', state.debug?.lo ?? 0]] as [string, number][]
+  const core = registers.map(
+    (name, index) => [name, consoleData.debug?.registers[index] ?? 0]
+  ) as [string, number][]
+  const other = [
+    ['hi', consoleData.debug?.hi ?? 0], ['lo', consoleData.debug?.lo ?? 0]
+  ] as [string, number][]
 
   const result = []
-  result.push(['pc', state.debug?.pc ?? 0])
+  result.push(['pc', consoleData.debug?.pc ?? 0])
   result.push(...core)
   result.push(...other)
 
@@ -361,7 +366,7 @@ const properties = reactive({
 const grabber = ref(null as HTMLElement | null)
 
 function close() {
-  state.debug = null
+  consoleData.debug = null
 }
 
 function grabberPosition(event: MouseEvent): { x: number, y: number } {
@@ -424,7 +429,7 @@ function watchHeight(height: number, resizing: boolean) {
   }
 
   if (height < closingHeight) {
-    state.debug = null
+    consoleData.showConsole = false
 
     properties.height = properties.lastHeight
   } else {
@@ -449,7 +454,7 @@ async function updateMemoryData() {
     return
   }
 
-  if (!state.execution) {
+  if (!consoleData.execution) {
     return
   }
 
@@ -457,7 +462,7 @@ async function updateMemoryData() {
   const page = targetColumns * targetRows * maxUnitSize
 
   memory.data = []
-  const data = await state.execution.memoryAt(address, page)
+  const data = await consoleData.execution.memoryAt(address, page)
 
   if (!data) {
     return
@@ -474,5 +479,6 @@ const checkMemory = () => {
 
 watch(() => memory.address, checkMemory)
 watch(() => properties.tab, checkMemory)
-watch(() => state.debug, checkMemory)
+watch(() => consoleData.showConsole, checkMemory)
+watch(() => consoleData.debug, checkMemory)
 </script>

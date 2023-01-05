@@ -22,13 +22,11 @@ export function collectLines(lines: string[]): string {
 }
 
 export interface EditorState {
-  tabs: EditorTab[],
-  selected: string | null,
-  execution: ExecutionState | null,
-  debug: ExecutionResult | null
+  tabs: EditorTab[]
+  selected: string | null
 }
 
-export const state = reactive({
+export const editor = reactive({
   tabs: [],
   selected: null,
   execution: null,
@@ -36,18 +34,18 @@ export const state = reactive({
 } as EditorState)
 
 export function tab(): EditorTab | null {
-  if (state.selected) {
-    return state.tabs.find(tab => tab.uuid === state.selected) ?? null
+  if (editor.selected) {
+    return editor.tabs.find(tab => tab.uuid === editor.selected) ?? null
   }
 
   return null
 }
 
 export function remove(uuid: string) {
-  state.tabs = state.tabs.filter(tab => tab.uuid !== uuid)
+  editor.tabs = editor.tabs.filter(tab => tab.uuid !== uuid)
 
-  if (state.selected === uuid) {
-    state.selected = null
+  if (editor.selected === uuid) {
+    editor.selected = null
   }
 }
 
@@ -62,7 +60,7 @@ export function createTab(
 ) {
   const id = uuid()
 
-  state.tabs.push({
+  editor.tabs.push({
     uuid: id,
     title: named,
     lines: content,
@@ -70,7 +68,7 @@ export function createTab(
     profile
   })
 
-  state.selected = id
+  editor.selected = id
 }
 
 export async function loadElf(named: string, elf: ArrayBuffer) {
@@ -81,6 +79,6 @@ export async function loadElf(named: string, elf: ArrayBuffer) {
   createTab(named, lines, { kind: 'elf', elf, breakpoints: value.breakpoints })
 }
 
-if (!state.tabs.length) {
+if (!editor.tabs.length) {
   createTab('Untitled', [''])
 }

@@ -1,6 +1,6 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
-    <button v-if="!!state.execution" class="w-10 h-10
+    <button v-if="!!consoleData.execution" class="w-10 h-10
       hover:bg-slate-800
       text-slate-300
       shrink-0
@@ -11,7 +11,7 @@
       <StopIcon class="w-4 h-4" />
     </button>
 
-    <button v-if="!!state.execution" class="w-10 h-10
+    <button v-if="!!consoleData.execution" class="w-10 h-10
       hover:bg-slate-800
       text-slate-300
       shrink-0
@@ -22,7 +22,7 @@
       <PauseIcon class="w-4 h-4" />
     </button>
 
-    <button v-if="!!state.execution" class="w-10 h-10
+    <button v-if="!!consoleData.execution" class="w-10 h-10
       hover:bg-slate-800
       text-slate-300
       shrink-0
@@ -62,7 +62,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { state, tab } from '../state/editor-state'
+import { editor, tab } from '../state/editor-state'
+import { consoleData } from '../state/console-data'
 import { resume, step, pause, stop } from '../utils/editor-debug'
 
 import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
@@ -71,7 +72,9 @@ import { ExecutionMode } from '../utils/mips'
 
 const profile = computed(() => tab()?.profile)
 
-const allowResume = computed(() => !state.execution || state.debug?.mode !== ExecutionMode.Running)
+const allowResume = computed(() =>
+  !consoleData.execution || consoleData.debug?.mode !== ExecutionMode.Running
+)
 
 const profileText = computed((): string | null => {
   switch (profile.value?.kind) {

@@ -66,7 +66,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { state, tab } from '../state/editor-state'
+import { editor, tab } from '../state/editor-state'
+import { consoleData } from '../state/console-data'
 import {
   lines,
   cursor,
@@ -91,14 +92,15 @@ const input = ref(null as HTMLElement | null)
 
 const stoppedIndex = computed(() => {
   const profile = tab()?.profile
-  const debug = state.debug
+  const debug = consoleData.debug
+  const execution = consoleData.execution
 
-  if (!profile || !debug || !state.execution) {
+  if (!profile || !debug || !execution) {
     return null
   }
 
   // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
-  const point = state.execution.breakpoints?.pcToLine.get(debug.pc)
+  const point = execution.breakpoints?.pcToLine.get(debug.pc)
 
   if (!point) {
     return null

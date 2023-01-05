@@ -1,4 +1,5 @@
-import { collectLines, state, tab } from '../state/editor-state'
+import { collectLines, tab } from '../state/editor-state'
+import { consoleData } from '../state/console-data'
 import { defaultResult, ExecutionMode, ExecutionState } from './mips'
 
 export async function setBreakpoint(line: number, remove: boolean) {
@@ -15,8 +16,8 @@ export async function setBreakpoint(line: number, remove: boolean) {
     currentTab.breakpoints.push(line)
   }
 
-  if (state.execution) {
-    await state.execution.setBreakpoints(currentTab.breakpoints)
+  if (consoleData.execution) {
+    await consoleData.execution.setBreakpoints(currentTab.breakpoints)
   }
 }
 
@@ -28,40 +29,40 @@ export async function resume() {
     return
   }
 
-  if (!state.execution) {
+  if (!consoleData.execution) {
     const text = collectLines(tab()?.lines ?? [])
 
-    state.execution = new ExecutionState(text, usedProfile)
+    consoleData.execution = new ExecutionState(text, usedProfile)
   }
 
   // TODO: On set breakpoint while execution is non-null:
   //  - await state.execution.pause()
   //  - await state.execution.resume(newBreakpoints)
 
-  state.execution.resume(usedBreakpoints)
+  consoleData.execution.resume(usedBreakpoints)
     .then(result => {
-      state.debug = result
+      consoleData.debug = result
     })
 
-  state.debug = defaultResult(ExecutionMode.Running)
+  consoleData.debug = defaultResult(ExecutionMode.Running)
 }
 
 export async function pause() {
-  if (state.execution) {
-    state.debug = await state.execution.pause()
+  if (consoleData.execution) {
+    consoleData.debug = await consoleData.execution.pause()
   }
 }
 
 export async function step() {
-  if (state.execution) {
-    state.debug = await state.execution.step()
+  if (consoleData.execution) {
+    consoleData.debug = await consoleData.execution.step()
   }
 }
 
 export async function stop() {
-  if (state.execution) {
-    await state.execution.stop()
+  if (consoleData.execution) {
+    await consoleData.execution.stop()
 
-    state.execution = null
+    consoleData.execution = null
   }
 }
