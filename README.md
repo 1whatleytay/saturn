@@ -18,11 +18,11 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [x] Basic Assembler
 - [ ] Syntax Highlighting
 - [ ] Bitmap Display
-- [ ] Console Events
+- [x] Console Events
 - [ ] Syscall Handling
-- [ ] Assembler Breakpoint Information
-- [ ] Compile Assembly In-Editor
-- [ ] Breakpoint Assembly In-Editor
+- [x] Assembler Breakpoint Information
+- [x] Compile Assembly In-Editor
+- [x] Breakpoint Assembly In-Editor
 - [ ] File Loading
 
 # Important Tasks
