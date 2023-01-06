@@ -19,7 +19,7 @@ interface DisassembleResult {
   breakpoints: Record<number, number>
 }
 
-interface LineMarker {
+export interface LineMarker {
   line: number
   offset: number
 }
@@ -29,12 +29,13 @@ interface AssemblerResultSuccess {
   breakpoints: Record<number, number>
 }
 
-interface AssemblerResultError {
-  status: 'Error'
+export interface AssemblerError {
   marker: LineMarker | null
   body: string | null
   message: string
 }
+
+type AssemblerResultError = AssemblerError & { status: 'Error' }
 
 type AssemblerResult = AssemblerResultSuccess | AssemblerResultError;
 
@@ -46,13 +47,46 @@ export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<D
   return value as DisassembleResult
 }
 
-export enum ExecutionMode {
+export enum ExecutionErrorType {
+  MemoryAlign = 'MemoryAlign',
+  MemoryUnmapped = 'MemoryUnmapped',
+  MemoryBoundary = 'MemoryBoundary',
+  CpuInvalid = 'CpuInvalid',
+  CpuTrap = 'CpuTrap',
+}
+
+export enum ExecutionModeType {
   Running = 'Running',
   Invalid = 'Invalid',
   Paused = 'Paused',
   Breakpoint = 'Breakpoint',
+  Finished = 'Finished',
   BuildFailed = 'BuildFailed'
 }
+
+export interface ExecutionModeInvalid {
+  type: ExecutionModeType.Invalid,
+  value: string
+}
+
+export interface ExecutionModeFinished {
+  type: ExecutionModeType.Finished,
+  value: number
+}
+
+export interface ExecutionModeBuildFailed {
+  type: ExecutionModeType.BuildFailed
+  value: AssemblerError
+}
+
+type ExecutionModeOther = ExecutionModeType.Running
+  | ExecutionModeType.Breakpoint
+  | ExecutionModeType.Paused
+
+export type ExecutionMode = ExecutionModeInvalid
+  | ExecutionModeFinished
+  | ExecutionModeBuildFailed
+  | { type: ExecutionModeOther }
 
 export interface ExecutionResult {
   mode: ExecutionMode,
@@ -87,6 +121,8 @@ class Breakpoints {
     this.lineToPc = new Map()
     this.pcToLine = new Map()
 
+    console.log(`bp: ${JSON.stringify(breakpoints)}`)
+
     for (const [line, pc] of Object.entries(breakpoints)) {
       const lineNumber = parseInt(line)
 
@@ -100,9 +136,9 @@ export class ExecutionState {
   configured: boolean = false
   public breakpoints: Breakpoints | null
 
-  async configure(): Promise<boolean> {
+  async configure(): Promise<AssemblerError | null> {
     if (this.configured) {
-      return true
+      return null
     }
 
     this.configured = true
@@ -117,7 +153,11 @@ export class ExecutionState {
           console.error('Failed to configure interpreter.')
         }
 
-        return !!result
+        return result ? null : {
+          message: 'Configured ELF was not valid',
+          body: null,
+          marker: null
+        }
       }
 
       case 'asm': {
@@ -129,13 +169,20 @@ export class ExecutionState {
           case 'Success':
             this.breakpoints = new Breakpoints(result.breakpoints)
 
-            return true
+            console.log(this.breakpoints)
+            console.log(this.breakpoints.lineToPc)
+
+            return null
 
           case 'Error':
-            return false
+            return {
+              message: result.message,
+              body: result.body,
+              marker: result.marker
+            }
         }
 
-        return false
+        throw new Error() // unknown status
       }
 
       default: throw new Error()
@@ -143,9 +190,17 @@ export class ExecutionState {
   }
 
   public async resume(breakpoints: number[]): Promise<ExecutionResult> {
-    if (!await this.configure()) {
-      return defaultResult(ExecutionMode.BuildFailed)
+    const assemblerError = await this.configure()
+
+    if (assemblerError) {
+      return defaultResult({
+        type: ExecutionModeType.BuildFailed,
+        value: assemblerError
+      })
     }
+
+    const test = this.breakpoints?.mapLines(breakpoints)
+    console.log(test)
 
     const result = await tauri.invoke('resume', {
       breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
@@ -162,7 +217,7 @@ export class ExecutionState {
       return
     }
 
-    await tauri.invoke('set_breakpoints', {
+    await tauri.invoke('swap_breakpoints', {
       breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
     })
   }

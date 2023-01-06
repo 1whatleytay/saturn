@@ -10,7 +10,7 @@ export class SizeCalculator {
     }
   }
 
-  position(text: string, position: number): number {
+  position(text: string, position: number, push: number = 2): number {
     // Let's do some BST
     let startOffset = 0
     let leadingSize = 0 // here for centering the character at the end
@@ -42,7 +42,7 @@ export class SizeCalculator {
       }
     } while (start + 1 < end)
 
-    const offset = Math.round((position + 2 - startOffset) / leadingSize)
+    const offset = Math.round((position + push - startOffset) / leadingSize)
 
     return start + Math.min(offset, 1)
   }

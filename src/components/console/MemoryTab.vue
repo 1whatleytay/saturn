@@ -243,5 +243,5 @@ const checkMemory = () => {
 watch(() => memory.address, checkMemory)
 watch(() => consoleData.tab, checkMemory)
 watch(() => consoleData.showConsole, checkMemory)
-watch(() => consoleData.debug, checkMemory)
+watch(() => consoleData.registers, checkMemory)
 </script>

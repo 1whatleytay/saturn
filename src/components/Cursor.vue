@@ -68,8 +68,6 @@ const range = computed((): RangeSelection | null => {
 
   const result = [] as LineRange[]
 
-  console.log(top)
-
   const first = all[range.startLine]
   result.push({
     leading: first.substring(0, range.startIndex),

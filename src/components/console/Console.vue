@@ -72,7 +72,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { consoleData, DebugTab } from '../../state/console-data'
 
 import { XMarkIcon } from '@heroicons/vue/24/solid'
-import { ExecutionMode } from '../../utils/mips'
+import { ExecutionModeType } from '../../utils/mips'
 import Tab from '../Tab.vue'
 import RegistersTab from './RegistersTab.vue'
 import MemoryTab from './MemoryTab.vue'
@@ -86,12 +86,12 @@ const modeString = computed(() => {
     return 'Debug'
   }
 
-  switch (consoleData.debug?.mode ?? ExecutionMode.Running) {
-    case ExecutionMode.Running: return 'Running'
-    case ExecutionMode.Breakpoint: return 'Breakpoint'
-    case ExecutionMode.Paused: return 'Paused'
-    case ExecutionMode.Invalid: return 'Exception'
-    case ExecutionMode.BuildFailed: return 'Build Failed'
+  switch (consoleData.mode ?? ExecutionModeType.Running) {
+    case ExecutionModeType.Running: return 'Running'
+    case ExecutionModeType.Breakpoint: return 'Breakpoint'
+    case ExecutionModeType.Paused: return 'Paused'
+    case ExecutionModeType.Invalid: return 'Exception'
+    case ExecutionModeType.BuildFailed: return 'Build Failed'
     default: return 'Debug'
   }
 })
@@ -100,14 +100,12 @@ const modeClass = computed(() => {
     return 'bg-transparent'
   }
 
-  console.log(consoleData.debug?.mode)
-
-  switch (consoleData.debug?.mode ?? ExecutionMode.Running) {
-    case ExecutionMode.Running: return 'bg-teal-900'
-    case ExecutionMode.Breakpoint: return 'bg-red-900'
-    case ExecutionMode.Paused: return 'bg-yellow-900'
-    case ExecutionMode.Invalid: return 'bg-red-900'
-    case ExecutionMode.BuildFailed: return 'bg-orange-900'
+  switch (consoleData.mode ?? ExecutionModeType.Running) {
+    case ExecutionModeType.Running: return 'bg-teal-900'
+    case ExecutionModeType.Breakpoint: return 'bg-red-900'
+    case ExecutionModeType.Paused: return 'bg-yellow-900'
+    case ExecutionModeType.Invalid: return 'bg-red-900'
+    case ExecutionModeType.BuildFailed: return 'bg-orange-900'
     default: return 'bg-teal-900'
   }
 })

@@ -1,6 +1,8 @@
 import { collectLines, tab } from '../state/editor-state'
-import { consoleData } from '../state/console-data'
-import { defaultResult, ExecutionMode, ExecutionState } from './mips'
+import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
+import { ExecutionMode, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
+
+import { format } from 'date-fns'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -12,13 +14,66 @@ export async function setBreakpoint(line: number, remove: boolean) {
   if (remove) {
     currentTab.breakpoints = currentTab.breakpoints
       .filter(point => point !== line)
-  } else if (currentTab.breakpoints.includes(line)) {
+  } else if (!currentTab.breakpoints.includes(line)) {
     currentTab.breakpoints.push(line)
   }
 
   if (consoleData.execution) {
     await consoleData.execution.setBreakpoints(currentTab.breakpoints)
   }
+}
+
+function postDebugInformation(result: ExecutionResult) {
+  consoleData.mode = result.mode.type
+  
+  switch (result.mode.type) {
+    case ExecutionModeType.Finished: {
+      const address = result.mode.value.toString(16).padStart(8, '0')
+
+      pushConsole(`Execution finished at 0x${address}`)
+
+      break
+    }
+    
+    case ExecutionModeType.Invalid: {
+      pushConsole(`Exception thrown: ${result.mode.value}`)
+
+      consoleData.tab = DebugTab.Console
+
+      break
+    }
+
+    default:
+      break
+  }
+  
+  consoleData.registers = {
+    pc: result.pc,
+    hi: result.hi,
+    lo: result.lo,
+    registers: result.registers
+  }
+}
+
+function postBuildMessage(mode: ExecutionMode) {
+  switch (mode.type) {
+    case ExecutionModeType.BuildFailed:
+      const error = mode.value
+
+      const marker = error.marker ? ` (line ${error.marker.line})` : ''
+      const trailing = error.body ? `\n${error.body}` : ''
+
+      openConsole(`Build failed: ${error.message}${marker}${trailing}`)
+
+      break
+
+    default:
+      openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, p')}`)
+
+      break
+  }
+
+  consoleData.tab = DebugTab.Console
 }
 
 export async function resume() {
@@ -29,37 +84,41 @@ export async function resume() {
     return
   }
 
+  let needsBuild = false
   if (!consoleData.execution) {
     const text = collectLines(tab()?.lines ?? [])
 
+    needsBuild = true
     consoleData.execution = new ExecutionState(text, usedProfile)
   }
 
-  // TODO: On set breakpoint while execution is non-null:
-  //  - await state.execution.pause()
-  //  - await state.execution.resume(newBreakpoints)
+  consoleData.showConsole = true
+  consoleData.mode = ExecutionModeType.Running
 
-  consoleData.execution.resume(usedBreakpoints)
-    .then(result => {
-      consoleData.showConsole = true
-      consoleData.debug = result
-    })
+  const result = await consoleData.execution.resume(usedBreakpoints)
 
   consoleData.showConsole = true
-  consoleData.debug = defaultResult(ExecutionMode.Running)
+
+  if (needsBuild) {
+    postBuildMessage(result.mode)
+  }
+
+  postDebugInformation(result)
 }
 
 export async function pause() {
   if (consoleData.execution) {
     consoleData.showConsole = true
-    consoleData.debug = await consoleData.execution.pause()
+
+    postDebugInformation(await consoleData.execution.pause())
   }
 }
 
 export async function step() {
   if (consoleData.execution) {
     consoleData.showConsole = true
-    consoleData.debug = await consoleData.execution.step()
+
+    postDebugInformation(await consoleData.execution.step())
   }
 }
 

@@ -68,12 +68,12 @@ import { resume, step, pause, stop } from '../utils/editor-debug'
 
 import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
 
-import { ExecutionMode } from '../utils/mips'
+import { ExecutionModeType } from '../utils/mips'
 
 const profile = computed(() => tab()?.profile)
 
 const allowResume = computed(() =>
-  !consoleData.execution || consoleData.debug?.mode !== ExecutionMode.Running
+  !consoleData.execution || consoleData.mode !== ExecutionModeType.Running
 )
 
 const profileText = computed((): string | null => {

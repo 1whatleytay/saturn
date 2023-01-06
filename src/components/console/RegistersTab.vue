@@ -1,6 +1,6 @@
 <template>
   <div
-    class="font-mono text-sm overflow-scroll flex flex-col flex-wrap grow content-start"
+    class="font-mono text-sm overflow-x-auto flex flex-col flex-wrap grow content-start"
   >
     <div
       v-for="values in registersMap" :key="values[0]"
@@ -34,14 +34,14 @@ const registers = [
 
 const registersMap = computed(() => {
   const core = registers.map(
-    (name, index) => [name, consoleData.debug?.registers[index] ?? 0]
+    (name, index) => [name, consoleData.registers?.registers[index] ?? 0]
   ) as [string, number][]
   const other = [
-    ['hi', consoleData.debug?.hi ?? 0], ['lo', consoleData.debug?.lo ?? 0]
+    ['hi', consoleData.registers?.hi ?? 0], ['lo', consoleData.registers?.lo ?? 0]
   ] as [string, number][]
 
   const result = []
-  result.push(['pc', consoleData.debug?.pc ?? 0])
+  result.push(['pc', consoleData.registers?.pc ?? 0])
   result.push(...core)
   result.push(...other)
 

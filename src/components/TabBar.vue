@@ -1,6 +1,6 @@
 <template>
   <div @click.stop>
-    <div class="h-10 flex items-center overflow-x-scroll items-start bg-neutral-900 w-full fixed z-20 top-0">
+    <div class="h-10 flex items-center overflow-x-auto items-start bg-neutral-900 w-full fixed z-20 top-0">
       <input type="file" class="hidden" ref="input" @change="loadFile" />
 
       <Tab

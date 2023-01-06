@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { ExecutionResult, ExecutionState } from '../utils/mips'
+import { ExecutionModeType, ExecutionState } from '../utils/mips'
 
 export enum DebugTab {
   Registers,
@@ -7,24 +7,35 @@ export enum DebugTab {
   Console
 }
 
+export interface Registers {
+  pc: number,
+  registers: number[],
+  lo: number,
+  hi: number,
+}
+
 interface ConsoleData {
-  showConsole: boolean,
+  showConsole: boolean
   execution: ExecutionState | null
-  debug: ExecutionResult | null,
-  tab: DebugTab,
+  mode: ExecutionModeType | null,
+  registers: Registers | null
+  tab: DebugTab
   console: string
 }
 
 export const consoleData = reactive({
   showConsole: false,
   execution: null,
-  debug: null,
+  mode: null,
+  registers: null,
   tab: DebugTab.Registers,
   console: ''
 } as ConsoleData)
 
-export function openConsole(text: string) {
-  consoleData.console = text
+export function openConsole(text: string, terminator: string = '\n') {
+  consoleData.console = ''
+
+  pushConsole(text, terminator)
 }
 
 export function pushConsole(text: string, terminator: string = '\n') {

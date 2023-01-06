@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-xs font-mono overflow-scroll flex flex-col flex-wrap grow whitespace-pre content-start p-2"
+    class="text-xs font-mono overflow-auto flex flex-col flex-wrap grow whitespace-pre content-start p-2 select-text"
   >
     <div v-if="consoleData.console.length">
       {{ consoleData.console }}

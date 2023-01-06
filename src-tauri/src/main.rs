@@ -11,7 +11,6 @@ use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::source::{assemble_from, SourceError};
 use titan::cpu::{Memory, State};
-use titan::cpu::error::Error;
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
@@ -43,31 +42,10 @@ enum AssemblerResult {
 }
 
 #[derive(Serialize)]
-#[serde(tag="error", content="value")]
-enum ResumeError {
-    MemoryAlign(u32),
-    MemoryUnmapped(u32),
-    MemoryBoundary(u32),
-    CpuInvalid(u32),
-    CpuTrap,
-}
-
-impl From<Error> for ResumeError {
-    fn from(value: Error) -> Self {
-        match value {
-            Error::MemoryAlign(address) => ResumeError::MemoryAlign(address),
-            Error::MemoryUnmapped(address) => ResumeError::MemoryUnmapped(address),
-            Error::MemoryBoundary(address) => ResumeError::MemoryBoundary(address),
-            Error::CpuInvalid(address) => ResumeError::CpuInvalid(address),
-            Error::CpuTrap => ResumeError::CpuTrap,
-        }
-    }
-}
-
-#[derive(Serialize)]
+#[serde(tag="type", content="value")]
 enum ResumeMode {
     Running,
-    Invalid(ResumeError),
+    Invalid(String),
     Paused,
     Breakpoint,
     Finished(u32),
@@ -77,7 +55,7 @@ impl From<DebuggerMode> for ResumeMode {
     fn from(value: DebuggerMode) -> Self {
         match value {
             DebuggerMode::Running => ResumeMode::Running,
-            DebuggerMode::Invalid(error) => ResumeMode::Invalid(error.into()),
+            DebuggerMode::Invalid(error) => ResumeMode::Invalid(format!("{}", error)),
             DebuggerMode::Paused => ResumeMode::Paused,
             DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
             DebuggerMode::Finished(address) => ResumeMode::Finished(address),
@@ -209,6 +187,30 @@ fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool
     *value = Some(debugger);
 
     true
+}
+
+pub fn source_breakpoints(map: &HashMap<usize, u32>, source: &str) -> HashMap<usize, u32> {
+    let mut result = HashMap::new();
+
+    let mut line_number = 0;
+    let mut input = source;
+
+    while let Some(c) = input.chars().next() {
+        let next = &input[1..];
+
+        let start = input.as_ptr() as usize - source.as_ptr() as usize;
+        if let Some(pc) = map.get(&start).copied() {
+            result.insert(line_number, pc);
+        }
+
+        if c == '\n' {
+            line_number += 1;
+        }
+
+        input = next;
+    }
+
+    result
 }
 
 #[tauri::command]

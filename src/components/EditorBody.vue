@@ -1,7 +1,7 @@
 <template>
   <div
     ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-scroll flex pt-2"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
     @scroll="handleScroll"
   >
     <div
@@ -92,15 +92,15 @@ const input = ref(null as HTMLElement | null)
 
 const stoppedIndex = computed(() => {
   const profile = tab()?.profile
-  const debug = consoleData.debug
+  const registers = consoleData.registers
   const execution = consoleData.execution
 
-  if (!profile || !debug || !execution) {
+  if (!profile || !registers || !execution) {
     return null
   }
 
   // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
-  const point = execution.breakpoints?.pcToLine.get(debug.pc)
+  const point = execution.breakpoints?.pcToLine.get(registers.pc)
 
   if (!point) {
     return null
