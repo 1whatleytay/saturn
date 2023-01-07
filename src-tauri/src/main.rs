@@ -148,6 +148,7 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
     let mut memory = SectionMemory::new();
 
     for region in binary.regions {
+        println!("Mounting 0x{:08x} with size 0x{:08x} (zero: {}, [0xC00]: {})", region.address, region.data.len(), region.data.iter().all(|x| *x == 0), region.data.get(0xC00).unwrap_or(&0));
         let region = Region { start: region.address, data: region.data };
 
         memory.mount(region);
@@ -162,15 +163,19 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
 
     memory.mount(heap);
 
+    println!("@0x10010C00: {}", memory.get(0x10010C00).unwrap_or(0));
+
     State::new(binary.entry, memory)
 }
 
-fn setup_memory<T: Memory + Mountable>(memory: &mut T) {
-    let screen = Region { start: 0x10008000, data: vec![0; 0x40000] };
+fn setup_state<T: Memory + Mountable>(state: &mut State<T>) {
+    let screen = Region { start: 0x10008000, data: vec![0; 0x4000] };
     let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
 
-    memory.mount(screen);
-    memory.mount(keyboard);
+    state.memory.mount(screen);
+    state.memory.mount(keyboard);
+
+    state.registers[28] = 0x10008000
 }
 
 #[tauri::command]
@@ -178,7 +183,7 @@ fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
     let mut cpu_state = create_simple_state(&elf, 0x100000);
-    setup_memory(&mut cpu_state.memory);
+    setup_state(&mut cpu_state);
 
     let mut value = state.lock().unwrap();
     let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));
@@ -221,7 +226,7 @@ fn configure_asm(text: &str, state: tauri::State<'_, DebuggerState>) -> Assemble
     let Some(binary) = binary else { return result };
 
     let mut cpu_state = state_from_binary(binary, 0x100000);
-    setup_memory(&mut cpu_state.memory);
+    setup_state(&mut cpu_state);
 
     let mut value = state.lock().unwrap();
     let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));
@@ -245,7 +250,6 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 
     let frame: DebugFrame = tokio::spawn(async move {
-
         Debugger::run(&debugger)
     }).await.unwrap();
 

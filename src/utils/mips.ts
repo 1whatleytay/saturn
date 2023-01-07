@@ -148,10 +148,6 @@ export class ExecutionState {
           bytes: Array.from(new Uint8Array(this.profile.elf))
         })
 
-        if (!result) {
-          console.error('Failed to configure interpreter.')
-        }
-
         return result ? null : {
           message: 'Configured ELF was not valid',
           body: null,
@@ -167,9 +163,6 @@ export class ExecutionState {
         switch (result.status) {
           case 'Success':
             this.breakpoints = new Breakpoints(result.breakpoints)
-
-            console.log(this.breakpoints)
-            console.log(this.breakpoints.lineToPc)
 
             return null
 
@@ -197,9 +190,6 @@ export class ExecutionState {
         value: assemblerError
       })
     }
-
-    const test = this.breakpoints?.mapLines(breakpoints)
-    console.log(test)
 
     const result = await tauri.invoke('resume', {
       breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
