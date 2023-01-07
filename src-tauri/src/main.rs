@@ -25,7 +25,7 @@ struct DisassembleResult {
     error: Option<String>,
 
     lines: Vec<String>,
-    breakpoints: HashMap<usize, u32>
+    breakpoints: HashMap<u32, usize>
 }
 
 #[derive(Serialize)]
@@ -38,7 +38,7 @@ struct LineMarker {
 #[serde(tag="status")]
 enum AssemblerResult {
     Error { marker: Option<LineMarker>, message: String, body: Option<String> },
-    Success { breakpoints: HashMap<usize, u32> }
+    Success { breakpoints: HashMap<u32, usize> }
 }
 
 #[derive(Serialize)]

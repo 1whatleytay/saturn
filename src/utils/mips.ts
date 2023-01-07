@@ -117,17 +117,16 @@ class Breakpoints {
       .filter(point => !!point) as number[]
   }
 
+  // pc -> line
   constructor(breakpoints: Record<number, number>) {
     this.lineToPc = new Map()
     this.pcToLine = new Map()
 
-    console.log(`bp: ${JSON.stringify(breakpoints)}`)
+    for (const [pc, line] of Object.entries(breakpoints)) {
+      const pcNumber = parseInt(pc)
 
-    for (const [line, pc] of Object.entries(breakpoints)) {
-      const lineNumber = parseInt(line)
-
-      this.lineToPc.set(lineNumber, pc)
-      this.pcToLine.set(pc, lineNumber)
+      this.lineToPc.set(line, pcNumber)
+      this.pcToLine.set(pcNumber, line)
     }
   }
 }
