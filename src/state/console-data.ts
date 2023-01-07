@@ -4,7 +4,8 @@ import { ExecutionModeType, ExecutionState } from '../utils/mips'
 export enum DebugTab {
   Registers,
   Memory,
-  Console
+  Console,
+  Bitmap
 }
 
 export interface Registers {

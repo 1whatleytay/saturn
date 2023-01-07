@@ -34,7 +34,7 @@
       </select>
     </div>
 
-    <div class="text-right pt-4 overflow-scroll grow shrink flex flex-col">
+    <div class="text-right pt-4 overflow-auto grow shrink flex flex-col">
       <div class="flex font-bold text-neutral-500">
         <div class="w-32 px-2 py-1 shrink-0">Address</div>
 

@@ -49,6 +49,12 @@
           @select="consoleData.tab = DebugTab.Console"
         />
 
+        <Tab
+          title="Bitmap"
+          :selected="consoleData.tab === DebugTab.Bitmap"
+          @select="consoleData.tab = DebugTab.Bitmap"
+        />
+
         <button class="w-10 h-10 ml-auto
             hover:bg-slate-800
             text-slate-300
@@ -62,6 +68,7 @@
       <RegistersTab v-if="consoleData.tab === DebugTab.Registers" />
       <MemoryTab v-if="consoleData.tab === DebugTab.Memory" />
       <ConsoleTab v-if="consoleData.tab === DebugTab.Console" />
+      <BitmapTab v-if="consoleData.tab === DebugTab.Bitmap" />
     </div>
   </div>
 </template>
@@ -77,6 +84,7 @@ import Tab from '../Tab.vue'
 import RegistersTab from './RegistersTab.vue'
 import MemoryTab from './MemoryTab.vue'
 import ConsoleTab from './ConsoleTab.vue'
+import BitmapTab from './BitmapTab.vue'
 
 const closingHeight = 90
 const defaultHeight = 320
