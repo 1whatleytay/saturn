@@ -148,7 +148,6 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
     let mut memory = SectionMemory::new();
 
     for region in binary.regions {
-        println!("Mounting 0x{:08x} with size 0x{:08x} (zero: {}, [0xC00]: {})", region.address, region.data.len(), region.data.iter().all(|x| *x == 0), region.data.get(0xC00).unwrap_or(&0));
         let region = Region { start: region.address, data: region.data };
 
         memory.mount(region);
@@ -162,8 +161,6 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
     };
 
     memory.mount(heap);
-
-    println!("@0x10010C00: {}", memory.get(0x10010C00).unwrap_or(0));
 
     State::new(binary.entry, memory)
 }

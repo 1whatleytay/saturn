@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-sm overflow-auto flex flex-col flex-wrap grow whitespace-pre content-start p-2 select-text"
+    class="text-sm overflow-auto flex flex-col whitespace-pre content-start p-2 select-text"
   >
     <div class="flex items-center text-lg font-bold mb-2 w-full">
       Bitmap Display
