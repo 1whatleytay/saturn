@@ -58,7 +58,11 @@ async function reloadDisplay() {
     data.data[i + 3] = 255
   }
 
-  const image = await createImageBitmap(data)
+  const image = await createImageBitmap(data, {
+    resizeWidth: 256,
+    resizeHeight: 256,
+    resizeQuality: 'pixelated'
+  })
 
   context.drawImage(image, 0, 0, 256, 256)
 }

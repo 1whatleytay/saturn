@@ -1,18 +1,11 @@
 import { reactive } from 'vue'
-import { ExecutionModeType, ExecutionState } from '../utils/mips'
+import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
 
 export enum DebugTab {
   Registers,
   Memory,
   Console,
   Bitmap
-}
-
-export interface Registers {
-  pc: number,
-  registers: number[],
-  lo: number,
-  hi: number,
 }
 
 interface ConsoleData {

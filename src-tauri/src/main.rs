@@ -3,9 +3,11 @@
     windows_subsystem = "windows"
 )]
 
+mod syscall;
+
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use serde::Serialize;
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
@@ -13,12 +15,13 @@ use titan::assembler::source::{assemble_from, SourceError};
 use titan::cpu::{Memory, State};
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::SectionMemory;
-use titan::debug::Debugger;
-use titan::debug::debugger::{DebugFrame, DebuggerMode};
+use titan::cpu::state::Registers;
+use titan::debug::debugger::{Debugger, DebugFrame, DebuggerMode};
 
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
+use crate::syscall::SyscallDelegate;
 
 #[derive(Serialize)]
 struct DisassembleResult {
@@ -64,13 +67,28 @@ impl From<DebuggerMode> for ResumeMode {
 }
 
 #[derive(Serialize)]
+struct RegistersResult {
+    pc: u32,
+    line: [u32; 32],
+    lo: u32,
+    hi: u32,
+}
+
+impl From<Registers> for RegistersResult {
+    fn from(value: Registers) -> Self {
+        RegistersResult {
+            pc: value.pc,
+            line: value.line,
+            lo: value.lo,
+            hi: value.hi
+        }
+    }
+}
+
+#[derive(Serialize)]
 struct ResumeResult {
     mode: ResumeMode,
-
-    pc: u32,
-    registers: [u32; 32],
-    lo: u32,
-    hi: u32
+    registers: RegistersResult
 }
 
 impl AssemblerResult {
@@ -114,10 +132,7 @@ impl ResumeResult {
     fn from_frame(frame: DebugFrame) -> ResumeResult {
         ResumeResult {
             mode: frame.mode.into(),
-            pc: frame.pc,
-            registers: frame.registers,
-            lo: frame.lo,
-            hi: frame.hi,
+            registers: frame.registers.into()
         }
     }
 }
@@ -143,6 +158,17 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
 
 type DebuggerPointer = Arc<Mutex<Debugger<SectionMemory>>>;
 type DebuggerState = Mutex<Option<DebuggerPointer>>;
+
+fn swap(mut pointer: MutexGuard<Option<DebuggerPointer>>, debugger: Debugger<SectionMemory>) {
+    if let Some(state) = pointer.as_ref() {
+        state.lock().unwrap().pause()
+    }
+
+    let wrapped = Arc::new(Mutex::new(debugger));
+
+    // Drop should cancel the last process and kill the other thread.
+    *pointer = Some(wrapped);
+}
 
 fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
     let mut memory = SectionMemory::new();
@@ -172,7 +198,7 @@ fn setup_state<T: Memory + Mountable>(state: &mut State<T>) {
     state.memory.mount(screen);
     state.memory.mount(keyboard);
 
-    state.registers[28] = 0x10008000
+    state.registers.line[28] = 0x10008000
 }
 
 #[tauri::command]
@@ -182,11 +208,7 @@ fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool
     let mut cpu_state = create_simple_state(&elf, 0x100000);
     setup_state(&mut cpu_state);
 
-    let mut value = state.lock().unwrap();
-    let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));
-
-    // Drop should cancel the last process and kill the other thread.
-    *value = Some(debugger);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state));
 
     true
 }
@@ -225,11 +247,7 @@ fn configure_asm(text: &str, state: tauri::State<'_, DebuggerState>) -> Assemble
     let mut cpu_state = state_from_binary(binary, 0x100000);
     setup_state(&mut cpu_state);
 
-    let mut value = state.lock().unwrap();
-    let debugger = Arc::new(Mutex::new(Debugger::new(cpu_state)));
-
-    // Drop should cancel the last process and kill the other thread.
-    *value = Some(debugger);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state));
 
     result
 }
@@ -246,8 +264,8 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
 
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 
-    let frame: DebugFrame = tokio::spawn(async move {
-        Debugger::run(&debugger)
+    let frame = tokio::spawn(async move {
+        SyscallDelegate::new().run(&debugger).await
     }).await.unwrap();
 
     Ok(ResumeResult::from_frame(frame))
@@ -287,6 +305,10 @@ fn pause(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
 #[tauri::command]
 fn stop(state: tauri::State<'_, DebuggerState>) {
     let debugger = &mut *state.lock().unwrap();
+
+    if let Some(debugger) = debugger {
+        debugger.lock().unwrap().pause();
+    }
 
     *debugger = None;
 }
@@ -330,9 +352,9 @@ fn set_register(register: u32, value: u32, state: tauri::State<'_, DebuggerState
     let state = debugger.state();
 
     match register {
-        0 ..= 31 => state.registers[register as usize] = value,
-        32 => state.hi = value,
-        33 => state.lo = value,
+        0 ..= 31 => state.registers.line[register as usize] = value,
+        32 => state.registers.hi = value,
+        33 => state.registers.lo = value,
         _ => { }
     }
 }

@@ -47,14 +47,6 @@ export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<D
   return value as DisassembleResult
 }
 
-export enum ExecutionErrorType {
-  MemoryAlign = 'MemoryAlign',
-  MemoryUnmapped = 'MemoryUnmapped',
-  MemoryBoundary = 'MemoryBoundary',
-  CpuInvalid = 'CpuInvalid',
-  CpuTrap = 'CpuTrap',
-}
-
 export enum ExecutionModeType {
   Running = 'Running',
   Invalid = 'Invalid',
@@ -88,22 +80,31 @@ export type ExecutionMode = ExecutionModeInvalid
   | ExecutionModeBuildFailed
   | { type: ExecutionModeOther }
 
-export interface ExecutionResult {
-  mode: ExecutionMode,
-
+export interface Registers {
   pc: number,
-  registers: number[],
+  line: number[],
   lo: number,
   hi: number,
+}
+
+export interface ExecutionResult {
+  mode: ExecutionMode,
+  registers: Registers
+}
+
+export function defaultRegisters(): Registers {
+  return {
+    pc: 0,
+    line: Array(32).fill(0),
+    lo: 0,
+    hi: 0
+  }
 }
 
 export function defaultResult(mode: ExecutionMode): ExecutionResult {
   return {
     mode,
-    pc: 0,
-    registers: Array(32).fill(0),
-    lo: 0,
-    hi: 0
+    registers: defaultRegisters()
   }
 }
 

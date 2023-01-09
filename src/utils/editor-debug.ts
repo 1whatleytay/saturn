@@ -47,33 +47,31 @@ function postDebugInformation(result: ExecutionResult) {
       break
   }
   
-  consoleData.registers = {
-    pc: result.pc,
-    hi: result.hi,
-    lo: result.lo,
-    registers: result.registers
-  }
+  consoleData.registers = result.registers
 }
 
-function postBuildMessage(mode: ExecutionMode) {
+function postBuildMessage(mode: ExecutionMode): boolean {
+  consoleData.tab = DebugTab.Console
+
+  consoleData.mode = null
+  consoleData.registers = null
+
   switch (mode.type) {
     case ExecutionModeType.BuildFailed:
       const error = mode.value
 
-      const marker = error.marker ? ` (line ${error.marker.line})` : ''
-      const trailing = error.body ? `\n${error.body}` : ''
+      const marker = error.marker ? ` (line ${error.marker.line + 1})` : ''
+      const trailing = error.body ? `\n${error.body.split('\n').map(x => `> ${x}`).join('\n')}` : ''
 
       openConsole(`Build failed: ${error.message}${marker}${trailing}`)
 
-      break
+      return false
 
     default:
       openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, p')}`)
 
-      break
+      return true
   }
-
-  consoleData.tab = DebugTab.Console
 }
 
 export async function resume() {
@@ -100,10 +98,12 @@ export async function resume() {
   consoleData.showConsole = true
 
   if (needsBuild) {
-    postBuildMessage(result.mode)
+    if (postBuildMessage(result.mode)) {
+      postDebugInformation(result)
+    }
+  } else {
+    postDebugInformation(result)
   }
-
-  postDebugInformation(result)
 }
 
 export async function pause() {

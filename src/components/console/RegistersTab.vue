@@ -34,7 +34,7 @@ const registers = [
 
 const registersMap = computed(() => {
   const core = registers.map(
-    (name, index) => [name, consoleData.registers?.registers[index] ?? 0]
+    (name, index) => [name, consoleData.registers?.line[index] ?? 0]
   ) as [string, number][]
   const other = [
     ['hi', consoleData.registers?.hi ?? 0], ['lo', consoleData.registers?.lo ?? 0]
