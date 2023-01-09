@@ -2950,7 +2950,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+ssh://git@github.com/1whatleytay/titan.git?branch=main#f6a0afd78343557c35f04e51669ab59dea071715"
+source = "git+ssh://git@github.com/1whatleytay/titan.git?branch=main#f8c2574a2811b2c2c5996143c9e8ffe6a0b6d42d"
 dependencies = [
  "bitflags",
  "byteorder",
