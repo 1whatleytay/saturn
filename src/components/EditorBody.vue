@@ -102,15 +102,7 @@ const stoppedIndex = computed(() => {
   // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
   const point = execution.breakpoints?.pcToLine.get(registers.pc)
 
-  if (!point) {
-    return null
-  }
-
-  try {
-    return point
-  } catch {
-    return null
-  }
+  return point ?? null
 })
 
 function handleScroll() {

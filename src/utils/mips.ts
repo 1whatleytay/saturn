@@ -120,6 +120,8 @@ class Breakpoints {
 
   // pc -> line
   constructor(breakpoints: Record<number, number>) {
+    console.log({ breakpoints })
+
     this.lineToPc = new Map()
     this.pcToLine = new Map()
 
