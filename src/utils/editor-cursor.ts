@@ -99,24 +99,26 @@ export function getSelection(): string | null {
   return cursor.editor.grab(range)
 }
 
-export function dropSelection() {
+export function dropSelection(): boolean {
   const range = selectionRange()
 
   if (!range) {
-    return
+    return false
   }
 
   cursor.editor.drop(range)
 
   clearSelection()
-  putCursor(range.startLine, range.startIndex)
+  putCursor({ line: range.startLine, index: range.startIndex })
+
+  return true
 }
 
-function cursorPosition(line: number, index: number): Cursor {
+function cursorPosition(index: SelectionIndex): Cursor {
   let underflow = false
   let overflow = false
 
-  let actualLine = line
+  let actualLine = index.line
   const count = cursor.editor.lineCount()
 
   if (actualLine >= count) {
@@ -136,7 +138,7 @@ function cursorPosition(line: number, index: number): Cursor {
   } else if (overflow) {
     actualIndex = text.length
   } else {
-    actualIndex = Math.max(index, 0)
+    actualIndex = Math.max(index.index, 0)
   }
 
   const leading = text.substring(0, actualIndex)
@@ -150,8 +152,8 @@ function cursorPosition(line: number, index: number): Cursor {
   }
 }
 
-export function putCursor(line: number, index: number, set: Cursor = cursor) {
-  const position = cursorPosition(line, index)
+export function putCursor(index: SelectionIndex, set: Cursor = cursor) {
+  const position = cursorPosition(index)
 
   set.line = position.line
   set.index = position.index
@@ -169,14 +171,26 @@ function moveLeft(alt: boolean = false, shift: boolean = false) {
   let line = cursor.line
   let move = cursor.index - consume
 
-  setSelection(shift)
+  const range = selectionRange()
 
-  if (move < 0) {
-    line -= 1
-    move = text.length
+  if (!shift && range) {
+    putCursor({ line: range.startLine, index: range.startIndex })
+    clearSelection()
+
+    return
   }
 
-  putCursor(line, move)
+  if (shift && !range) {
+    makeSelection()
+  }
+
+  if (move < 0 && line > 0) {
+    line -= 1
+
+    move = cursor.editor.lineAt(line).length
+  }
+
+  putCursor({ line, index: move })
 }
 
 function moveRight(alt: boolean = false, shift: boolean = false) {
@@ -187,26 +201,37 @@ function moveRight(alt: boolean = false, shift: boolean = false) {
   let line = cursor.line
   let move = cursor.index + consume
 
-  setSelection(shift)
+  const range = selectionRange()
+
+  if (!shift && range) {
+    putCursor({ line: range.endLine, index: range.endIndex })
+    clearSelection()
+
+    return
+  }
+
+  if (shift && !range) {
+    makeSelection()
+  }
 
   if (text.length < move) {
     line += 1
     move = 0
   }
 
-  putCursor(line, move)
+  putCursor({ line, index: move })
 }
 
 function moveDown(shift: boolean = false) {
   setSelection(shift)
 
-  putCursor(cursor.line + 1, cursor.index)
+  putCursor({ line: cursor.line + 1, index: cursor.index })
 }
 
 function moveUp(shift: boolean = false) {
   setSelection(shift)
 
-  putCursor(cursor.line - 1, cursor.index)
+  putCursor({ line: cursor.line - 1, index: cursor.index })
 }
 
 function hitTab(shift: boolean = false) {
@@ -214,11 +239,11 @@ function hitTab(shift: boolean = false) {
 
   const adjustCursor = (line: number, alignment: number) => {
     if (line === cursor.line) {
-      putCursor(cursor.line, cursor.index + alignment)
+      putCursor({ line: cursor.line, index: cursor.index + alignment })
     }
 
     if (cursor.highlight && line == cursor.highlight.line) {
-      putCursor(cursor.highlight.line, cursor.highlight.index + alignment, cursor.highlight)
+      putCursor({ line: cursor.highlight.line, index: cursor.highlight.index + alignment }, cursor.highlight)
     }
   }
 
@@ -232,7 +257,7 @@ function hitTab(shift: boolean = false) {
     } else {
       const alignment = cursor.editor.dropTab(cursor.line, settings.tabSize)
 
-      putCursor(cursor.line, cursor.index - alignment)
+      putCursor({ line: cursor.line, index: cursor.index - alignment })
     }
   } else {
     const alignment = settings.tabSize
@@ -247,7 +272,7 @@ function hitTab(shift: boolean = false) {
     } else {
       cursor.editor.put(cursor, tabs)
 
-      putCursor(cursor.line, cursor.index + alignment)
+      putCursor({ line: cursor.line, index: cursor.index + alignment })
     }
   }
 }
@@ -269,15 +294,33 @@ function handleActionKey(event: KeyboardEvent) {
         const end = count - 1
         const text = cursor.editor.lineAt(end)
 
-        putCursor(0, 0, cursor)
-        cursor.highlight = cursorPosition(end, text.length)
+        putCursor({ line: 0, index: 0 }, cursor)
+        cursor.highlight = cursorPosition({ line: end, index: text.length })
       }
 
       break
 
-    case 'z':
-      // history.undo()
+    case 'z': {
+      const frame = cursor.editor.undo()
+
+      if (!frame) {
+        return
+      }
+
+      const { data, cursor: value } = frame
+
+      const current = tab()
+
+      if (current) {
+        // Please work...
+        console.log('spliced')
+        current.lines.splice(0, current.lines.length, ...data)
+      }
+
+      putCursor(value)
+
       break
+    }
   }
 }
 
@@ -305,11 +348,16 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Backspace':
-      cursor.editor.backspace(cursor, event.altKey)
+      if (!dropSelection()) {
+        putCursor(cursor.editor.backspace(cursor, event.altKey))
+      }
+
       break
 
     case 'Enter':
-      cursor.editor.newline(cursor)
+      dropSelection()
+      putCursor(cursor.editor.newline(cursor))
+
       break
 
     default:
@@ -320,7 +368,7 @@ export function handleKey(event: KeyboardEvent) {
         }
         /* handle meta */
       } else if (event.key.length === 1) {
-        cursor.editor.put(cursor, event.key)
+        putCursor(cursor.editor.put(cursor, event.key))
       }
 
       break
@@ -343,7 +391,7 @@ function putCursorAtCoordinates(x: number, y: number) {
 
   const index = regular.position(text, x, defaultCursorPush)
 
-  putCursor(line, index)
+  putCursor({ line, index })
 }
 
 export function dropCursor(x: number, y: number) {

@@ -229,7 +229,7 @@ export class Editor {
     }
   }
 
-  put(index: SelectionIndex, character: string) {
+  put(index: SelectionIndex, character: string): SelectionIndex {
     this.dirty(index.line, 1)
 
     const line = this.data[index.line]
@@ -238,6 +238,8 @@ export class Editor {
 
     // Mutate
     this.data[index.line] = leading + character + trailing
+
+    return { line: index.line, index: index.index + character.length }
   }
 
 // Technical Debt: insert vs paste (concern: speed for splitting by \n)
@@ -285,7 +287,7 @@ export class Editor {
     return 0
   }
 
-  newline(index: SelectionIndex) {
+  newline(index: SelectionIndex): SelectionIndex {
     const line = this.data[index.line]
     const leading = line.substring(0, index.index)
     const trailing = line.substring(index.index)
@@ -301,9 +303,11 @@ export class Editor {
     // Mutate
     this.data[index.line] = leading
     this.data.splice(index.line + 1, 0, spacing + noSpace)
+
+    return { line: index.line + 1, index: spacing.length }
   }
 
-  backspace(index: SelectionIndex, alt: boolean = false) {
+  backspace(index: SelectionIndex, alt: boolean = false): SelectionIndex {
     const line = this.data[index.line]
 
     if (index.index > 0) {
@@ -315,6 +319,8 @@ export class Editor {
       // Mutate
       this.dirty(index.line, 1)
       this.data[index.line] = leading + trailing
+
+      return { line: index.line, index: leading.length }
     } else if (index.line > 0) {
       const leading = this.data[index.line - 1]
       const trailing = this.data[index.line]
@@ -323,7 +329,11 @@ export class Editor {
       this.data[index.line - 1] = leading + trailing
 
       this.data.splice(index.line, 1)
+
+      return { line: index.line - 1, index: leading.length }
     }
+
+    return index
   }
 
   // Immutable Line Methods

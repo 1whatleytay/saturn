@@ -204,7 +204,7 @@ function handlePaste(event: ClipboardEvent) {
 }
 
 onMounted(() => {
-  putCursor(0, 0)
+  putCursor({ line: 0, index: 0 })
   handleScroll()
 
   window.addEventListener('focus', focusHandler)
@@ -236,7 +236,7 @@ watch(() => cursor.offsetY, (value) => {
 
 watch(() => tab()?.uuid, () => {
   clearSelection()
-  putCursor(0, 0)
+  putCursor({ line: 0, index: 0 })
 })
 
 watch(() => stoppedIndex.value, (index) => {
