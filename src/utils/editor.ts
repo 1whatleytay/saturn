@@ -1,4 +1,3 @@
-import * as repl from 'repl'
 import { consumeBackwards } from './alt-consume'
 
 export interface SelectionIndex {
@@ -116,7 +115,7 @@ export class Editor {
 
   lastLines: LineData | null = null
 
-  private commit() {
+  public commit() {
     this.uncommitted = 0
 
     if (this.current) {
@@ -133,8 +132,22 @@ export class Editor {
   }
 
   public push(step: Step) {
-    // Assuming merging was properly done.
-    this.current = step
+    if (this.current) {
+      let cursor = this.current.cursor
+      const { commit, merged } = merge(this.current.op, step.op)
+
+      if (commit) {
+        this.current = { cursor, op: commit }
+        this.commit()
+
+        cursor = step.cursor
+      }
+
+      this.current = { cursor, op: merged }
+    } else {
+      this.current = step
+    }
+
     this.uncommitted++
 
     if (this.timeout) {
@@ -222,10 +235,7 @@ export class Editor {
       const trailing = this.data[range.endLine].substring(range.endIndex)
       this.data[range.startLine] = leading + trailing
 
-      // splice with multiple deleteCount seems bugged
-      for (let a = range.startLine + 1; a <= range.endLine; a++) {
-        this.data.splice(range.startLine + 1, 1)
-      }
+      this.data.splice(range.startLine + 1, range.endLine - range.startLine)
     }
   }
 
@@ -243,11 +253,11 @@ export class Editor {
   }
 
 // Technical Debt: insert vs paste (concern: speed for splitting by \n)
-  paste(index: SelectionIndex, text: string) {
+  paste(index: SelectionIndex, text: string): SelectionIndex {
     const textLines = text.split('\n')
 
     if (!textLines.length) {
-      return
+      return index
     }
 
     if (textLines.length === 1) {
@@ -261,14 +271,16 @@ export class Editor {
 
     const first = textLines[0]
     const rest = textLines.slice(1)
-    // const last = textLines[textLines.length - 1]
+    const last = rest[rest.length - 1].length
     rest[rest.length - 1] += trailing
 
-    this.dirty(index.line, 1, 1 + rest.length)
+    this.dirty(index.line, 1, textLines.length)
 
     // Mutate
     this.data[index.line] = leading + first
     this.data.splice(index.line + 1, 0, ...rest)
+
+    return { line: index.line + textLines.length - 1, index: last }
   }
 
   dropTab(line: number, spacing: number): number {

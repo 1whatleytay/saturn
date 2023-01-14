@@ -24,6 +24,7 @@ export const cursor = reactive({
 } as Cursor & {
   editor: Editor
   highlight: Cursor | null
+  pressedBackspace: boolean
 })
 
 function createEditor(): Editor {
@@ -280,7 +281,7 @@ function hitTab(shift: boolean = false) {
 export const tabBody = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
 export function pasteText(text: string) {
-  cursor.editor.paste(cursor, text)
+  putCursor(cursor.editor.paste(cursor, text))
 }
 
 function handleActionKey(event: KeyboardEvent) {
@@ -325,6 +326,9 @@ function handleActionKey(event: KeyboardEvent) {
 }
 
 export function handleKey(event: KeyboardEvent) {
+  const last = cursor.pressedBackspace
+  cursor.pressedBackspace = false
+
   switch (event.key) {
     case 'ArrowLeft':
       moveLeft(event.altKey, event.shiftKey)
@@ -348,6 +352,12 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Backspace':
+      if (!last) {
+        cursor.editor.commit()
+      }
+
+      cursor.pressedBackspace = true
+
       if (!dropSelection()) {
         putCursor(cursor.editor.backspace(cursor, event.altKey))
       }
@@ -355,6 +365,8 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Enter':
+      cursor.editor.commit()
+
       dropSelection()
       putCursor(cursor.editor.newline(cursor))
 
@@ -368,6 +380,7 @@ export function handleKey(event: KeyboardEvent) {
         }
         /* handle meta */
       } else if (event.key.length === 1) {
+        dropSelection()
         putCursor(cursor.editor.put(cursor, event.key))
       }
 
@@ -396,6 +409,7 @@ function putCursorAtCoordinates(x: number, y: number) {
 
 export function dropCursor(x: number, y: number) {
   cursor.highlight = null
+  cursor.editor.commit()
 
   putCursorAtCoordinates(x, y)
 }
