@@ -209,14 +209,15 @@ export class Editor {
     this.operations = []
   }
 
-
   drop(range: SelectionRange) {
-    // assert range.startLine >= range.endLine
     if (range.startLine == range.endLine) {
+      this.dirty(range.startLine, 1)
       const text = this.data[range.startLine]
 
       this.data[range.startLine] = text.substring(0, range.startIndex) + text.substring(range.endIndex)
     } else {
+      this.dirty(range.startLine, range.endLine - range.startLine + 1, 2)
+
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
       this.data[range.startLine] = leading + trailing
@@ -229,6 +230,8 @@ export class Editor {
   }
 
   put(index: SelectionIndex, character: string) {
+    this.dirty(index.line, 1)
+
     const line = this.data[index.line]
     const leading = line.substring(0, index.index)
     const trailing = line.substring(index.index)
@@ -250,7 +253,6 @@ export class Editor {
     }
 
     // at least two lines
-
     const line = this.data[index.line]
     const leading = line.substring(0, index.index)
     const trailing = line.substring(index.index)
@@ -259,6 +261,8 @@ export class Editor {
     const rest = textLines.slice(1)
     // const last = textLines[textLines.length - 1]
     rest[rest.length - 1] += trailing
+
+    this.dirty(index.line, 1, 1 + rest.length)
 
     // Mutate
     this.data[index.line] = leading + first
@@ -272,6 +276,7 @@ export class Editor {
     if (match && match.length) {
       const text = match[0]
 
+      this.dirty(line, 1)
       this.data[line] = this.data[line].substring(text.length)
 
       return text.length
@@ -292,6 +297,7 @@ export class Editor {
     const spacing = match && match.length ? match[0] : ''
     const noSpace = endMatch && endMatch.length ? trailing.substring(endMatch[0].length) : trailing
 
+    this.dirty(index.line, 1, 2)
     // Mutate
     this.data[index.line] = leading
     this.data.splice(index.line + 1, 0, spacing + noSpace)
@@ -307,11 +313,13 @@ export class Editor {
       const trailing = line.substring(index.index)
 
       // Mutate
+      this.dirty(index.line, 1)
       this.data[index.line] = leading + trailing
-    } else if(index.line > 0) {
+    } else if (index.line > 0) {
       const leading = this.data[index.line - 1]
       const trailing = this.data[index.line]
 
+      this.dirty(index.line - 1, 2, 1)
       this.data[index.line - 1] = leading + trailing
 
       this.data.splice(index.line, 1)
