@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { cursor, lines, selectionRange } from '../utils/editor-cursor'
+import { cursor, tabBody, selectionRange } from '../utils/editor-cursor'
 import { computed } from 'vue'
 import { regular } from '../utils/text-size'
 
@@ -50,7 +50,7 @@ const range = computed((): RangeSelection | null => {
     return null
   }
 
-  const all = lines.value
+  const all = tabBody.value
 
   const { height } = regular.calculate('')
   const top = range.startLine * height

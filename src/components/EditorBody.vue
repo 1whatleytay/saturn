@@ -10,7 +10,7 @@
       :style="{ top: `${linesOffset}px` }"
     >
       <div
-        v-for="(_, index) in lines" :key="index"
+        v-for="(_, index) in tabBody" :key="index"
         @click="toggleBreakpoint(index)"
         class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto"
       >
@@ -45,7 +45,7 @@
       />
 
       <div
-        v-for="(line, index) in lines"
+        v-for="(line, index) in tabBody"
         :key="index"
         class="h-6 flex items-center pr-16"
         :class="{
@@ -69,13 +69,13 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { tab } from '../state/editor-state'
 import { consoleData } from '../state/console-data'
 import {
-  lines,
   cursor,
+  tabBody,
   putCursor,
   handleKey,
   dropCursor,
   dragTo,
-  paste,
+  pasteText,
   getSelection,
   clearSelection,
   dropSelection,
@@ -199,7 +199,7 @@ function handlePaste(event: ClipboardEvent) {
   if (event.clipboardData) {
     const value = event.clipboardData.getData('text/plain')
 
-    paste(value)
+    pasteText(value)
   }
 }
 
