@@ -8,7 +8,7 @@
     <div
       class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900 pt-2"
       @wheel.stop
-      :style="{ top: `${state.offset}px` }"
+      :style="{ top: `${lineOffset}px` }"
     >
       <div
         v-for="(_, index) in tabBody" :key="index"
@@ -49,21 +49,20 @@
 
       <div
         v-for="i in renderCount"
-        :key="lineIndex(i)"
+        :key="getIndex(i)"
         class="h-6 flex items-center pr-16"
         :class="{
-          'bg-breakpoint-neutral': hasBreakpoint(lineIndex(i)) && lineIndex(i) !== stoppedIndex,
-          'bg-breakpoint-stopped': lineIndex(i) === stoppedIndex
+          'bg-breakpoint-neutral': hasBreakpoint(getIndex(i)) && getIndex(i) !== stoppedIndex,
+          'bg-breakpoint-stopped': getIndex(i) === stoppedIndex
         }"
       >
-        <div v-if="lineIndex(i) < storage.highlights.length">
-          <span v-for="token in storage.highlights[lineIndex(i)]" :class="[token.color]">
+        <div v-if="getIndex(i) < storage.highlights.length">
+          <span v-for="token in storage.highlights[getIndex(i)]" :class="[token.color]">
             {{ token.text }}
           </span>
         </div>
         <div v-else>
-          {{ tabBody[lineIndex(i)] }}
-          body
+          {{ tabBody[getIndex(i)] }}
         </div>
       </div>
 
@@ -76,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
@@ -95,31 +94,21 @@ import {
 } from '../state/cursor-state'
 import { storage } from '../state/editor-state'
 import { setBreakpoint } from '../utils/editor-debug'
+import { useVirtualize } from '../utils/virtualization'
+
 import Cursor from './Cursor.vue'
 
+const lineOffset = ref(0)
+
 const lineHeight = 24 // h-6 -> 1.5rem -> 24px
-const linePadding = 16
-const dangerPadding = 8
 
-const state = reactive({
-  offset: 0,
-  startIndex: 0,
-  endIndex: 0
-})
-
-function inBounds(line: number) {
-  return Math.max(Math.min(line, tabBody.value.length), 0)
-}
-
-function lineIndex(i: number) {
-  return i - 1 + renderStart.value
-}
-
-const renderStart = computed(() => inBounds(state.startIndex))
-const renderCount = computed(() => inBounds(state.endIndex) - renderStart.value)
-const topPadding = computed(() => renderStart.value * lineHeight)
-const remainingLines = computed(() => (tabBody.value.length - renderCount.value - renderStart.value))
-const bottomPadding = computed(() => remainingLines.value * lineHeight)
+const {
+  getIndex,
+  renderCount,
+  topPadding,
+  bottomPadding,
+  update
+} = useVirtualize(lineHeight, () => tabBody.value.length)
 
 const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)
@@ -145,21 +134,7 @@ function updateBounds() {
     return
   }
 
-  const top = scroll.value.scrollTop
-  const height = scroll.value.clientHeight
-
-  const start = inBounds(Math.floor(top / lineHeight))
-  const body = Math.ceil(height / lineHeight)
-  const end = inBounds(start + body)
-
-  const dangerStart = state.startIndex + dangerPadding
-  const dangerEnd = state.endIndex - dangerPadding
-
-  if (dangerStart >= start || dangerEnd <= end) {
-    // reset bounds
-    state.startIndex = start - linePadding - dangerPadding
-    state.endIndex = start + body + linePadding + dangerPadding
-  }
+  update(scroll.value.scrollTop, scroll.value.clientHeight)
 }
 
 watch(() => tabBody.value, () => { updateBounds() })
@@ -170,7 +145,7 @@ function handleScroll() {
   }
 
   updateBounds()
-  state.offset = scroll.value.offsetTop - scroll.value.scrollTop
+  lineOffset.value = scroll.value.offsetTop - scroll.value.scrollTop
 }
 
 const focusHandler = () => {

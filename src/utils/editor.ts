@@ -14,51 +14,24 @@ export interface SelectionRange {
 
 type LineData = string[]
 
-interface UndoProvider {
-  undo(data: LineData): LineData
+interface Frame {
+  index: number,
+  deleted: string[],
+  replaced: number
 }
 
-class FullFrame implements UndoProvider {
-  type: 'full' = 'full'
-
-  undo(data: LineData): LineData {
-    return this.lines
-  }
-
-  constructor(public lines: string[]) { }
-}
-
-class ReplaceFrame implements UndoProvider {
-  type: 'replace' = 'replace'
-
-  undo(data: LineData): LineData {
-    const value = data.slice()
-
-    value.splice(this.index, this.replaced, ...this.deleted)
-
-    return value
-  }
-
-  constructor(
-    public index: number, // line # where lines are deleted
-    public deleted: string[],
-    public replaced: number // # of lines
-  ) { }
-}
-
-type Operation = FullFrame | ReplaceFrame
-type Step = { op: Operation, cursor: SelectionIndex }
+type Step = { frame: Frame, cursor: SelectionIndex }
 
 interface MergeResult {
-  commit?: Operation
-  merged: Operation
+  commit?: Frame
+  merged: Frame
 }
 
 function collides(s1: number, e1: number, s2: number, e2: number) {
   return s1 <= e2 && s2 <= e1
 }
 
-function mergeReplaces(last: ReplaceFrame, next: ReplaceFrame): MergeResult {
+function merge(last: Frame, next: Frame): MergeResult {
   const lastStart = last.index
   const lastEnd = last.index + last.replaced
   const nextStart = next.index
@@ -84,26 +57,7 @@ function mergeReplaces(last: ReplaceFrame, next: ReplaceFrame): MergeResult {
 
   const start = Math.min(last.index, next.index)
 
-  return { merged: new ReplaceFrame(start, deleted, replaced) }
-}
-
-// Moves last, next
-function merge(last: Operation, next: Operation): MergeResult {
-  switch (last.type) {
-    case 'full':
-      return { merged: last }
-
-    case 'replace':
-      switch (next.type) {
-        case 'full':
-          next.lines = last.undo(next.lines)
-
-          return { merged: next }
-
-        case 'replace':
-          return mergeReplaces(last, next)
-      }
-  }
+  return { merged: { index: start, deleted, replaced } }
 }
 
 export type DirtyHandler = (line: number, deleted: number, insert: string[]) => void
@@ -136,16 +90,16 @@ export class Editor {
   public push(step: Step) {
     if (this.current) {
       let cursor = this.current.cursor
-      const { commit, merged } = merge(this.current.op, step.op)
+      const { commit, merged } = merge(this.current.frame, step.frame)
 
       if (commit) {
-        this.current = { cursor, op: commit }
+        this.current = { cursor, frame: commit }
         this.commit()
 
         cursor = step.cursor
       }
 
-      this.current = { cursor, op: merged }
+      this.current = { cursor, frame: merged }
     } else {
       this.current = step
     }
@@ -181,18 +135,12 @@ export class Editor {
     }
   }
 
-  public frame() {
-    this.push({
-      op: new FullFrame(this.data.slice()),
-      cursor: this.mergedCursor()
-    })
-  }
-
   private dirty(line: number, count: number, insert?: number) {
     const backup = this.data.slice(line, line + count)
 
+    // replace with self
     this.push({
-      op: new ReplaceFrame(line, backup, insert ?? count), // replace with self
+      frame: { index: line, deleted: backup, replaced: insert ?? count },
       cursor: this.mergedCursor()
     })
   }
@@ -221,14 +169,19 @@ export class Editor {
     }
   }
 
-  public undo(): { data: LineData, cursor: SelectionIndex } | null {
+  public undo(): SelectionIndex | null {
     const step = this.popStep()
 
     if (!step) {
       return null
     }
 
-    return { data: step.op.undo(this.data), cursor: step.cursor }
+    const frame = step.frame
+
+    this.data.splice(frame.index, frame.replaced, ...frame.deleted)
+    this.onDirty(frame.index, frame.replaced, frame.deleted)
+
+    return step.cursor
   }
 
   public clear() {

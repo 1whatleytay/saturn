@@ -292,24 +292,12 @@ function handleActionKey(event: KeyboardEvent) {
       break
 
     case 'z': {
-      const frame = editor().undo()
-
-      if (!frame) {
-        return
+      const value = editor().undo()
+      
+      if (value) {
+        putCursor(value)
       }
-
-      const { data, cursor: value } = frame
-
-      const current = tab()
-
-      if (current) {
-        // Please work...
-        console.log('spliced')
-        current.lines.splice(0, current.lines.length, ...data)
-      }
-
-      putCursor(value)
-
+      
       break
     }
   }
