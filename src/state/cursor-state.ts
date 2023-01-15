@@ -269,6 +269,8 @@ function hitTab(shift: boolean = false) {
 export const tabBody = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
 export function pasteText(text: string) {
+  dropSelection()
+  
   putCursor(editor().paste(cursor, text))
 }
 
