@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { tab } from '../state/editor-state'
+import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
 import {
   cursor,

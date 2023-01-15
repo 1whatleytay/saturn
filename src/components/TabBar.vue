@@ -46,7 +46,7 @@ import { ref } from 'vue'
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
-import { loadElf, remove, createTab, editor } from '../state/editor-state'
+import { loadElf, remove, createTab, editor } from '../state/tabs-state'
 import TabBarItems from './TabBarItems.vue'
 
 const input = ref(null as HTMLInputElement | null)

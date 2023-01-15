@@ -19,7 +19,7 @@ export function collectLines(lines: string[]): string {
   return lines.join('\n')
 }
 
-export interface EditorState {
+export interface TabsState {
   tabs: EditorTab[]
   selected: string | null
 }
@@ -29,7 +29,7 @@ export const editor = reactive({
   selected: null,
   execution: null,
   debug: null
-} as EditorState)
+} as TabsState)
 
 export function tab(): EditorTab | null {
   if (editor.selected) {

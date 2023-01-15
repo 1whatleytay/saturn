@@ -1,6 +1,6 @@
 import { computed, reactive, watch } from 'vue'
 
-import { tab } from './editor-state'
+import { tab } from './tabs-state'
 
 import { regular } from '../utils/text-size'
 import { consumeBackwards, consumeForwards } from '../utils/alt-consume'

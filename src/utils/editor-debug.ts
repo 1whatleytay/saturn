@@ -1,4 +1,4 @@
-import { collectLines, tab } from '../state/editor-state'
+import { collectLines, tab } from '../state/tabs-state'
 import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import { ExecutionMode, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
 
