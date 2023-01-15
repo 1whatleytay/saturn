@@ -7,7 +7,7 @@ import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 import { hasActionKey } from '../utils/shortcut-key'
 import { settings } from './settings-state'
 import { SelectionIndex, SelectionRange } from '../utils/editor'
-import { storage } from './editor-state'
+import { editor } from './editor-state'
 
 export type Cursor = SelectionIndex & {
   offsetX: number
@@ -85,7 +85,7 @@ export function getSelection(): string | null {
     return null
   }
 
-  return storage.editor.grab(range)
+  return editor().grab(range)
 }
 
 export function dropSelection(): boolean {
@@ -95,7 +95,7 @@ export function dropSelection(): boolean {
     return false
   }
 
-  storage.editor.drop(range)
+  editor().drop(range)
 
   clearSelection()
   putCursor({ line: range.startLine, index: range.startIndex })
@@ -108,7 +108,7 @@ function cursorPosition(index: SelectionIndex): Cursor {
   let overflow = false
 
   let actualLine = index.line
-  const count = storage.editor.lineCount()
+  const count = editor().lineCount()
 
   if (actualLine >= count) {
     overflow = true
@@ -118,7 +118,7 @@ function cursorPosition(index: SelectionIndex): Cursor {
     actualLine = 0
   }
 
-  const text = storage.editor.lineAt(actualLine)
+  const text = editor().lineAt(actualLine)
 
   let actualIndex: number
 
@@ -151,7 +151,7 @@ export function putCursor(index: SelectionIndex, set: Cursor = cursor) {
 }
 
 function moveLeft(alt: boolean = false, shift: boolean = false) {
-  const text = storage.editor.lineAt(cursor.line)
+  const text = editor().lineAt(cursor.line)
 
   const consume = alt
     ? consumeBackwards(text, cursor.index)
@@ -176,14 +176,14 @@ function moveLeft(alt: boolean = false, shift: boolean = false) {
   if (move < 0 && line > 0) {
     line -= 1
 
-    move = storage.editor.lineAt(line).length
+    move = editor().lineAt(line).length
   }
 
   putCursor({ line, index: move })
 }
 
 function moveRight(alt: boolean = false, shift: boolean = false) {
-  const text = storage.editor.lineAt(cursor.line)
+  const text = editor().lineAt(cursor.line)
 
   const consume = alt ? consumeForwards(text, cursor.index) : 1
 
@@ -239,12 +239,12 @@ function hitTab(shift: boolean = false) {
   if (shift) {
     if (region) {
       for (let line = region.startLine; line <= region.endLine; line++) {
-        const alignment = storage.editor.dropTab(line, settings.tabSize)
+        const alignment = editor().dropTab(line, settings.tabSize)
 
         adjustCursor(line, -alignment)
       }
     } else {
-      const alignment = storage.editor.dropTab(cursor.line, settings.tabSize)
+      const alignment = editor().dropTab(cursor.line, settings.tabSize)
 
       putCursor({ line: cursor.line, index: cursor.index - alignment })
     }
@@ -254,12 +254,12 @@ function hitTab(shift: boolean = false) {
 
     if (region) {
       for (let line = region.startLine; line <= region.endLine; line++) {
-        storage.editor.put({ line, index: 0 }, tabs)
+        editor().put({ line, index: 0 }, tabs)
 
         adjustCursor(line, +alignment)
       }
     } else {
-      storage.editor.put(cursor, tabs)
+      editor().put(cursor, tabs)
 
       putCursor({ line: cursor.line, index: cursor.index + alignment })
     }
@@ -269,7 +269,7 @@ function hitTab(shift: boolean = false) {
 export const tabBody = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
 export function pasteText(text: string) {
-  putCursor(storage.editor.paste(cursor, text))
+  putCursor(editor().paste(cursor, text))
 }
 
 function handleActionKey(event: KeyboardEvent) {
@@ -277,11 +277,11 @@ function handleActionKey(event: KeyboardEvent) {
 
   switch (event.key) {
     case 'a':
-      const count = storage.editor.lineCount()
+      const count = editor().lineCount()
 
       if (count > 0) {
         const end = count - 1
-        const text = storage.editor.lineAt(end)
+        const text = editor().lineAt(end)
 
         putCursor({ line: 0, index: 0 }, cursor)
         cursor.highlight = cursorPosition({ line: end, index: text.length })
@@ -290,7 +290,7 @@ function handleActionKey(event: KeyboardEvent) {
       break
 
     case 'z': {
-      const frame = storage.editor.undo()
+      const frame = editor().undo()
 
       if (!frame) {
         return
@@ -341,22 +341,22 @@ export function handleKey(event: KeyboardEvent) {
 
     case 'Backspace':
       if (!last) {
-        storage.editor.commit()
+        editor().commit()
       }
 
       cursor.pressedBackspace = true
 
       if (!dropSelection()) {
-        putCursor(storage.editor.backspace(cursor, event.altKey))
+        putCursor(editor().backspace(cursor, event.altKey))
       }
 
       break
 
     case 'Enter':
-      storage.editor.commit()
+      editor().commit()
 
       dropSelection()
-      putCursor(storage.editor.newline(cursor))
+      putCursor(editor().newline(cursor))
 
       break
 
@@ -369,7 +369,7 @@ export function handleKey(event: KeyboardEvent) {
         /* handle meta */
       } else if (event.key.length === 1) {
         dropSelection()
-        putCursor(storage.editor.put(cursor, event.key))
+        putCursor(editor().put(cursor, event.key))
       }
 
       break
@@ -378,7 +378,7 @@ export function handleKey(event: KeyboardEvent) {
 
 const defaultCursorPush = 4
 function putCursorAtCoordinates(x: number, y: number) {
-  const count = storage.editor.lineCount()
+  const count = editor().lineCount()
 
   if (count <= 0) {
     return
@@ -388,7 +388,7 @@ function putCursorAtCoordinates(x: number, y: number) {
 
   const lineIndex = Math.floor(y / height)
   const line = Math.min(Math.max(lineIndex, 0), count - 1)
-  const text = storage.editor.lineAt(line)
+  const text = editor().lineAt(line)
 
   const index = regular.position(text, x, defaultCursorPush)
 
@@ -397,7 +397,7 @@ function putCursorAtCoordinates(x: number, y: number) {
 
 export function dropCursor(x: number, y: number) {
   cursor.highlight = null
-  storage.editor.commit()
+  editor().commit()
 
   putCursorAtCoordinates(x, y)
 }

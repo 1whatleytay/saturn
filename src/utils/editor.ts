@@ -106,6 +106,8 @@ function merge(last: Operation, next: Operation): MergeResult {
   }
 }
 
+export type DirtyHandler = (line: number, deleted: number, insert: string[]) => void
+
 export class Editor {
   current: Step | null = null
   operations: Step[] = []
@@ -200,7 +202,7 @@ export class Editor {
 
     body()
 
-    this.onDirty(line, this.data.slice(line, line + insert))
+    this.onDirty(line, count, this.data.slice(line, line + insert))
   }
 
   public mutateLine(line: number, body: () => void) {
@@ -394,7 +396,7 @@ export class Editor {
   constructor(
     public data: LineData,
     public cursor: () => SelectionIndex,
-    public onDirty: (line: number, data: string[]) => void = () => { },
+    public onDirty: DirtyHandler = () => { },
     private backlog: number = 50,
     private debounce: number = 800,
     private commitInterval: number = 30
