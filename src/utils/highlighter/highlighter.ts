@@ -4,13 +4,13 @@ export interface Token {
 }
 
 export const style = {
-  comment: 'text-blue-200',
-  comma: 'text-yellow-200',
-  directive: 'text-red-200',
-  register: 'text-orange-200',
-  numeric: 'text-teal-200',
-  symbol: 'text-purple-200',
-  text: 'text-magenta-200',
+  comment: 'text-neutral-400',
+  comma: 'text-yellow-400',
+  directive: 'text-rose-500 font-bold',
+  register: 'text-purple-300',
+  numeric: 'text-teal-300',
+  symbol: 'text-white',
+  text: 'text-lime-300',
   nothing: 'text-white'
 }
 
