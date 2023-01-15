@@ -1,22 +1,8 @@
-export interface Highlight {
-  text: string,
-  color: string
-}
+import { Highlighter, style, Token } from './highlighter'
 
 interface Item {
   color: string,
   next: number
-}
-
-const style = {
-  comment: 'text-blue-200',
-  comma: 'text-yellow-200',
-  directive: 'text-red-200',
-  register: 'text-orange-200',
-  numeric: 'text-teal-200',
-  symbol: 'text-purple-200',
-  text: 'text-magenta-200',
-  nothing: 'text-white'
 }
 
 // Port of https://github.com/1whatleytay/titan/blob/main/src/assembler/lexer.rs
@@ -169,39 +155,34 @@ function readItem(line: string, index: number): Item {
         }
       }
     }
-
-//   '0'..='9' | '-' | '+' | '\'' => integer_literal(input)
-//     .map(|(out, value)| Some((out, IntegerLiteral(value))))
-// .ok_or(ImproperLiteral),
-//     '\"' => string_body(after_leading, '\"')
-//     .map(|(out, body)| Some((&out[1..], StringLiteral(body))))
-// .ok_or(InvalidString),
   }
 }
 
-export function highlight(line: string): Highlight[] {
-  const result = []
+export class MipsHighlighter implements Highlighter {
+  highlight(line: string): Token[] {
+    const result = []
 
-  let index = 0
+    let index = 0
 
-  while (index < line.length) {
-    const { color, next } = readItem(line, index)
+    while (index < line.length) {
+      const { color, next } = readItem(line, index)
 
-    if (index === next) {
-      const some = takeSome(line, next)
+      if (index === next) {
+        const some = takeSome(line, next)
 
-      result.push({
-        text: line.substring(index, index + some),
-        color: style.nothing
-      })
+        result.push({
+          text: line.substring(index, index + some),
+          color: style.nothing
+        })
 
-      index += some
-    } else {
-      result.push({ text: line.substring(index, next), color })
+        index += some
+      } else {
+        result.push({ text: line.substring(index, next), color })
 
-      index = next
+        index = next
+      }
     }
-  }
 
-  return result
+    return result
+  }
 }

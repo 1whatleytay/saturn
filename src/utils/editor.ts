@@ -186,13 +186,25 @@ export class Editor {
     })
   }
 
-  public dirty(line: number, count: number, insert?: number) {
+  private dirty(line: number, count: number, insert?: number) {
     const backup = this.data.slice(line, line + count)
 
     this.push({
       op: new ReplaceFrame(line, backup, insert ?? count), // replace with self
       cursor: this.mergedCursor()
     })
+  }
+
+  public mutate(line: number, count: number, insert: number, body: () => void) {
+    this.dirty(line, count, insert)
+
+    body()
+
+    this.onDirty(line, this.data.slice(line, line + insert))
+  }
+
+  public mutateLine(line: number, body: () => void) {
+    this.mutate(line, 1, 1, body)
   }
 
   popStep(): Step | null {
@@ -224,30 +236,34 @@ export class Editor {
 
   drop(range: SelectionRange) {
     if (range.startLine == range.endLine) {
-      this.dirty(range.startLine, 1)
       const text = this.data[range.startLine]
 
-      this.data[range.startLine] = text.substring(0, range.startIndex) + text.substring(range.endIndex)
-    } else {
-      this.dirty(range.startLine, range.endLine - range.startLine + 1, 2)
+      const leading = text.substring(0, range.startIndex)
+      const trailing = text.substring(range.endIndex)
 
+      this.mutateLine(range.startLine, () => {
+        this.data[range.startLine] = leading + trailing
+      })
+    } else {
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
-      this.data[range.startLine] = leading + trailing
 
-      this.data.splice(range.startLine + 1, range.endLine - range.startLine)
+      this.mutate(range.startLine, range.endLine - range.startLine + 1, 2, () => {
+        this.data[range.startLine] = leading + trailing
+        this.data.splice(range.startLine + 1, range.endLine - range.startLine)
+      })
     }
   }
 
   put(index: SelectionIndex, character: string): SelectionIndex {
-    this.dirty(index.line, 1)
-
     const line = this.data[index.line]
     const leading = line.substring(0, index.index)
     const trailing = line.substring(index.index)
 
     // Mutate
-    this.data[index.line] = leading + character + trailing
+    this.mutateLine(index.line, () => {
+      this.data[index.line] = leading + character + trailing
+    })
 
     return { line: index.line, index: index.index + character.length }
   }
@@ -274,11 +290,11 @@ export class Editor {
     const last = rest[rest.length - 1].length
     rest[rest.length - 1] += trailing
 
-    this.dirty(index.line, 1, textLines.length)
-
     // Mutate
-    this.data[index.line] = leading + first
-    this.data.splice(index.line + 1, 0, ...rest)
+    this.mutate(index.line, 1, textLines.length, () => {
+      this.data[index.line] = leading + first
+      this.data.splice(index.line + 1, 0, ...rest)
+    })
 
     return { line: index.line + textLines.length - 1, index: last }
   }
@@ -290,8 +306,9 @@ export class Editor {
     if (match && match.length) {
       const text = match[0]
 
-      this.dirty(line, 1)
-      this.data[line] = this.data[line].substring(text.length)
+      this.mutateLine(line, () => {
+        this.data[line] = this.data[line].substring(text.length)
+      })
 
       return text.length
     }
@@ -311,10 +328,11 @@ export class Editor {
     const spacing = match && match.length ? match[0] : ''
     const noSpace = endMatch && endMatch.length ? trailing.substring(endMatch[0].length) : trailing
 
-    this.dirty(index.line, 1, 2)
     // Mutate
-    this.data[index.line] = leading
-    this.data.splice(index.line + 1, 0, spacing + noSpace)
+    this.mutate(index.line, 1, 2, () => {
+      this.data[index.line] = leading
+      this.data.splice(index.line + 1, 0, spacing + noSpace)
+    })
 
     return { line: index.line + 1, index: spacing.length }
   }
@@ -329,18 +347,19 @@ export class Editor {
       const trailing = line.substring(index.index)
 
       // Mutate
-      this.dirty(index.line, 1)
-      this.data[index.line] = leading + trailing
+      this.mutateLine(index.line, () => {
+        this.data[index.line] = leading + trailing
+      })
 
       return { line: index.line, index: leading.length }
     } else if (index.line > 0) {
       const leading = this.data[index.line - 1]
       const trailing = this.data[index.line]
 
-      this.dirty(index.line - 1, 2, 1)
-      this.data[index.line - 1] = leading + trailing
-
-      this.data.splice(index.line, 1)
+      this.mutate(index.line - 1, 2, 1, () => {
+        this.data[index.line - 1] = leading + trailing
+        this.data.splice(index.line, 1)
+      })
 
       return { line: index.line - 1, index: leading.length }
     }
@@ -375,6 +394,7 @@ export class Editor {
   constructor(
     public data: LineData,
     public cursor: () => SelectionIndex,
+    public onDirty: (line: number, data: string[]) => void = () => { },
     private backlog: number = 50,
     private debounce: number = 800,
     private commitInterval: number = 30
