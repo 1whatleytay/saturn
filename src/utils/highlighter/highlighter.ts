@@ -7,6 +7,7 @@ export const style = {
   known: 'font-bold',
   comment: 'text-neutral-400',
   comma: 'text-yellow-400',
+  label: 'text-yellow-400',
   directive: 'text-red-400',
   instruction: 'text-sky-400',
   register: 'text-orange-300',

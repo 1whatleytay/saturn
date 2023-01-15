@@ -175,6 +175,17 @@ function readItem(line: string, index: number, initial: boolean): Item {
           next: start + count
         }
       } else {
+        // Check for color for labels
+        const nextUp = start + count + takeSpace(line, start + count)
+
+        if (nextUp < line.length && line[nextUp] == ':') {
+          return {
+            color: style.label,
+            next: nextUp + 1 // including colon
+          }
+        }
+
+        // It's an instruction!
         if (initial) {
           // First lone symbol on a line *should* be an instruction
           const parts = [style.instruction]
