@@ -22,10 +22,30 @@ function takeCount(input: string, index: number, take: (c: string) => boolean): 
 }
 
 const allHard = new Set([
-  ':', ';', ',', '.', '{', '}', '+', '-',
+  ':', ';', ',', '{', '}', '+', '-',
   '=', '/', '@', '#', '$', '%', '^', '&',
   '|', '*', '(', ')', '!', '?', '<', '>',
   '~', '[', ']', '\\', '\"', '\''
+])
+
+const knownDirectives = new Set([
+  'ascii', 'asciiz', 'align', 'space',
+  'byte', 'half', 'word', 'float',
+  'double', 'text', 'data', 'ktext',
+  'extern'
+])
+
+const knownInstructions = new Set([
+  'sll', 'srl', 'sra', 'sllv', 'srlv', 'srav', 'jr', 'jalr',
+  'mfhi', 'mthi', 'mflo', 'mtlo', 'mult', 'multu', 'div', 'divu',
+  'add', 'addu', 'sub', 'subu', 'and', 'or', 'xor', 'nor',
+  'sltu', 'slt', 'bltz', 'bgez', 'bltzal', 'bgezal', 'j', 'jal',
+  'beq', 'bne', 'blez', 'bgtz', 'addi', 'addiu', 'slti', 'sltiu',
+  'andi', 'ori', 'xori', 'lui', 'llo', 'lhi', 'trap', 'syscall',
+  'lb', 'lh', 'lw', 'lbu', 'lhu', 'sb', 'sh', 'sw',
+  'madd', 'maddu', 'mul', 'msub', 'msubu', 'abs', 'blt', 'bgt',
+  'ble', 'bge', 'neg', 'negu', 'not', 'li', 'la', 'move',
+  'sge', 'sgt', 'b', 'subi', 'subiu',
 ])
 
 function isWhitespace(c: string): boolean {
@@ -69,7 +89,7 @@ function takeStringBody(input: string, index: number, quote: string): number {
   return count
 }
 
-function readItem(line: string, index: number): Item {
+function readItem(line: string, index: number, initial: boolean): Item {
   // assert index < line.length
 
   const start = index + takeSpace(line, index)
@@ -96,8 +116,14 @@ function readItem(line: string, index: number): Item {
     case '.': {
       const count = takeName(line, start + 1)
 
+      const parts = [style.directive]
+
+      if (knownDirectives.has(line.substring(start + 1, start + 1 + count))) {
+        parts.push(style.known)
+      }
+
       return {
-        color: style.directive,
+        color: parts.join(' '),
         next: start + 1 + count
       }
     }
@@ -149,6 +175,20 @@ function readItem(line: string, index: number): Item {
           next: start + count
         }
       } else {
+        if (initial) {
+          // First lone symbol on a line *should* be an instruction
+          const parts = [style.instruction]
+
+          if (knownInstructions.has(line.substring(start, start + count))) {
+            parts.push(style.known)
+          }
+
+          return {
+            color: parts.join(' '),
+            next: start + count
+          }
+        }
+
         return {
           color: style.symbol,
           next: start + count
@@ -163,9 +203,11 @@ export class MipsHighlighter implements Highlighter {
     const result = []
 
     let index = 0
+    let initial = true
 
     while (index < line.length) {
-      const { color, next } = readItem(line, index)
+      const { color, next } = readItem(line, index, initial)
+      initial = false
 
       if (index === next) {
         const some = takeSome(line, next)

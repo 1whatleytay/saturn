@@ -4,12 +4,14 @@ export interface Token {
 }
 
 export const style = {
+  known: 'font-bold',
   comment: 'text-neutral-400',
   comma: 'text-yellow-400',
-  directive: 'text-rose-500 font-bold',
+  directive: 'text-red-400',
+  instruction: 'text-sky-400',
   register: 'text-orange-300',
   numeric: 'text-teal-300',
-  symbol: 'text-purple-300',
+  symbol: 'text-white',
   text: 'text-lime-300',
   nothing: 'text-white'
 }
