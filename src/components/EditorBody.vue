@@ -53,7 +53,14 @@
           'bg-breakpoint-stopped': index === stoppedIndex
         }"
       >
-        {{ line }}
+        <div v-if="index < storage.highlights.length">
+          <span v-for="token in storage.highlights[index]" :class="[token.color]">
+            {{ token.text }}
+          </span>
+        </div>
+        <div v-else>
+          {{ line }}
+        </div>
       </div>
 
       <div class="h-32" />
@@ -81,6 +88,7 @@ import {
   dropSelection,
   lineStart
 } from '../state/cursor-state'
+import { storage } from '../state/editor-state'
 import { setBreakpoint } from '../utils/editor-debug'
 import Cursor from './Cursor.vue'
 

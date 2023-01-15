@@ -164,18 +164,11 @@ export class MipsHighlighter implements Highlighter {
 
     let index = 0
 
-    console.log(`Highlighting (${line.length}): ${line}`)
-
     while (index < line.length) {
-      console.log(`Parsing index ${index}`)
-
       const { color, next } = readItem(line, index)
 
       if (index === next) {
-        console.log(`Stuck! ${color}`)
         const some = takeSome(line, next)
-
-        console.log(`Some took ${some}`)
 
         result.push({
           text: line.substring(index, index + some),
@@ -185,9 +178,6 @@ export class MipsHighlighter implements Highlighter {
         index += some
       } else {
         result.push({ text: line.substring(index, next), color })
-
-        console.log(`Pushed ${color}, ${index} -> ${next}`)
-        console.assert(next > index)
 
         index = next
       }
