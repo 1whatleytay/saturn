@@ -10,17 +10,19 @@
       @wheel.stop
       :style="{ top: `${lineOffset}px` }"
     >
+      <div :style="{ height: `${topPadding}px` }" />
+
       <div
-        v-for="(_, index) in tabBody" :key="index"
-        @click="toggleBreakpoint(index)"
+        v-for="i in renderCount" :key="getIndex(i)"
+        @click="toggleBreakpoint(getIndex(i))"
         class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto"
       >
         <div
-          v-if="hasBreakpoint(index)"
+          v-if="hasBreakpoint(getIndex(i))"
           class="rounded-full bg-red-700 w-3 h-3 mr-auto ml-3"
         />
 
-        {{ index + 1 }}
+        {{ getIndex(i) + 1 }}
       </div>
     </div>
 
@@ -69,7 +71,7 @@
       <div :style="{ height: `${bottomPadding}px` }" />
       <div class="h-32" />
 
-      <Cursor />
+      <Cursor :start="renderStart" :count="renderCount" />
     </div>
   </div>
 </template>
@@ -104,6 +106,7 @@ const lineHeight = 24 // h-6 -> 1.5rem -> 24px
 
 const {
   getIndex,
+  renderStart,
   renderCount,
   topPadding,
   bottomPadding,

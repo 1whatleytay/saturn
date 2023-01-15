@@ -14,6 +14,11 @@ export interface Virtualization {
 const defaultLinePadding = 16
 const defaultDangerPadding = 8
 
+// For vue v-for in renderCount
+export function getIndex(i: number, start: number) {
+  return i - 1 + start
+}
+
 export function useVirtualize(
   lineHeight: number,
   count: () => number,
@@ -27,10 +32,6 @@ export function useVirtualize(
 
   function inBounds(line: number) {
     return Math.max(Math.min(line, count()), 0)
-  }
-
-  function getIndex(i: number) {
-    return i - 1 + renderStart.value
   }
 
   const renderStart = computed(() => inBounds(state.startIndex))
@@ -56,7 +57,7 @@ export function useVirtualize(
   return {
     renderStart, renderCount,
     topPadding, bottomPadding,
-    getIndex,
+    getIndex: i => getIndex(i, renderStart.value),
     update
   }
 }

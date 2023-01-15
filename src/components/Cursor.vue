@@ -33,6 +33,12 @@ import { cursor, tabBody, selectionRange } from '../state/cursor-state'
 import { computed } from 'vue'
 import { regular } from '../utils/text-size'
 
+const props = defineProps<{
+  // virtualization props
+  start: number,
+  count: number,
+}>()
+
 interface LineRange {
   leading: string,
   body: string
@@ -41,6 +47,10 @@ interface LineRange {
 interface RangeSelection {
   ranges: LineRange[],
   top: number
+}
+
+function inBounds(line: number): boolean {
+  return props.start <= line && line < props.start + props.count
 }
 
 const range = computed((): RangeSelection | null => {
@@ -53,9 +63,18 @@ const range = computed((): RangeSelection | null => {
   const all = tabBody.value
 
   const { height } = regular.calculate('')
-  const top = range.startLine * height
+  let top = null as number | null
+  const suggestTop = (line: number) => {
+    if (top === null) {
+      top = line * height
+    }
+  }
 
   if (range.startLine == range.endLine) {
+    if (!inBounds(range.startLine)) {
+      return null // ?
+    }
+
     const line = all[range.startLine]
 
     const ranges = [{
@@ -63,31 +82,45 @@ const range = computed((): RangeSelection | null => {
       body: line.substring(range.startIndex, range.endIndex)
     }]
 
-    return { ranges, top }
+    return { ranges, top: range.startLine * height }
   }
 
   const result = [] as LineRange[]
 
-  const first = all[range.startLine]
-  result.push({
-    leading: first.substring(0, range.startIndex),
-    body: first.substring(range.startIndex)
-  })
+  if (inBounds(range.startLine)) {
+    suggestTop(range.startLine)
+    const first = all[range.startLine]
+    result.push({
+      leading: first.substring(0, range.startIndex),
+      body: first.substring(range.startIndex)
+    })
+  }
 
-  for (let a = range.startLine + 1; a < range.endLine; a++) {
+  // Just going to hope this intersection thingy works.
+  const intersectionStart = Math.max(range.startLine + 1, props.start)
+  const intersectionEnd = Math.min(range.endLine, props.start + props.count)
+
+  if (intersectionStart < intersectionEnd) {
+    suggestTop(intersectionStart)
+  }
+
+  for (let a = intersectionStart; a < intersectionEnd; a++) {
     result.push({
       leading: '',
       body: all[a]
     })
   }
 
-  const last = all[range.endLine]
-  result.push({
-    leading: '',
-    body: last.substring(0, range.endIndex)
-  })
+  if (inBounds(range.endLine)) {
+    suggestTop(range.endLine)
+    const last = all[range.endLine]
+    result.push({
+      leading: '',
+      body: last.substring(0, range.endIndex)
+    })
+  }
 
-  return { top, ranges: result }
+  return { top: top ?? range.startLine * height, ranges: result }
 })
 </script>
 
