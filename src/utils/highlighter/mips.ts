@@ -72,7 +72,7 @@ function takeStringBody(input: string, index: number, quote: string): number {
 function readItem(line: string, index: number): Item {
   // assert index < line.length
 
-  const start = takeSpace(line, index)
+  const start = index + takeSpace(line, index)
 
   if (start >= line.length) {
     return {
@@ -140,7 +140,7 @@ function readItem(line: string, index: number): Item {
     }
 
     default: {
-      const count = takeName(line, start + 1)
+      const count = takeName(line, start)
 
       if (/\d/.test(first)) {
         // digit
@@ -164,11 +164,18 @@ export class MipsHighlighter implements Highlighter {
 
     let index = 0
 
+    console.log(`Highlighting (${line.length}): ${line}`)
+
     while (index < line.length) {
+      console.log(`Parsing index ${index}`)
+
       const { color, next } = readItem(line, index)
 
       if (index === next) {
+        console.log(`Stuck! ${color}`)
         const some = takeSome(line, next)
+
+        console.log(`Some took ${some}`)
 
         result.push({
           text: line.substring(index, index + some),
@@ -178,6 +185,9 @@ export class MipsHighlighter implements Highlighter {
         index += some
       } else {
         result.push({ text: line.substring(index, next), color })
+
+        console.log(`Pushed ${color}, ${index} -> ${next}`)
+        console.assert(next > index)
 
         index = next
       }
