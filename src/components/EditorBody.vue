@@ -80,7 +80,7 @@ import {
   clearSelection,
   dropSelection,
   lineStart
-} from '../utils/editor-cursor'
+} from '../state/cursor-state'
 import { setBreakpoint } from '../utils/editor-debug'
 import Cursor from './Cursor.vue'
 

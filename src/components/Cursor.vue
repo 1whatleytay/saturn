@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { cursor, tabBody, selectionRange } from '../utils/editor-cursor'
+import { cursor, tabBody, selectionRange } from '../state/cursor-state'
 import { computed } from 'vue'
 import { regular } from '../utils/text-size'
 

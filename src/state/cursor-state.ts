@@ -1,12 +1,12 @@
 import { computed, reactive, watch } from 'vue'
 
-import { tab } from '../state/editor-state'
+import { tab } from './editor-state'
 
-import { regular } from './text-size'
-import { consumeBackwards, consumeForwards } from './alt-consume'
-import { hasActionKey } from './shortcut-key'
-import { settings } from '../state/settings-state'
-import { Editor, SelectionIndex, SelectionRange } from './editor'
+import { regular } from '../utils/text-size'
+import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
+import { hasActionKey } from '../utils/shortcut-key'
+import { settings } from './settings-state'
+import { Editor, SelectionIndex, SelectionRange } from '../utils/editor'
 
 export type Cursor = SelectionIndex & {
   offsetX: number
