@@ -38,7 +38,9 @@ function merge(last: Frame, next: Frame): MergeResult {
   const nextEnd = next.index + next.deleted.length
 
   // Common Case
-  if (lastStart == nextStart && last.replaced == next.deleted.length) {
+  if (lastStart == nextStart
+    && last.deleted.length == next.deleted.length
+    && last.replaced == next.replaced) {
     return { merged: last }
   }
 
