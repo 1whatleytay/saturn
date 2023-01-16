@@ -4,6 +4,7 @@
 )]
 
 mod syscall;
+mod keyboard;
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
@@ -21,6 +22,7 @@ use titan::debug::debugger::{Debugger, DebugFrame, DebuggerMode};
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
+use crate::keyboard::KeyboardHandler;
 use crate::syscall::SyscallDelegate;
 
 #[derive(Serialize)]
@@ -156,10 +158,11 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
     }
 }
 
-type DebuggerPointer = Arc<Mutex<Debugger<SectionMemory>>>;
+type MemoryType = SectionMemory<KeyboardHandler>;
+type DebuggerPointer = Arc<Mutex<Debugger<MemoryType>>>;
 type DebuggerState = Mutex<Option<DebuggerPointer>>;
 
-fn swap(mut pointer: MutexGuard<Option<DebuggerPointer>>, debugger: Debugger<SectionMemory>) {
+fn swap(mut pointer: MutexGuard<Option<DebuggerPointer>>, debugger: Debugger<MemoryType>) {
     if let Some(state) = pointer.as_ref() {
         state.lock().unwrap().pause()
     }
@@ -170,7 +173,7 @@ fn swap(mut pointer: MutexGuard<Option<DebuggerPointer>>, debugger: Debugger<Sec
     *pointer = Some(wrapped);
 }
 
-fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
+fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
     let mut memory = SectionMemory::new();
 
     for region in binary.regions {
@@ -191,7 +194,7 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<SectionMemory> {
     State::new(binary.entry, memory)
 }
 
-fn setup_state<T: Memory + Mountable>(state: &mut State<T>) {
+fn setup_state(state: &mut State<MemoryType>) {
     let screen = Region { start: 0x10008000, data: vec![0; 0x4000] };
     let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
 

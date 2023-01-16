@@ -7,9 +7,10 @@ use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::Invalid;
 use tokio::time::Instant;
+use crate::keyboard::KeyboardHandler;
 use crate::syscall::SyscallResult::{Aborted, Completed, Terminated, Unimplemented, Unknown};
 
-type MemoryType = SectionMemory;
+type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
 
 pub enum SyscallResult {

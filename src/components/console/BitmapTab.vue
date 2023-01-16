@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-sm overflow-auto flex flex-col whitespace-pre content-start p-2 select-text"
+    class="text-sm overflow-auto flex flex-col whitespace-pre content-start p-2"
   >
     <div class="flex items-center text-lg font-bold mb-2 w-full">
       Bitmap Display
@@ -10,12 +10,19 @@
       </button>
     </div>
 
-    <canvas
-      ref="canvas"
-      class="w-64 h-64 border border-neutral-700 rounded"
-      width="256"
-      height="256"
-    />
+    <button
+      ref="wrapper"
+      @click="focusSelf"
+      @keydown="woah"
+      class="outline-none focus:ring-4 w-64 h-64 border border-neutral-700 rounded overflow-clip"
+    >
+      <canvas
+        ref="canvas"
+        class="w-64 h-64"
+        width="256"
+        height="256"
+      />
+    </button>
   </div>
 </template>
 
@@ -25,7 +32,16 @@ import { ref } from 'vue'
 import { ArrowPathIcon } from '@heroicons/vue/24/solid'
 import { consoleData } from '../../state/console-data'
 
+const wrapper = ref(null as HTMLElement | null)
 const canvas = ref(null as HTMLCanvasElement | null)
+
+function handleKey(event: KeyboardEvent) {
+
+}
+
+function focusSelf() {
+  wrapper.value?.focus()
+}
 
 async function reloadDisplay() {
   const dest = canvas.value
