@@ -243,13 +243,11 @@ onMounted(() => {
   putCursor({ line: 0, index: 0 })
   handleScroll()
 
-  window.addEventListener('focus', focusHandler)
   window.addEventListener('mousemove', handleMove)
   window.addEventListener('mouseup', handleUp)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('focus', focusHandler)
   window.removeEventListener('mousemove', handleMove)
   window.removeEventListener('mouseup', handleUp)
 })
