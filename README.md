@@ -16,13 +16,14 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [x] Basic Interpreter
 - [x] Basic Debugger
 - [x] Basic Assembler
-- [ ] Syntax Highlighting
-- [ ] Bitmap Display
+- [x] Syntax Highlighting
+- [x] Bitmap Display
 - [x] Console Events
-- [ ] Syscall Handling
+- [x] Syscall Handling
 - [x] Assembler Breakpoint Information
 - [x] Compile Assembly In-Editor
 - [x] Breakpoint Assembly In-Editor
+- [ ] Keyboard Input
 - [ ] File Loading
 
 # Important Tasks
@@ -30,4 +31,5 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [ ] Register Editing and Copying
 - [ ] Find and Replace
 - [ ] Finished Execution State
-- [ ] Editor Performance (Smooth Cmd + A @ 4000 lines)
+- [x] Editor Performance (Smooth Cmd + A @ 4000 lines)
+- [ ] Floating Point Co-processor
