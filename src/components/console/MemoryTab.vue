@@ -12,11 +12,11 @@
       />
 
       <div class="flex px-2 space-x-1">
-        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(+1)">
+        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(-1)">
           <ArrowUpIcon class="w-4 h-4" />
         </button>
 
-        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(-1)">
+        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(+1)">
           <ArrowDownIcon class="w-4 h-4" />
         </button>
       </div>
