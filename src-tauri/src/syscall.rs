@@ -206,18 +206,44 @@ impl SyscallDelegate {
         }
     }
 
+    async fn handle_frame(
+        &mut self, debugger: &Mutex<DebuggerType>, frame: DebugFrame
+    ) -> Option<DebugFrame> {
+        match frame.mode {
+             Invalid(CpuSyscall) => {
+                // $v0
+                let code = debugger.lock().unwrap().state().registers.line[2];
+                let _ = self.dispatch(debugger, code).await;
+
+                 None
+            }
+            _ => Some(frame)
+        }
+    }
+
     pub async fn run(&mut self, debugger: &Mutex<DebuggerType>) -> DebugFrame {
         loop {
             let frame = Debugger::run(debugger);
+            let frame = self.handle_frame(debugger, frame).await;
 
-            match frame.mode {
-                Invalid(CpuSyscall) => {
-                    // $v0
-                    let code = debugger.lock().unwrap().state().registers.line[2];
-                    let _ = self.dispatch(debugger, code).await;
-                }
-                _ => return frame
+            if let Some(frame) = frame {
+                return frame
             }
         }
+    }
+
+    pub async fn cycle(&mut self, debugger: &Mutex<DebuggerType>) -> DebugFrame {
+        let frame = {
+            let mut pointer = debugger.lock().unwrap();
+
+            pointer.cycle(true)
+        };
+
+        if let Some(frame) = frame {
+            self.handle_frame(debugger, frame).await
+        } else {
+            None
+        }
+            .unwrap_or_else(|| debugger.lock().unwrap().frame())
     }
 }

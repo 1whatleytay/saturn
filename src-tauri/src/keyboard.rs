@@ -3,7 +3,8 @@ use titan::cpu::error;
 use titan::cpu::error::Error::MemoryUnmapped;
 use titan::cpu::memory::section::ListenResponder;
 
-pub const KEYBOARD_MOUNT_POINT: u32 = 0xFFFF0000;
+pub const KEYBOARD_ADDRESS: u32 = 0xFFFF0000;
+pub const KEYBOARD_SELECTOR: u32 = KEYBOARD_ADDRESS >> 16;
 
 pub struct KeyboardState {
     last: Option<char>,
@@ -45,13 +46,13 @@ impl KeyboardHandler {
 
 impl ListenResponder for KeyboardHandler {
     fn read(&self, address: u32) -> error::Result<u8> {
-        let keyboard_handled = KEYBOARD_MOUNT_POINT .. KEYBOARD_MOUNT_POINT + 8;
+        let keyboard_handled = KEYBOARD_ADDRESS .. KEYBOARD_ADDRESS + 8;
 
         if !keyboard_handled.contains(&address) {
             return Err(MemoryUnmapped(address))
         }
 
-        let offset = address - KEYBOARD_MOUNT_POINT;
+        let offset = address - KEYBOARD_ADDRESS;
 
         let mut state = self.state.lock().unwrap();
 

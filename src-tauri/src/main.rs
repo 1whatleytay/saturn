@@ -22,7 +22,7 @@ use titan::debug::debugger::{Debugger, DebugFrame, DebuggerMode};
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
-use crate::keyboard::KeyboardHandler;
+use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
 use crate::syscall::SyscallDelegate;
 
 #[derive(Serialize)]
@@ -159,18 +159,32 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
 }
 
 type MemoryType = SectionMemory<KeyboardHandler>;
-type DebuggerPointer = Arc<Mutex<Debugger<MemoryType>>>;
-type DebuggerState = Mutex<Option<DebuggerPointer>>;
 
-fn swap(mut pointer: MutexGuard<Option<DebuggerPointer>>, debugger: Debugger<MemoryType>) {
+struct DebuggerState {
+    debugger: Arc<Mutex<Debugger<MemoryType>>>,
+    keyboard: Arc<Mutex<KeyboardState>>
+}
+
+type DebuggerBody = Mutex<Option<DebuggerState>>;
+
+fn swap(mut pointer: MutexGuard<Option<DebuggerState>>, mut debugger: Debugger<MemoryType>) {
     if let Some(state) = pointer.as_ref() {
-        state.lock().unwrap().pause()
+        state.debugger.lock().unwrap().pause()
     }
+
+    let handler = KeyboardHandler::new();
+    let keyboard = handler.state.clone();
+
+    let memory = debugger.memory();
+    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
 
     let wrapped = Arc::new(Mutex::new(debugger));
 
     // Drop should cancel the last process and kill the other thread.
-    *pointer = Some(wrapped);
+    *pointer = Some(DebuggerState {
+        debugger: wrapped,
+        keyboard
+    });
 }
 
 fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
@@ -205,7 +219,7 @@ fn setup_state(state: &mut State<MemoryType>) {
 }
 
 #[tauri::command]
-fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) -> bool {
+fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerBody>) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
     let mut cpu_state = create_simple_state(&elf, 0x100000);
@@ -241,7 +255,7 @@ pub fn source_breakpoints(map: &HashMap<usize, u32>, source: &str) -> HashMap<us
 }
 
 #[tauri::command]
-fn configure_asm(text: &str, state: tauri::State<'_, DebuggerState>) -> AssemblerResult {
+fn configure_asm(text: &str, state: tauri::State<'_, DebuggerBody>) -> AssemblerResult {
     let binary = assemble_from(text);
     let (binary, result) = AssemblerResult::from_result_with_binary(binary, text);
 
@@ -256,11 +270,11 @@ fn configure_asm(text: &str, state: tauri::State<'_, DebuggerState>) -> Assemble
 }
 
 #[tauri::command]
-async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -> Result<ResumeResult, ()> {
+async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
     let debugger = {
         let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
 
-        pointer.clone()
+        pointer.debugger.clone()
     };
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
@@ -275,52 +289,53 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) -
 }
 
 #[tauri::command]
-fn swap_breakpoints(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerState>) {
+fn swap_breakpoints(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
-    pointer.lock().unwrap().set_breakpoints(breakpoints_set);
+    pointer.debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 }
 
 #[tauri::command]
-fn step(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
-    let Some(pointer) = &*state.lock().unwrap() else { return None };
+async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
+    let debugger = {
+        let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
 
-    let mut debugger = pointer.lock().unwrap();
+        pointer.debugger.clone()
+    };
 
-    let frame = debugger.cycle(true)
-        .unwrap_or_else(|| debugger.frame());
+    let frame = SyscallDelegate::new().cycle(&debugger).await;
 
-    Some(ResumeResult::from_frame(frame))
+    Ok(ResumeResult::from_frame(frame))
 }
 
 #[tauri::command]
-fn pause(state: tauri::State<'_, DebuggerState>) -> Option<ResumeResult> {
+fn pause(state: tauri::State<'_, DebuggerBody>) -> Option<ResumeResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    let mut debugger = pointer.lock().unwrap();
+    let mut debugger = pointer.debugger.lock().unwrap();
     debugger.pause();
 
     Some(ResumeResult::from_frame(debugger.frame()))
 }
 
 #[tauri::command]
-fn stop(state: tauri::State<'_, DebuggerState>) {
+fn stop(state: tauri::State<'_, DebuggerBody>) {
     let debugger = &mut *state.lock().unwrap();
 
-    if let Some(debugger) = debugger {
-        debugger.lock().unwrap().pause();
+    if let Some(pointer) = debugger {
+        pointer.debugger.lock().unwrap().pause();
     }
 
     *debugger = None;
 }
 
 #[tauri::command]
-fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerState>) -> Option<Vec<Option<u8>>> {
+fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerBody>) -> Option<Vec<Option<u8>>> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    let mut debugger = pointer.lock().unwrap();
+    let mut debugger = pointer.debugger.lock().unwrap();
     let memory = debugger.memory();
 
     let end = address
@@ -336,10 +351,10 @@ fn read_bytes(address: u32, count: u32, state: tauri::State<'_, DebuggerState>) 
 }
 
 #[tauri::command]
-fn write_bytes(address: u32, bytes: Vec<u8>, state: tauri::State<'_, DebuggerState>) {
+fn write_bytes(address: u32, bytes: Vec<u8>, state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    let mut debugger = pointer.lock().unwrap();
+    let mut debugger = pointer.debugger.lock().unwrap();
     let memory = debugger.memory();
 
     for (index, byte) in bytes.iter().enumerate() {
@@ -348,10 +363,10 @@ fn write_bytes(address: u32, bytes: Vec<u8>, state: tauri::State<'_, DebuggerSta
 }
 
 #[tauri::command]
-fn set_register(register: u32, value: u32, state: tauri::State<'_, DebuggerState>) {
+fn set_register(register: u32, value: u32, state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    let mut debugger = pointer.lock().unwrap();
+    let mut debugger = pointer.debugger.lock().unwrap();
     let state = debugger.state();
 
     match register {
@@ -371,7 +386,7 @@ fn assemble(text: &str) -> AssemblerResult {
 
 fn main() {
     tauri::Builder::default()
-        .manage(Mutex::new(None) as DebuggerState)
+        .manage(Mutex::new(None) as DebuggerBody)
         .invoke_handler(tauri::generate_handler![
             disassemble,
             configure_elf,
