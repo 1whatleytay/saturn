@@ -32,7 +32,7 @@ const knownDirectives = new Set([
   'ascii', 'asciiz', 'align', 'space',
   'byte', 'half', 'word', 'float',
   'double', 'text', 'data', 'ktext',
-  'extern'
+  'extern', 'eqv', 'macro', 'end_macro'
 ])
 
 const knownInstructions = new Set([
