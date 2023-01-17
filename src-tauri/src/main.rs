@@ -335,8 +335,6 @@ fn stop(state: tauri::State<'_, DebuggerBody>) {
 
 #[tauri::command]
 fn post_key(key: char, state: tauri::State<'_, DebuggerBody>) {
-    println!("Received key {}", key);
-
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let mut keyboard = pointer.keyboard.lock().unwrap();
