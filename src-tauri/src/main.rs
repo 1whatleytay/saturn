@@ -269,13 +269,15 @@ fn configure_asm(text: &str, state: tauri::State<'_, DebuggerBody>) -> Assembler
     result
 }
 
+fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<Arc<Mutex<Debugger<MemoryType>>>> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
+
+    Some(pointer.debugger.clone())
+}
+
 #[tauri::command]
 async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let debugger = {
-        let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
-
-        pointer.debugger.clone()
-    };
+    let debugger = lock_and_clone(state).ok_or(())?;
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
@@ -289,25 +291,21 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) ->
 }
 
 #[tauri::command]
+async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
+    let debugger = lock_and_clone(state).ok_or(())?;
+
+    let frame = SyscallDelegate::new().cycle(&debugger).await;
+
+    Ok(ResumeResult::from_frame(frame))
+}
+
+#[tauri::command]
 fn swap_breakpoints(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
     pointer.debugger.lock().unwrap().set_breakpoints(breakpoints_set);
-}
-
-#[tauri::command]
-async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let debugger = {
-        let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
-
-        pointer.debugger.clone()
-    };
-
-    let frame = SyscallDelegate::new().cycle(&debugger).await;
-
-    Ok(ResumeResult::from_frame(frame))
 }
 
 #[tauri::command]
@@ -329,6 +327,15 @@ fn stop(state: tauri::State<'_, DebuggerBody>) {
     }
 
     *debugger = None;
+}
+
+#[tauri::command]
+fn post_key(key: char, state: tauri::State<'_, DebuggerBody>) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
+
+    let mut keyboard = pointer.keyboard.lock().unwrap();
+
+    keyboard.push_key(key)
 }
 
 #[tauri::command]
@@ -392,13 +399,14 @@ fn main() {
             configure_elf,
             configure_asm,
             resume,
-            pause,
             step,
+            pause,
             stop,
             read_bytes,
             write_bytes,
             set_register,
             assemble,
+            post_key,
             swap_breakpoints
         ])
         .run(tauri::generate_context!())
