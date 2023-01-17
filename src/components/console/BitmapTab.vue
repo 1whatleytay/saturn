@@ -13,7 +13,7 @@
     <button
       ref="wrapper"
       @click="focusSelf"
-      @keydown="woah"
+      @keydown="handleKey"
       class="outline-none focus:ring-4 w-64 h-64 border border-neutral-700 rounded overflow-clip"
     >
       <canvas
@@ -35,8 +35,12 @@ import { consoleData } from '../../state/console-data'
 const wrapper = ref(null as HTMLElement | null)
 const canvas = ref(null as HTMLCanvasElement | null)
 
-function handleKey(event: KeyboardEvent) {
-
+async function handleKey(event: KeyboardEvent) {
+  if (!consoleData.execution) {
+    return
+  }
+  
+  await consoleData.execution.postKey(event.key)
 }
 
 function focusSelf() {

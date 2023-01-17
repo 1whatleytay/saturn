@@ -205,15 +205,19 @@ fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
 
     memory.mount(heap);
 
-    State::new(binary.entry, memory)
+    let mut state = State::new(binary.entry, memory);
+
+    state.registers.line[29] = heap_end;
+
+    state
 }
 
 fn setup_state(state: &mut State<MemoryType>) {
     let screen = Region { start: 0x10008000, data: vec![0; 0x4000] };
-    let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
+    // let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
 
     state.memory.mount(screen);
-    state.memory.mount(keyboard);
+    // state.memory.mount(keyboard);
 
     state.registers.line[28] = 0x10008000
 }
@@ -331,6 +335,8 @@ fn stop(state: tauri::State<'_, DebuggerBody>) {
 
 #[tauri::command]
 fn post_key(key: char, state: tauri::State<'_, DebuggerBody>) {
+    println!("Received key {}", key);
+
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let mut keyboard = pointer.keyboard.lock().unwrap();
