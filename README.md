@@ -23,7 +23,7 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [x] Assembler Breakpoint Information
 - [x] Compile Assembly In-Editor
 - [x] Breakpoint Assembly In-Editor
-- [ ] Keyboard Input
+- [x] Keyboard Input
 - [ ] File Loading
 
 # Important Tasks
