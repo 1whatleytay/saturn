@@ -5,8 +5,17 @@
     <div class="flex items-center text-lg font-bold mb-2 w-full">
       Bitmap Display
 
-      <button class="p-1 rounded hover:bg-neutral-700 ml-2" @click="reloadDisplay()">
-        <ArrowPathIcon class="w-4 h-4" />
+      <button
+        class="px-2 py-1 border border-neutral-700 rounded text-xs font-medium flex items-center ml-2"
+        @click="state.connected = !state.connected"
+        :class="{
+          'hover:bg-neutral-700': !state.connected,
+          'bg-slate-700 hover:bg-slate-600': state.connected
+        }"
+      >
+        <ArrowPathRoundedSquareIcon class="w-4 h-4 mr-1" />
+
+        Connect
       </button>
     </div>
 
@@ -27,19 +36,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onUnmounted, reactive, ref, watch } from 'vue'
 
-import { ArrowPathIcon } from '@heroicons/vue/24/solid'
+import { ArrowPathRoundedSquareIcon } from '@heroicons/vue/24/solid'
 import { consoleData } from '../../state/console-data'
 
 const wrapper = ref(null as HTMLElement | null)
 const canvas = ref(null as HTMLCanvasElement | null)
 
+const state = reactive({
+  connected: false,
+  interval: null as number | null
+})
+
 async function handleKey(event: KeyboardEvent) {
   if (!consoleData.execution) {
     return
   }
-  
+
   await consoleData.execution.postKey(event.key)
 }
 
@@ -47,8 +61,24 @@ function focusSelf() {
   wrapper.value?.focus()
 }
 
+watch(() => state.connected, connect => {
+  if (connect) {
+    state.interval = window.setInterval(() => {
+      reloadDisplay()
+    }, 60)
+  } else if (state.interval) {
+    clearInterval(state.interval)
+    state.interval = null
+  }
+})
+
+onUnmounted(() => {
+  if (state.interval) {
+    clearInterval(state.interval)
+  }
+})
+
 async function reloadDisplay() {
-  const dest = canvas.value
   const context = canvas.value?.getContext('2d')
   const state = consoleData.execution
 
