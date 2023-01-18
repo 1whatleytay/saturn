@@ -122,6 +122,10 @@ export async function setupEvents() {
     await loadElf(name, data.buffer)
   })
 
+  await listen('assemble', async () => {
+
+  })
+
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
   })
