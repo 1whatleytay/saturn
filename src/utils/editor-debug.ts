@@ -1,5 +1,5 @@
-import { collectLines, tab } from "../state/tabs-state";
-import { consoleData, DebugTab, openConsole, pushConsole } from "../state/console-data";
+import { collectLines, tab } from '../state/tabs-state'
+import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import {
   AssemblerResult,
   assembleText,
@@ -7,9 +7,10 @@ import {
   ExecutionModeType,
   ExecutionResult,
   ExecutionState
-} from "./mips";
+} from './mips'
 
-import { format } from "date-fns";
+import { format } from 'date-fns'
+import { PromptType, saveCurrentTab } from './events'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -91,6 +92,8 @@ function modeToResult(mode: ExecutionMode): AssemblerResult {
 }
 
 export async function build() {
+  await saveCurrentTab(PromptType.NeverPrompt)
+
   const result = await assembleText(collectLines(tab()?.lines ?? []))
 
   consoleData.showConsole = true
@@ -108,6 +111,8 @@ export async function resume() {
   let needsBuild = false
   if (!consoleData.execution) {
     const text = collectLines(tab()?.lines ?? [])
+
+    await saveCurrentTab(PromptType.NeverPrompt)
 
     needsBuild = true
     consoleData.execution = new ExecutionState(text, usedProfile)

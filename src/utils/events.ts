@@ -5,6 +5,43 @@ import { resume, step, pause, stop, build } from "./editor-debug";
 import { openInputFile, openElf, selectSaveAssembly, writeFile } from './select-file'
 import { consoleData } from '../state/console-data'
 
+export enum PromptType {
+  NeverPrompt,
+  PromptWhenNeeded,
+  ForcePrompt
+}
+
+export async function saveCurrentTab(type: PromptType = PromptType.PromptWhenNeeded) {
+  const current = tab()
+
+  if (!current) {
+    return
+  }
+
+  if (type === PromptType.NeverPrompt && !current.path) {
+    return
+  }
+
+  if (type === PromptType.ForcePrompt || !current.path) {
+    const result = await selectSaveAssembly()
+
+    if (!result) {
+      return
+    }
+
+    const { name, path } = result
+
+    current.title = name
+    current.path = path
+  }
+
+  const data = collectLines(current.lines)
+
+  await writeFile(current.path, data)
+
+  current.marked = false // Remove "needs saving" marker
+}
+
 export async function setupEvents() {
   await listen('new-tab', () => {
     createTab('Untitled', [''])
@@ -46,30 +83,11 @@ export async function setupEvents() {
   })
 
   await listen('save', async () => {
-    const current = tab()
+    await saveCurrentTab()
+  })
 
-    if (!current) {
-      return
-    }
-
-    if (!current.path) {
-      const result = await selectSaveAssembly()
-
-      if (!result) {
-        return
-      }
-
-      const { name, path } = result
-
-      current.title = name
-      current.path = path
-    }
-
-    const data = collectLines(current.lines)
-
-    await writeFile(current.path, data)
-
-    current.marked = false // Remove "needs saving" marker
+  await listen('save-as', async () => {
+    await saveCurrentTab(PromptType.ForcePrompt)
   })
 
   await listen('build', async () => {
