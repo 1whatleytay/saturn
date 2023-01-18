@@ -1,8 +1,21 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
-    <button v-if="!!consoleData.execution" class="w-10 h-10
+    <button class="
+      w-10 h-10
       hover:bg-slate-800
-      text-slate-300
+      shrink-0
+      flex items-center justify-center
+      font-black
+      text-sky-300
+    " :class="{
+      'opacity-25 cursor-not-allowed': !!consoleData.execution,
+    }" @click="build()" :disabled="!!consoleData.execution">
+      <WrenchIcon class="w-4 h-4" />
+    </button>
+
+    <button v-if="!!consoleData.execution" class="
+      w-10 h-10
+      hover:bg-slate-800
       shrink-0
       flex items-center justify-center
       font-black
@@ -11,9 +24,9 @@
       <StopIcon class="w-4 h-4" />
     </button>
 
-    <button v-if="!!consoleData.execution" class="w-10 h-10
+    <button v-if="!!consoleData.execution" class="
+      w-10 h-10
       hover:bg-slate-800
-      text-slate-300
       shrink-0
       flex items-center justify-center
       font-black
@@ -22,9 +35,9 @@
       <PauseIcon class="w-4 h-4" />
     </button>
 
-    <button v-if="!!consoleData.execution" class="w-10 h-10
+    <button v-if="!!consoleData.execution" class="
+      w-10 h-10
       hover:bg-slate-800
-      text-slate-300
       shrink-0
       flex items-center justify-center
       font-black
@@ -33,8 +46,8 @@
       <ChevronRightIcon class="w-4 h-4" />
     </button>
 
-    <button class="w-10 h-10
-      text-slate-300
+    <button class="
+      w-10 h-10
       shrink-0
       flex items-center justify-center
       font-black
@@ -64,9 +77,15 @@
 import { computed } from 'vue'
 import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
-import { resume, step, pause, stop } from '../utils/editor-debug'
+import { build, resume, step, pause, stop } from '../utils/editor-debug'
 
-import { ChevronRightIcon, PlayIcon, PauseIcon, StopIcon } from '@heroicons/vue/24/solid'
+import {
+  WrenchIcon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  ChevronRightIcon
+} from '@heroicons/vue/24/solid'
 
 import { ExecutionModeType } from '../utils/mips'
 

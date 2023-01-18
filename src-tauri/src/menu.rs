@@ -5,6 +5,8 @@ enum MenuOptions {
     NewTab,
     OpenFile,
     CloseTab,
+    Save,
+    SaveAs,
     Disassemble,
     Assemble,
     Export,
@@ -18,9 +20,11 @@ enum MenuOptions {
 impl ToString for MenuOptions {
     fn to_string(&self) -> String {
         match self {
-            MenuOptions::NewTab => "new",
-            MenuOptions::OpenFile => "open",
-            MenuOptions::CloseTab => "close",
+            MenuOptions::NewTab => "new-tab",
+            MenuOptions::OpenFile => "open-file",
+            MenuOptions::CloseTab => "close-tab",
+            MenuOptions::Save => "save",
+            MenuOptions::SaveAs => "save-as",
             MenuOptions::Disassemble => "disassemble",
             MenuOptions::Assemble => "assemble",
             MenuOptions::Export => "export",
@@ -38,9 +42,11 @@ impl FromStr for MenuOptions {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "new" => MenuOptions::NewTab,
-            "open" => MenuOptions::OpenFile,
-            "close" => MenuOptions::CloseTab,
+            "new-tab" => MenuOptions::NewTab,
+            "open-file" => MenuOptions::OpenFile,
+            "close-tab" => MenuOptions::CloseTab,
+            "save" => MenuOptions::Save,
+            "save-as" => MenuOptions::SaveAs,
             "disassemble" => MenuOptions::Disassemble,
             "assemble" => MenuOptions::Assemble,
             "export" => MenuOptions::Export,
@@ -60,9 +66,11 @@ impl MenuOptions {
             MenuOptions::NewTab => "New Tab",
             MenuOptions::OpenFile => "Open File",
             MenuOptions::CloseTab => "Close Tab",
-            MenuOptions::Disassemble => "Disassemble",
-            MenuOptions::Assemble => "Assemble",
-            MenuOptions::Export => "Export",
+            MenuOptions::Save => "Save",
+            MenuOptions::SaveAs => "Save As",
+            MenuOptions::Disassemble => "Disassemble Elf",
+            MenuOptions::Assemble => "Assemble Elf",
+            MenuOptions::Export => "Export Elf",
             MenuOptions::Build => "Build",
             MenuOptions::Run => "Run",
             MenuOptions::Step => "Step",
@@ -118,11 +126,14 @@ pub fn create_menu() -> Menu {
         .add_item(MenuOptions::CloseTab.make_item()
             .accelerator(meta_key("W")))
         .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Disassemble.make_item())
-        .add_item(MenuOptions::Assemble.make_item())
-        .add_item(MenuOptions::Export.make_item())
+        .add_item(MenuOptions::Save.make_item()
+            .accelerator(meta_key("S")))
+        .add_item(MenuOptions::SaveAs.make_item()
+            .accelerator(meta_key("Shift+S")))
         .add_native_item(MenuItem::Separator)
-        .add_native_item(MenuItem::CloseWindow)
+        .add_item(MenuOptions::Export.make_item())
+        .add_item(MenuOptions::Assemble.make_item())
+        .add_item(MenuOptions::Disassemble.make_item())
     ));
 
     // windows unsupported for some of these, hopefully this wont cause a crash
@@ -164,12 +175,13 @@ pub fn handle_event(event: WindowMenuEvent<Wry>) {
         }
     };
 
-    let Ok(menu) = MenuOptions::from_str(event.menu_item_id()) else {
+    let emit_normal = |name: &str| {
+        catch_emit(event.window().emit(name, ()))
+    };
+
+    let Ok(item) = MenuOptions::from_str(event.menu_item_id()) else {
         return eprintln!("Unknown menu ID: {}", event.menu_item_id())
     };
 
-    match menu {
-        MenuOptions::NewTab => catch_emit(event.window().emit("new-tab", ())),
-        _ => { println!("Unhandled menu event {}", event.menu_item_id()) }
-    };
+    emit_normal(&item.to_string())
 }

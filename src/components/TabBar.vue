@@ -10,7 +10,7 @@
         :selected="editor.selected === tab.uuid"
         :deletable="true"
         @select="editor.selected = tab.uuid"
-        @delete="remove(tab.uuid)"
+        @delete="closeTab(tab.uuid)"
       />
 
       <button class="w-10 h-10
@@ -46,7 +46,7 @@ import { ref } from 'vue'
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
-import { loadElf, remove, createTab, editor } from '../state/tabs-state'
+import { loadElf, closeTab, createTab, editor } from '../state/tabs-state'
 import TabBarItems from './TabBarItems.vue'
 
 const input = ref(null as HTMLInputElement | null)

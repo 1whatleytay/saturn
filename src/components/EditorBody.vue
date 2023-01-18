@@ -36,6 +36,7 @@
     >
       <input
         type="text"
+        autocomplete="off"
         ref="input"
         spellcheck="false"
         :value="''"

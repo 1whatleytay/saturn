@@ -1,8 +1,15 @@
-import { collectLines, tab } from '../state/tabs-state'
-import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
-import { ExecutionMode, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
+import { collectLines, tab } from "../state/tabs-state";
+import { consoleData, DebugTab, openConsole, pushConsole } from "../state/console-data";
+import {
+  AssemblerResult,
+  assembleText,
+  ExecutionMode,
+  ExecutionModeType,
+  ExecutionResult,
+  ExecutionState
+} from "./mips";
 
-import { format } from 'date-fns'
+import { format } from "date-fns";
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -50,28 +57,44 @@ function postDebugInformation(result: ExecutionResult) {
   consoleData.registers = result.registers
 }
 
-function postBuildMessage(mode: ExecutionMode): boolean {
+function postBuildMessage(result: AssemblerResult): boolean {
   consoleData.tab = DebugTab.Console
 
   consoleData.mode = null
   consoleData.registers = null
 
-  switch (mode.type) {
-    case ExecutionModeType.BuildFailed:
-      const error = mode.value
+  switch (result.status) {
+    case 'Error':
+      const marker = result.marker ? ` (line ${result.marker.line + 1})` : ''
+      const trailing = result.body
+        ? `\n${result.body.split('\n').map(x => `> ${x}`).join('\n')}`
+        : ''
 
-      const marker = error.marker ? ` (line ${error.marker.line + 1})` : ''
-      const trailing = error.body ? `\n${error.body.split('\n').map(x => `> ${x}`).join('\n')}` : ''
-
-      openConsole(`Build failed: ${error.message}${marker}${trailing}`)
+      openConsole(`Build failed: ${result.message}${marker}${trailing}`)
 
       return false
 
-    default:
+    case 'Success':
       openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, p')}`)
 
       return true
   }
+}
+
+function modeToResult(mode: ExecutionMode): AssemblerResult {
+  switch (mode.type) {
+    case ExecutionModeType.BuildFailed:
+      return { status: 'Error', ...mode.value }
+    default:
+      return { status: 'Success', breakpoints: [] }
+  }
+}
+
+export async function build() {
+  const result = await assembleText(collectLines(tab()?.lines ?? []))
+
+  consoleData.showConsole = true
+  postBuildMessage(result)
 }
 
 export async function resume() {
@@ -98,7 +121,7 @@ export async function resume() {
   consoleData.showConsole = true
 
   if (needsBuild) {
-    if (postBuildMessage(result.mode)) {
+    if (postBuildMessage(modeToResult(result.mode))) {
       postDebugInformation(result)
     }
   } else {

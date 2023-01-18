@@ -39,11 +39,21 @@ export function tab(): EditorTab | null {
   return null
 }
 
-export function remove(uuid: string) {
+export function closeTab(uuid: string) {
+  const index = editor.tabs.findIndex(tab => tab.uuid === uuid)
+
   editor.tabs = editor.tabs.filter(tab => tab.uuid !== uuid)
 
   if (editor.selected === uuid) {
-    editor.selected = null
+    if (editor.tabs.length < 0) {
+      editor.selected = null
+
+      return
+    }
+
+    const point = Math.min(Math.max(index - 1, 0), editor.tabs.length)
+
+    editor.selected = editor.tabs[point].uuid
   }
 }
 

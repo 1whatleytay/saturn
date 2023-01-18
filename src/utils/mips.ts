@@ -24,8 +24,7 @@ export interface LineMarker {
   offset: number
 }
 
-interface AssemblerResultSuccess {
-  status: 'Success'
+export interface AssemblerSuccess {
   breakpoints: Record<number, number>
 }
 
@@ -35,9 +34,10 @@ export interface AssemblerError {
   message: string
 }
 
-type AssemblerResultError = AssemblerError & { status: 'Error' }
+export type AssemblerResultSuccess = AssemblerSuccess & { status: 'Success' }
+export type AssemblerResultError = AssemblerError & { status: 'Error' }
 
-type AssemblerResult = AssemblerResultSuccess | AssemblerResultError;
+export type AssemblerResult = AssemblerResultSuccess | AssemblerResultError;
 
 export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
   const bytes = Array.from(new Uint8Array(elf))
@@ -45,6 +45,12 @@ export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<D
   const value = await tauri.invoke('disassemble', { named, bytes })
 
   return value as DisassembleResult
+}
+
+export async function assembleText(text: string): Promise<AssemblerResult> {
+  const result = await tauri.invoke('assemble', { text })
+
+  return result as AssemblerResult
 }
 
 export enum ExecutionModeType {
