@@ -155,9 +155,9 @@ pub fn create_menu() -> Menu {
         .add_item(MenuOptions::Step.make_item()
             .accelerator(meta_key("L")))
         .add_item(MenuOptions::Pause.make_item()
-            .accelerator(meta_key("P")))
-        .add_item(MenuOptions::Stop.make_item()
             .accelerator(meta_key("J")))
+        .add_item(MenuOptions::Stop.make_item()
+            .accelerator(meta_key("P")))
     ));
 
     menu = menu.add_submenu(Submenu::new("Window", Menu::new()
