@@ -135,8 +135,8 @@ pub fn create_menu() -> Menu {
         .add_item(MenuOptions::SaveAs.make_item()
             .accelerator(meta_key("Shift+S")))
         .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Export.make_item())
-        .add_item(MenuOptions::Assemble.make_item())
+        // .add_item(MenuOptions::Export.make_item())
+        // .add_item(MenuOptions::Assemble.make_item())
         .add_item(MenuOptions::Disassemble.make_item())
     ));
 
