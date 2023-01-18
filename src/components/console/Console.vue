@@ -22,7 +22,7 @@
         opacity: properties.height > closingHeight ? '1' : '0'
       }">
       <div
-        class="absolute top-0 h-2 w-full cursor-row-resize"
+        class="absolute top-0 -mt-1 h-2 w-full cursor-row-resize"
         @mousedown="handleDown"
       />
 

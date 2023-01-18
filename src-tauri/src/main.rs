@@ -5,24 +5,25 @@
 
 mod syscall;
 mod keyboard;
+mod menu;
+mod state;
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::source::{assemble_from, SourceError};
-use titan::cpu::{Memory, State};
-use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::memory::section::SectionMemory;
+use titan::cpu::Memory;
 use titan::cpu::state::Registers;
 use titan::debug::debugger::{Debugger, DebugFrame, DebuggerMode};
 
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
-use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
+use crate::menu::{create_menu, handle_event};
+use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
 use crate::syscall::SyscallDelegate;
 
 #[derive(Serialize)]
@@ -156,70 +157,6 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
         lines: inspection.lines,
         breakpoints: inspection.breakpoints
     }
-}
-
-type MemoryType = SectionMemory<KeyboardHandler>;
-
-struct DebuggerState {
-    debugger: Arc<Mutex<Debugger<MemoryType>>>,
-    keyboard: Arc<Mutex<KeyboardState>>
-}
-
-type DebuggerBody = Mutex<Option<DebuggerState>>;
-
-fn swap(mut pointer: MutexGuard<Option<DebuggerState>>, mut debugger: Debugger<MemoryType>) {
-    if let Some(state) = pointer.as_ref() {
-        state.debugger.lock().unwrap().pause()
-    }
-
-    let handler = KeyboardHandler::new();
-    let keyboard = handler.state.clone();
-
-    let memory = debugger.memory();
-    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
-
-    let wrapped = Arc::new(Mutex::new(debugger));
-
-    // Drop should cancel the last process and kill the other thread.
-    *pointer = Some(DebuggerState {
-        debugger: wrapped,
-        keyboard
-    });
-}
-
-fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
-    let mut memory = SectionMemory::new();
-
-    for region in binary.regions {
-        let region = Region { start: region.address, data: region.data };
-
-        memory.mount(region);
-    }
-
-    let heap_end = 0x7FFFFFFCu32;
-
-    let heap = Region {
-        start: heap_end - heap_size,
-        data: vec![0; heap_size as usize]
-    };
-
-    memory.mount(heap);
-
-    let mut state = State::new(binary.entry, memory);
-
-    state.registers.line[29] = heap_end;
-
-    state
-}
-
-fn setup_state(state: &mut State<MemoryType>) {
-    let screen = Region { start: 0x10008000, data: vec![0; 0x4000] };
-    // let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
-
-    state.memory.mount(screen);
-    // state.memory.mount(keyboard);
-
-    state.registers.line[28] = 0x10008000
 }
 
 #[tauri::command]
@@ -396,8 +333,12 @@ fn assemble(text: &str) -> AssemblerResult {
 }
 
 fn main() {
+    let menu = create_menu();
+
     tauri::Builder::default()
         .manage(Mutex::new(None) as DebuggerBody)
+        .menu(menu)
+        .on_menu_event(handle_event)
         .invoke_handler(tauri::generate_handler![
             disassemble,
             configure_elf,
