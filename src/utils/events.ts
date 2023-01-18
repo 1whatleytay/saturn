@@ -1,8 +1,8 @@
 import { listen } from '@tauri-apps/api/event'
 
-import { editor, createTab, closeTab, loadElf } from '../state/tabs-state'
+import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
 import { resume, step, pause, stop, build } from "./editor-debug";
-import { openInputFile, openElf } from './select-file'
+import { openInputFile, openElf, selectSaveAssembly, writeFile } from './select-file'
 import { consoleData } from '../state/console-data'
 
 export async function setupEvents() {
@@ -17,13 +17,20 @@ export async function setupEvents() {
       return
     }
 
-    const { name, data } = result
+    const { name, path, data } = result
+
+    const existing = editor.tabs.find(tab => tab.path === path)
+
+    if (existing) {
+      editor.selected = existing.uuid
+      return
+    }
 
     switch (typeof data) {
       case 'string':
         const split = data.split('\n')
 
-        createTab(name, split.length ? split : [''])
+        createTab(name, split.length ? split : [''], path)
         break
 
       default:
@@ -36,6 +43,33 @@ export async function setupEvents() {
     if (editor.selected) {
       closeTab(editor.selected)
     }
+  })
+
+  await listen('save', async () => {
+    const current = tab()
+
+    if (!current) {
+      return
+    }
+
+    if (!current.path) {
+      const result = await selectSaveAssembly()
+
+      if (!result) {
+        return
+      }
+
+      const { name, path } = result
+
+      current.title = name
+      current.path = path
+    }
+
+    const data = collectLines(current.lines)
+
+    await writeFile(current.path, data)
+
+    current.marked = false // Remove "needs saving" marker
   })
 
   await listen('build', async () => {

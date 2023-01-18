@@ -21,11 +21,21 @@ function highlight(line: number, deleted: number, lines: string[]) {
   storage.highlights.splice(line, deleted, ...tokens)
 }
 
+function handleDirty(line: number, deleted: number, lines: string[]) {
+  highlight(line, deleted, lines)
+
+  const current = tab()
+
+  if (current) {
+    current.marked = true
+  }
+}
+
 function createEditor(): Editor {
   return new Editor(
     tab()?.lines ?? ['Nothing yet.'],
     () => cursor, // This is cyclic, but I can't bring myself to care.
-    highlight
+    handleDirty
   )
 }
 
