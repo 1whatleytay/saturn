@@ -1,16 +1,14 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
-    <button class="
+    <button v-if="!consoleData.execution" class="
       w-10 h-10
       hover:bg-slate-800
       shrink-0
       flex items-center justify-center
       font-black
       text-sky-300
-    " :class="{
-      'opacity-25 cursor-not-allowed': !!consoleData.execution,
-    }" @click="build()" :disabled="!!consoleData.execution">
-      <WrenchIcon class="w-4 h-4" />
+    " @click="build()">
+      <ArrowDownIcon class="w-4 h-4" />
     </button>
 
     <button v-if="!!consoleData.execution" class="
@@ -80,7 +78,7 @@ import { consoleData } from '../state/console-data'
 import { build, resume, step, pause, stop } from '../utils/editor-debug'
 
 import {
-  WrenchIcon,
+  ArrowDownIcon,
   PlayIcon,
   PauseIcon,
   StopIcon,
