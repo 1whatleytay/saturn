@@ -14,7 +14,8 @@ enum MenuOptions {
     Run,
     Step,
     Pause,
-    Stop
+    Stop,
+    ToggleConsole,
 }
 
 impl ToString for MenuOptions {
@@ -33,6 +34,7 @@ impl ToString for MenuOptions {
             MenuOptions::Step => "step",
             MenuOptions::Pause => "pause",
             MenuOptions::Stop => "stop",
+            MenuOptions::ToggleConsole => "toggle-console",
         }.into()
     }
 }
@@ -55,6 +57,7 @@ impl FromStr for MenuOptions {
             "step" => MenuOptions::Step,
             "pause" => MenuOptions::Pause,
             "stop" => MenuOptions::Stop,
+            "toggle-console" => MenuOptions::ToggleConsole,
             _ => return Err(())
         })
     }
@@ -76,6 +79,7 @@ impl MenuOptions {
             MenuOptions::Step => "Step",
             MenuOptions::Pause => "Pause",
             MenuOptions::Stop => "Stop",
+            MenuOptions::ToggleConsole => "Toggle Console",
         }
     }
 
@@ -162,6 +166,8 @@ pub fn create_menu() -> Menu {
 
     menu = menu.add_submenu(Submenu::new("Window", Menu::new()
         .add_native_item(MenuItem::Minimize)
+        .add_item(MenuOptions::ToggleConsole.make_item()
+            .accelerator(meta_key("T")))
         .add_native_item(MenuItem::CloseWindow)
     ));
 
