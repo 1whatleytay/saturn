@@ -1,8 +1,6 @@
 <template>
   <div @click.stop>
     <div class="h-10 flex items-center overflow-x-auto items-start bg-neutral-900 w-full fixed z-20 top-0">
-      <input type="file" class="hidden" ref="input" @change="loadFile" />
-
       <Tab
         v-for="tab in editor.tabs"
         :key="tab.uuid"
@@ -23,15 +21,15 @@
         <PlusIcon class="w-4 h-4" />
       </button>
 
-      <button class="w-10 h-10
-          hover:bg-slate-800
-          text-slate-300
-          shrink-0
-          flex items-center justify-center
-          font-black
-        " @click="input?.click()">
-        <ArrowDownTrayIcon class="w-4 h-4" />
-      </button>
+<!--      <button class="w-10 h-10-->
+<!--          hover:bg-slate-800-->
+<!--          text-slate-300-->
+<!--          shrink-0-->
+<!--          flex items-center justify-center-->
+<!--          font-black-->
+<!--        " @click="input?.click()">-->
+<!--        <ArrowDownTrayIcon class="w-4 h-4" />-->
+<!--      </button>-->
 
       <TabBarItems class="ml-auto" />
     </div>
@@ -41,42 +39,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
+// import { ref } from 'vue'
+//
 import Tab from './Tab.vue'
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
 import { loadElf, closeTab, createTab, editor } from '../state/tabs-state'
 import TabBarItems from './TabBarItems.vue'
 
-const input = ref(null as HTMLInputElement | null)
+// const input = ref(null as HTMLInputElement | null)
 
 function create() {
   createTab('Untitled', [''])
 }
 
-function loadFile() {
-  const files = input.value?.files
-
-  if (!files?.length) {
-    return
-  }
-
-  const file = files[0]
-
-  const reader = new FileReader()
-  reader.addEventListener('load', () => {
-    if (reader.result instanceof ArrayBuffer) {
-      loadElf(file.name, reader.result)
-        .then(() => console.log('Disassembled!'))
-    }
-  })
-  reader.addEventListener('loadend', () => {
-    if (input.value) {
-      input.value.value = input.value.defaultValue
-    }
-  })
-
-  reader.readAsArrayBuffer(file)
-}
+// function loadFile() {
+//   const files = input.value?.files
+//
+//   if (!files?.length) {
+//     return
+//   }
+//
+//   const file = files[0]
+//
+//   const reader = new FileReader()
+//   reader.addEventListener('load', () => {
+//     if (reader.result instanceof ArrayBuffer) {
+//       loadElf(file.name, reader.result)
+//         .then(() => console.log('Disassembled!'))
+//     }
+//   })
+//   reader.addEventListener('loadend', () => {
+//     if (input.value) {
+//       input.value.value = input.value.defaultValue
+//     }
+//   })
+//
+//   reader.readAsArrayBuffer(file)
+// }
 </script>
