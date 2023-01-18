@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import { v4 as uuid } from 'uuid'
 import {
   AssemblyExecutionProfile,
-  disassembleElf,
+  disassembleElf, ElfExecutionProfile,
   ExecutionProfile
 } from '../utils/mips'
 
@@ -12,6 +12,8 @@ export interface EditorTab {
   title: string,
   lines: string[],
   breakpoints: number[],
+  path: string | null,
+  marked: boolean, // needs saving
   profile: ExecutionProfile | null
 }
 
@@ -64,6 +66,7 @@ function defaultAssemblyProfile(): AssemblyExecutionProfile  {
 export function createTab(
   named: string,
   content: string[],
+  path: string | null = null,
   profile: ExecutionProfile | null = defaultAssemblyProfile()
 ) {
   const id = uuid()
@@ -73,6 +76,8 @@ export function createTab(
     title: named,
     lines: content,
     breakpoints: [],
+    path,
+    marked: false,
     profile
   })
 
@@ -83,8 +88,11 @@ export async function loadElf(named: string, elf: ArrayBuffer) {
   const value = await disassembleElf(named, elf)
 
   const lines = value.error ? [value.error] : value.lines
+  const profile = {
+    kind: 'elf', elf, breakpoints: value.breakpoints
+  } as ElfExecutionProfile
 
-  createTab(named, lines, { kind: 'elf', elf, breakpoints: value.breakpoints })
+  createTab(named, lines, null, profile)
 }
 
 if (!editor.tabs.length) {

@@ -65,6 +65,7 @@
       font-medium
       max-w-xs
       text-neutral-600
+      shrink-0
     ">
       {{ profileText }}
     </div>
