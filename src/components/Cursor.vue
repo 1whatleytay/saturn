@@ -26,6 +26,29 @@
       top: `${cursor.offsetY}px`
     }"
   />
+
+<!--  <div-->
+<!--    class="-->
+<!--      w-48 h-32-->
+<!--      text-sm font-mono-->
+<!--      overflow-clip-->
+<!--      rounded-lg-->
+<!--      mt-6 p-2-->
+<!--      bg-neutral-900 border border-neutral-800-->
+<!--      absolute mx-[-0.08rem]-->
+<!--    " :style="{-->
+<!--      left: `${cursor.offsetX}px`,-->
+<!--      top: `${cursor.offsetY}px`-->
+<!--    }"-->
+<!--  >-->
+<!--    <div class="w-full h-6 bg-neutral-700 rounded">-->
+<!--      dx_mono-->
+<!--    </div>-->
+
+<!--    <div class="w-full h-6">-->
+<!--      dy_mono-->
+<!--    </div>-->
+<!--  </div>-->
 </template>
 
 <script setup lang="ts">

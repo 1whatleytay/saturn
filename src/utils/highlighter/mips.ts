@@ -1,7 +1,8 @@
-import { Highlighter, style, Token } from './highlighter'
+import { getStyle, Highlighter, Token, TokenType } from './highlighter'
 
 interface Item {
-  color: string,
+  type: TokenType,
+  known: boolean,
   next: number
 }
 
@@ -96,7 +97,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
   if (start >= line.length) {
     return {
-      color: style.nothing,
+      type: TokenType.Nothing,
+      known: false,
       next: start
     }
   }
@@ -108,7 +110,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
       const count = takeCount(line, start + 1, c => c != '\n')
 
       return {
-        color: style.comment,
+        type: TokenType.Comment,
+        known: false,
         next: start + 1 + count
       }
     }
@@ -116,14 +119,9 @@ function readItem(line: string, index: number, initial: boolean): Item {
     case '.': {
       const count = takeName(line, start + 1)
 
-      const parts = [style.directive]
-
-      if (knownDirectives.has(line.substring(start + 1, start + 1 + count))) {
-        parts.push(style.known)
-      }
-
       return {
-        color: parts.join(' '),
+        type: TokenType.Directive,
+        known: knownDirectives.has(line.substring(start + 1, start + 1 + count)),
         next: start + 1 + count
       }
     }
@@ -132,7 +130,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
       const count = takeName(line, start + 1)
 
       return {
-        color: style.directive,
+        type: TokenType.Parameter,
+        known: false,
         next: start + 1 + count
       }
     }
@@ -141,7 +140,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
       const count = takeName(line, start + 1)
 
       return {
-        color: style.register,
+        type: TokenType.Register,
+        known: false,
         next: start + 1 + count
       }
     }
@@ -151,7 +151,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
     case ')':
     case ':':
       return {
-        color: style.comma,
+        type: TokenType.Hard,
+        known: false,
         next: start + 1
       }
 
@@ -160,7 +161,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
       const count = takeStringBody(line, start + 1, first)
 
       return {
-        color: style.text,
+        type: TokenType.Text,
+        known: false,
         next: Math.min(start + 1 + count + 1, line.length)
       }
     }
@@ -171,7 +173,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
       if (/\d/.test(first)) {
         // digit
         return {
-          color: style.numeric,
+          type: TokenType.Numeric,
+          known: false,
           next: start + count
         }
       } else {
@@ -180,28 +183,24 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
         if (nextUp < line.length && line[nextUp] == ':') {
           return {
-            color: style.label,
+            type: TokenType.Label,
+            known: false,
             next: nextUp + 1 // including colon
           }
         }
 
         // It's an instruction!
         if (initial) {
-          // First lone symbol on a line *should* be an instruction
-          const parts = [style.instruction]
-
-          if (knownInstructions.has(line.substring(start, start + count))) {
-            parts.push(style.known)
-          }
-
           return {
-            color: parts.join(' '),
+            type: TokenType.Instruction,
+            known: knownInstructions.has(line.substring(start, start + count)),
             next: start + count
           }
         }
 
         return {
-          color: style.symbol,
+          type: TokenType.Symbol,
+          known: false,
           next: start + count
         }
       }
@@ -211,26 +210,33 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
 export class MipsHighlighter implements Highlighter {
   highlight(line: string): Token[] {
-    const result = []
+    const result: Token[] = []
 
     let index = 0
     let initial = true
 
     while (index < line.length) {
-      const { color, next } = readItem(line, index, initial)
+      const { type, known, next } = readItem(line, index, initial)
       initial = false
 
       if (index === next) {
         const some = takeSome(line, next)
 
         result.push({
+          start: index,
           text: line.substring(index, index + some),
-          color: style.nothing
+          type: TokenType.Nothing,
+          color: getStyle(TokenType.Nothing)
         })
 
         index += some
       } else {
-        result.push({ text: line.substring(index, next), color })
+        result.push({
+          start: index,
+          text: line.substring(index, next),
+          type,
+          color: getStyle(type, known)
+        })
 
         index = next
       }
