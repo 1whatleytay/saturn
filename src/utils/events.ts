@@ -2,13 +2,36 @@ import { listen } from '@tauri-apps/api/event'
 
 import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
 import { resume, step, pause, stop, build } from "./editor-debug";
-import { openInputFile, openElf, selectSaveAssembly, writeFile } from './select-file'
+import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
 import { consoleData } from '../state/console-data'
 
 export enum PromptType {
   NeverPrompt,
   PromptWhenNeeded,
   ForcePrompt
+}
+
+export async function openTab(file: SelectedFile<string | Uint8Array>) {
+  const { name, path, data } = file
+
+  const existing = editor.tabs.find(tab => tab.path === path)
+
+  if (existing) {
+    editor.selected = existing.uuid
+    return
+  }
+
+  switch (typeof data) {
+    case 'string':
+      const split = data.split('\n')
+
+      createTab(name, split.length ? split : [''], path)
+      break
+
+    default:
+      await loadElf(name, data.buffer)
+      break
+  }
 }
 
 export async function saveCurrentTab(type: PromptType = PromptType.PromptWhenNeeded) {
@@ -54,26 +77,7 @@ export async function setupEvents() {
       return
     }
 
-    const { name, path, data } = result
-
-    const existing = editor.tabs.find(tab => tab.path === path)
-
-    if (existing) {
-      editor.selected = existing.uuid
-      return
-    }
-
-    switch (typeof data) {
-      case 'string':
-        const split = data.split('\n')
-
-        createTab(name, split.length ? split : [''], path)
-        break
-
-      default:
-        await loadElf(name, data.buffer)
-        break
-    }
+    await openTab(result)
   })
 
   await listen('close-tab', () => {
@@ -122,11 +126,19 @@ export async function setupEvents() {
     await loadElf(name, data.buffer)
   })
 
-  await listen('assemble', async () => {
-
-  })
-
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
+  })
+
+  await listen('tauri://file-drop', async event => {
+    for (const item of event.payload as string[]) {
+      const file = await readInputFile(item)
+
+      if (!file) {
+        continue
+      }
+
+      await openTab(file)
+    }
   })
 }
