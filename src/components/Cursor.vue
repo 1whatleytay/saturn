@@ -27,32 +27,35 @@
     }"
   />
 
-<!--  <div-->
-<!--    class="-->
-<!--      w-48 h-32-->
-<!--      text-sm font-mono-->
-<!--      overflow-clip-->
-<!--      rounded-lg-->
-<!--      mt-6 p-2-->
-<!--      bg-neutral-900 border border-neutral-800-->
-<!--      absolute mx-[-0.08rem]-->
-<!--    " :style="{-->
-<!--      left: `${cursor.offsetX}px`,-->
-<!--      top: `${cursor.offsetY}px`-->
-<!--    }"-->
-<!--  >-->
-<!--    <div class="w-full h-6 bg-neutral-700 rounded">-->
-<!--      dx_mono-->
-<!--    </div>-->
-
-<!--    <div class="w-full h-6">-->
-<!--      dy_mono-->
-<!--    </div>-->
-<!--  </div>-->
+  <div
+    v-if="suggestions.results.length"
+    class="
+      w-48 h-32
+      text-sm font-mono
+      overflow-clip
+      rounded-lg
+      mt-6 p-2
+      overflow-y-auto
+      bg-neutral-900 border border-neutral-800
+      absolute mx-[-0.08rem]
+    " :style="{
+      left: `${cursor.offsetX}px`,
+      top: `${cursor.offsetY}px`
+    }"
+  >
+    <div
+      v-for="(suggestion, index) in suggestions.results"
+      :key="suggestion.replace"
+      class="w-full h-6 rounded"
+      :class="{ 'bg-neutral-700': index === suggestions.index }"
+    >
+      {{ suggestion.name }}
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { cursor, tabBody, selectionRange } from '../state/cursor-state'
+import { cursor, tabBody, selectionRange, suggestions } from '../state/cursor-state'
 import { computed } from 'vue'
 import { regular } from '../utils/text-size'
 

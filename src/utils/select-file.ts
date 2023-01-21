@@ -2,7 +2,7 @@ import { open, save } from '@tauri-apps/api/dialog'
 import { basename, extname } from '@tauri-apps/api/path'
 import { readBinaryFile, readTextFile, writeTextFile } from '@tauri-apps/api/fs'
 
-interface SelectedFile<T> {
+export interface SelectedFile<T> {
   name: string
   path: string
   data: T
@@ -29,6 +29,25 @@ export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
   return { name, path: result, data }
 }
 
+export async function readInputFile(path: string): Promise<SelectedFile<string | Uint8Array> | null> {
+  const name = await basename(path)
+  const extension = await extname(path)
+
+  let data: string | Uint8Array
+
+  switch (extension) {
+    case 'elf':
+      data = await readBinaryFile(path)
+      break
+
+    default:
+      data = await readTextFile(path)
+      break
+  }
+
+  return { name, path, data }
+}
+
 // Would be magic if this could also open ELF files.
 export async function openInputFile(): Promise<SelectedFile<string | Uint8Array> | null> {
   const result = await open({
@@ -41,22 +60,7 @@ export async function openInputFile(): Promise<SelectedFile<string | Uint8Array>
     return null
   }
 
-  const name = await basename(result)
-  const extension = await extname(result)
-
-  let data: string | Uint8Array
-
-  switch (extension) {
-    case 'elf':
-      data = await readBinaryFile(result)
-      break
-
-    default:
-      data = await readTextFile(result)
-      break
-  }
-
-  return { name, path: result, data }
+  return await readInputFile(result)
 }
 
 export async function selectSaveAssembly(): Promise<SelectedFile<undefined> | null> {

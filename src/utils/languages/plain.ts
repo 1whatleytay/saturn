@@ -1,6 +1,7 @@
-import { Highlighter, style, Token, TokenType } from './highlighter'
+import { Language, style, Token, TokenType } from './language'
+import { Suggestion } from './suggestions'
 
-export class PlainHighlighter implements Highlighter {
+export class PlainHighlighter implements Language {
   highlight(line: string): Token[] {
     return [
       {
@@ -10,5 +11,13 @@ export class PlainHighlighter implements Highlighter {
         color: style.nothing
       }
     ]
+  }
+
+  inspect(tokens: Token[]): Suggestion[] {
+    return []
+  }
+
+  suggest(token: Token): Suggestion[] {
+    return []
   }
 }

@@ -121,7 +121,7 @@ export class Editor {
     }
   }
 
-  private mergedCursor() {
+  private mergedCursor(): SelectionIndex {
     // Not moved, kinda freaky!
     const lastCursor = this.current?.cursor
 

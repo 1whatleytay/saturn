@@ -1,3 +1,5 @@
+import { Suggestion } from './suggestions'
+
 export enum TokenType {
   Comment,
   Hard,
@@ -61,6 +63,8 @@ export function getStyle(type: TokenType, known: boolean = false): string {
   }
 }
 
-export interface Highlighter {
+export interface Language {
   highlight(line: string): Token[]
+  inspect(tokens: Token[]): Suggestion[] // for exports on a line
+  suggest(token: Token): Suggestion[] // for line while user is typing
 }

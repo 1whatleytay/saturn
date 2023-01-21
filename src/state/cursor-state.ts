@@ -7,7 +7,8 @@ import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 import { hasActionKey } from '../utils/shortcut-key'
 import { settings } from './settings-state'
 import { SelectionIndex, SelectionRange } from '../utils/editor'
-import { editor } from './editor-state'
+import { editor, storage } from './editor-state'
+import { useSuggestions } from '../utils/suggestions'
 
 export type Cursor = SelectionIndex & {
   offsetX: number
@@ -25,6 +26,14 @@ export const cursor = reactive({
   highlight: Cursor | null
   pressedBackspace: boolean
 })
+
+export const {
+  showSuggestions,
+  moveIndex,
+  suggestions,
+  mergeSuggestion,
+  hasSuggestions
+} = useSuggestions(storage.language)
 
 export function selectionRange(): SelectionRange | null {
   if (!cursor.highlight) {
@@ -212,12 +221,21 @@ function moveRight(alt: boolean = false, shift: boolean = false) {
 }
 
 function moveDown(shift: boolean = false) {
+  if (hasSuggestions()) {
+    console.log('moving down')
+    return moveIndex(+1)
+  }
+
   setSelection(shift)
 
   putCursor({ line: cursor.line + 1, index: cursor.index })
 }
 
 function moveUp(shift: boolean = false) {
+  if (hasSuggestions()) {
+    return moveIndex(-1)
+  }
+
   setSelection(shift)
 
   putCursor({ line: cursor.line - 1, index: cursor.index })
@@ -343,6 +361,28 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Enter':
+      if (hasSuggestions()) {
+        const suggestion = mergeSuggestion()
+
+        if (suggestion) {
+          editor().drop({
+            startLine: cursor.line,
+            endLine: cursor.line,
+            startIndex: suggestion.start,
+            endIndex: suggestion.start + suggestion.remove
+          })
+
+          putCursor(editor().paste({
+            line: cursor.line,
+            index: suggestion.start
+          }, suggestion.insert))
+
+          editor().commit()
+
+          return
+        }
+      }
+
       editor().commit()
 
       dropSelection()
@@ -360,6 +400,8 @@ export function handleKey(event: KeyboardEvent) {
       } else if (event.key.length === 1) {
         dropSelection()
         putCursor(editor().put(cursor, event.key))
+
+        showSuggestions(storage.highlights[cursor.line], cursor.index)
       }
 
       break

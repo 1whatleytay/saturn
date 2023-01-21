@@ -2,12 +2,12 @@ import { reactive, watch } from 'vue'
 import { Editor } from '../utils/editor'
 import { tab } from './tabs-state'
 import { cursor } from './cursor-state'
-import { Highlighter, Token } from '../utils/highlighter/highlighter'
-import { MipsHighlighter } from '../utils/highlighter/mips'
+import { Language, Token } from '../utils/languages/language'
+import { MipsHighlighter } from '../utils/languages/mips/language'
 
 export const storage = reactive({
   editor: createEditor(),
-  highlighter: createHighlighter(),
+  language: createLanguage(),
   highlights: [] as Token[][]
 })
 
@@ -16,7 +16,7 @@ export function editor() {
 }
 
 function highlight(line: number, deleted: number, lines: string[]) {
-  const tokens = lines.map(part => storage.highlighter.highlight(part))
+  const tokens = lines.map(part => storage.language.highlight(part))
 
   storage.highlights.splice(line, deleted, ...tokens)
 }
@@ -39,14 +39,14 @@ function createEditor(): Editor {
   )
 }
 
-function createHighlighter(): Highlighter {
+function createLanguage(): Language {
   return new MipsHighlighter()
 }
 
 watch(() => tab(), tab => {
-  // Might need to look at tab file extension to pick highlighter
+  // Might need to look at tab file extension to pick languages
   storage.editor = createEditor()
-  storage.highlighter = createHighlighter()
+  storage.language = createLanguage()
   storage.highlights = [] // needs highlighting here
 
   if (tab && tab.lines) {

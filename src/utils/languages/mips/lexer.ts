@@ -1,4 +1,4 @@
-import { getStyle, Highlighter, Token, TokenType } from './highlighter'
+import { getStyle, Token, TokenType } from '../language'
 
 interface Item {
   type: TokenType,
@@ -208,40 +208,38 @@ function readItem(line: string, index: number, initial: boolean): Item {
   }
 }
 
-export class MipsHighlighter implements Highlighter {
-  highlight(line: string): Token[] {
-    const result: Token[] = []
+export function lex(line: string): Token[] {
+  const result: Token[] = []
 
-    let index = 0
-    let initial = true
+  let index = 0
+  let initial = true
 
-    while (index < line.length) {
-      const { type, known, next } = readItem(line, index, initial)
-      initial = false
+  while (index < line.length) {
+    const { type, known, next } = readItem(line, index, initial)
+    initial = false
 
-      if (index === next) {
-        const some = takeSome(line, next)
+    if (index === next) {
+      const some = takeSome(line, next)
 
-        result.push({
-          start: index,
-          text: line.substring(index, index + some),
-          type: TokenType.Nothing,
-          color: getStyle(TokenType.Nothing)
-        })
+      result.push({
+        start: index,
+        text: line.substring(index, index + some),
+        type: TokenType.Nothing,
+        color: getStyle(TokenType.Nothing)
+      })
 
-        index += some
-      } else {
-        result.push({
-          start: index,
-          text: line.substring(index, next),
-          type,
-          color: getStyle(type, known)
-        })
+      index += some
+    } else {
+      result.push({
+        start: index,
+        text: line.substring(index, next),
+        type,
+        color: getStyle(type, known)
+      })
 
-        index = next
-      }
+      index = next
     }
-
-    return result
   }
+
+  return result
 }
