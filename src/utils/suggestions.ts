@@ -21,26 +21,62 @@ export interface SuggestionsResult {
   mergeSuggestion: () => MergeSuggestion | null
   dismissSuggestions: () => void
   hasSuggestions: () => boolean // convenience
+  flushSuggestions: () => boolean // flushes and returns hasSuggestions
 }
 
 export function useSuggestions(language: Language): SuggestionsResult {
   const suggestions = reactive({
     index: 0,
     token: null as Token | null,
-    results: [] as Suggestion[]
+    results: [] as Suggestion[],
+    debounce: null as {
+      interval: number,
+      token: Token,
+      end: number
+    } | null
   })
+
+  function makeSuggestions(token: Token) {
+    console.log('making suggestions')
+
+    suggestions.index = 0
+    suggestions.token = token
+    suggestions.results = language.suggest(token)
+
+    suggestions.debounce = null
+  }
 
   function showSuggestions(tokens: Token[], index: number) {
     const token = findToken(tokens, index)
 
-    if (!token) {
+    if (!token || !token.text.trim().length) {
       suggestions.results = []
 
       return
     }
 
-    suggestions.index = 0
-    suggestions.results = language.suggest(token)
+    const debounceTimeout = 100
+    const forceTimeout = 200
+
+    const now = Date.now()
+
+    if (suggestions.debounce) {
+      window.clearInterval(suggestions.debounce.interval)
+
+      if (suggestions.debounce.end <= now) {
+        console.log('force')
+
+        return makeSuggestions(token)
+      }
+
+      console.log('cancel')
+    }
+
+    suggestions.debounce = {
+      interval: window.setTimeout(() => makeSuggestions(token), debounceTimeout),
+      token,
+      end: now + forceTimeout
+    }
   }
 
   function moveCursor(direction: number) {
@@ -75,7 +111,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
     const token = suggestions.token
     const index = suggestions.index
 
-    if (!token || index <= suggestions.results.length) {
+    if (!token || index > suggestions.results.length) {
       return null
     }
 
@@ -94,12 +130,23 @@ export function useSuggestions(language: Language): SuggestionsResult {
     return !!suggestions.results.length
   }
 
+  function flushSuggestions(): boolean {
+    if (suggestions.debounce) {
+      window.clearInterval(suggestions.debounce.interval)
+
+      makeSuggestions(suggestions.debounce.token)
+    }
+
+    return hasSuggestions()
+  }
+
   return {
     suggestions,
     moveIndex: moveCursor,
     showSuggestions,
     dismissSuggestions,
     mergeSuggestion,
-    hasSuggestions
+    hasSuggestions,
+    flushSuggestions
   }
 }

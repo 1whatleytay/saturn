@@ -29,11 +29,17 @@ export const cursor = reactive({
 
 export const {
   showSuggestions,
+  dismissSuggestions,
   moveIndex,
   suggestions,
   mergeSuggestion,
-  hasSuggestions
+  hasSuggestions,
+  flushSuggestions
 } = useSuggestions(storage.language)
+
+function showCursorSuggestions() {
+  showSuggestions(storage.highlights[cursor.line], cursor.index)
+}
 
 export function selectionRange(): SelectionRange | null {
   if (!cursor.highlight) {
@@ -358,10 +364,14 @@ export function handleKey(event: KeyboardEvent) {
         putCursor(editor().backspace(cursor, event.altKey))
       }
 
+      if (hasSuggestions()) {
+        showCursorSuggestions()
+      }
+
       break
 
     case 'Enter':
-      if (hasSuggestions()) {
+      if (flushSuggestions()) {
         const suggestion = mergeSuggestion()
 
         if (suggestion) {
@@ -378,6 +388,8 @@ export function handleKey(event: KeyboardEvent) {
           }, suggestion.insert))
 
           editor().commit()
+
+          dismissSuggestions()
 
           return
         }
@@ -401,7 +413,7 @@ export function handleKey(event: KeyboardEvent) {
         dropSelection()
         putCursor(editor().put(cursor, event.key))
 
-        showSuggestions(storage.highlights[cursor.line], cursor.index)
+        showCursorSuggestions()
       }
 
       break
@@ -430,6 +442,7 @@ function putCursorAtCoordinates(x: number, y: number) {
 export function dropCursor(x: number, y: number) {
   cursor.highlight = null
   editor().commit()
+  dismissSuggestions()
 
   putCursorAtCoordinates(x, y)
 }

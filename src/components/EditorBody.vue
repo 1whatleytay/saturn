@@ -60,7 +60,7 @@
         }"
       >
         <div v-if="getIndex(i) < storage.highlights.length">
-          <span v-for="token in storage.highlights[getIndex(i)]" :class="[token.color]">
+          <span v-for="(token, index) in storage.highlights[getIndex(i)]" :key="index" :class="[token.color]">
             {{ token.text }}
           </span>
         </div>

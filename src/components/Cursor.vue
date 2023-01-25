@@ -35,29 +35,39 @@
       overflow-clip
       rounded-lg
       mt-6 p-2
-      overflow-y-auto
+      overflow-y-clip
       bg-neutral-900 border border-neutral-800
       absolute mx-[-0.08rem]
     " :style="{
       left: `${cursor.offsetX}px`,
-      top: `${cursor.offsetY}px`
+      top: `${cursor.offsetY}px`,
     }"
+    @wheel="myScroll"
   >
-    <div
-      v-for="(suggestion, index) in suggestions.results"
-      :key="suggestion.replace"
-      class="w-full h-6 rounded"
-      :class="{ 'bg-neutral-700': index === suggestions.index }"
-    >
-      {{ suggestion.name }}
+    <div :style="{ marginTop: `-${suggestionsScroll}px` }">
+      <div
+        v-for="(suggestion, index) in suggestions.results"
+        :key="suggestion.replace"
+        class="w-full h-6 rounded px-2 flex items-center"
+        :class="{ 'bg-neutral-700': index === suggestions.index }"
+      >
+        {{ suggestion.name }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cursor, tabBody, selectionRange, suggestions } from '../state/cursor-state'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { regular } from '../utils/text-size'
+
+const suggestionsScroll = ref(0)
+
+function myScroll(event: WheelEvent) {
+  console.log(event)
+  suggestionsScroll.value = Math.max(suggestionsScroll.value + event.deltaY, 0)
+}
 
 const props = defineProps<{
   // virtualization props

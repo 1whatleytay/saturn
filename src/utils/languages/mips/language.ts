@@ -1,8 +1,7 @@
 import { Language, Token, TokenType } from '../language'
 import { Suggestion } from '../suggestions'
 import { lex } from './lexer'
-import { instructions, suggestionFuse } from './suggestions'
-import Fuse from 'fuse.js'
+import { suggestionFuse } from './suggestions'
 
 export class MipsHighlighter implements Language {
   highlight(line: string): Token[] {
