@@ -14,7 +14,7 @@ export enum SuggestionType {
 
 export interface Suggestion {
   replace: string
-  name: string
+  name?: string
   type?: SuggestionType
 }
 

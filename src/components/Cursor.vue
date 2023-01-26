@@ -30,7 +30,7 @@
   <div
     v-if="suggestions.results.length"
     class="
-      w-48 h-40
+      w-80 h-40
       text-sm font-mono
       overflow-clip
       rounded-lg
@@ -58,30 +58,37 @@
         @click.stop="suggestions.index = index"
         @dblclick.stop="merge(index)"
       >
-        <!-- Ignoring Name for now while I figure out what replace does... -->
-        <span v-if="suggestion.range">
-          <span>
-            {{ suggestion.replace.substring(0, suggestion.range.start) }}
+        <span class="truncate">
+          <span v-if="suggestion.range">
+            <span>
+              {{ suggestion.replace.substring(0, suggestion.range.start) }}
+            </span>
+
+            <span class="font-bold">
+              {{ suggestion.replace.substring(suggestion.range.start, suggestion.range.end + 1) }}
+            </span>
+
+            <span>
+              {{ suggestion.replace.substring(suggestion.range.end + 1) }}
+            </span>
           </span>
 
-          <span class="font-bold">
-            {{ suggestion.replace.substring(suggestion.range.start, suggestion.range.end + 1) }}
-          </span>
-
-          <span>
-            {{ suggestion.replace.substring(suggestion.range.end + 1) }}
+          <span v-else>
+            {{ suggestion.replace }}
           </span>
         </span>
 
-        <span v-else>
-          {{ suggestion.name }}
-        </span>
+        <div class="ml-auto flex items-center">
+           <span v-if="suggestion.name" class="text-neutral-500 mr-2 text-xs max-w-[12rem] shrink truncate">
+            {{ suggestion.name }}
+           </span>
 
-        <div
-          class="ml-auto rounded w-4 h-4 text-black flex items-center justify-center text-xs"
-          :class="[suggestionStyle(suggestion.type)]"
-        >
-          {{ suggestionLetter(suggestion.type) }}
+          <div
+            class="rounded w-4 h-4 text-black flex items-center justify-center text-xs shrink-0"
+            :class="[suggestionStyle(suggestion.type)]"
+          >
+            {{ suggestionLetter(suggestion.type) }}
+          </div>
         </div>
       </div>
     </div>
@@ -143,8 +150,6 @@ watch(() => suggestions.index, value => {
   if (top < start) {
     scrollSuggestionsTo(top)
   } else if (bottom > end) {
-    const diff = bottom - end
-
     scrollSuggestionsTo(bottom - parentHeight + 16)
   }
 })

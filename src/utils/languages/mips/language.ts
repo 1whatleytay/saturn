@@ -1,7 +1,7 @@
 import { Language, Token, TokenType } from '../language'
 import { Suggestion, SuggestionMatch } from '../suggestions'
 import { lex } from './lexer'
-import { directives, lineSuggestions, registers, toSuggestionMatches } from './suggestions'
+import { directives, instructions, mergeResults, registers, toSuggestionMatches } from './suggestions'
 
 export class MipsHighlighter implements Language {
   highlight(line: string): Token[] {
@@ -15,9 +15,11 @@ export class MipsHighlighter implements Language {
   suggest(token: Token): SuggestionMatch[] {
     switch (token.type) {
       case TokenType.Instruction: {
-        const results = lineSuggestions.search(token.text.trim())
+        const trim = token.text.trim()
+        const instructionResults = instructions.search(trim)
+        const directiveResults = directives.search(trim)
 
-        return toSuggestionMatches(results)
+        return toSuggestionMatches(mergeResults(instructionResults, directiveResults))
       }
 
       case TokenType.Register: {
