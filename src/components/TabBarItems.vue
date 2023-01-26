@@ -1,6 +1,6 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
-    <button v-if="!consoleData.execution && tab()?.profile.kind === 'asm'" class="
+    <button v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'" class="
       w-10 h-10
       hover:bg-slate-800
       shrink-0
