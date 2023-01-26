@@ -32,7 +32,7 @@
       mt-6 py-2 px-6 w-auto
       bg-neutral-800 rounded
       absolute z-30
-      text-red-500 font-medium font-sans
+      text-red-400 font-medium font-sans
       hidden group-hover:block">
       {{ errorState.highlight.message }}
     </div>

@@ -1,4 +1,4 @@
-import { Language, Token } from './languages/language'
+import { grabWhitespace, Language, Token } from './languages/language'
 import { findToken, SuggestionMatch } from './languages/suggestions'
 import { reactive } from 'vue'
 
@@ -82,16 +82,6 @@ export function useSuggestions(language: Language): SuggestionsResult {
       suggestions.index = suggestions.results.length - 1
     } else {
       suggestions.index = destination
-    }
-  }
-
-  function grabWhitespace(text: string): { leading: string, trailing: string } {
-    const leadingMatches = text.match(/^\s*/)
-    const trailingMatches = text.match(/\s*$/)
-
-    return {
-      leading: leadingMatches && leadingMatches.length ? leadingMatches[0] : '',
-      trailing: trailingMatches && trailingMatches.length ? trailingMatches[0] : ''
     }
   }
 

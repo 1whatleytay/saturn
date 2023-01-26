@@ -68,3 +68,15 @@ export interface Language {
   inspect(tokens: Token[]): Suggestion[] // for exports on a line
   suggest(token: Token): SuggestionMatch[] // for line while user is typing
 }
+
+// For Tokens
+export function grabWhitespace(text: string): { leading: string, trailing: string } {
+  const leadingMatches = text.match(/^\s*/)
+  const trailingMatches = text.match(/\s*$/)
+
+  return {
+    leading: leadingMatches && leadingMatches.length ? leadingMatches[0] : '',
+    trailing: trailingMatches && trailingMatches.length ? trailingMatches[0] : ''
+  }
+}
+

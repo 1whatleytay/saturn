@@ -1,5 +1,5 @@
 import { findTokenIndex } from './languages/suggestions'
-import { Token } from './languages/language'
+import { grabWhitespace, Token } from './languages/language'
 import { reactive } from 'vue'
 
 export interface ErrorHighlight {
@@ -34,16 +34,16 @@ export function useErrorHighlight(
 
     const tokenIndex = findTokenIndex(tokens, index + 1)
 
-    console.log({ tokenIndex, line, index })
-
     if (tokenIndex === null) {
       return
     }
 
     const token = tokens[tokenIndex]
 
-    const offset = widthQuery(tokens.slice(0, tokenIndex).map(x => x.text).join(''))
-    const size = widthQuery(token.text)
+    const { leading, trailing } = grabWhitespace(token.text)
+
+    const offset = widthQuery(tokens.slice(0, tokenIndex).map(x => x.text).join('') + leading)
+    const size = widthQuery(token.text.substring(leading.length, token.text.length - trailing.length))
 
     state.highlight = { line, message, offset, size }
   }

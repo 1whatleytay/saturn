@@ -4,7 +4,7 @@ import { collectLines, tab } from './tabs-state'
 import { cursor } from './cursor-state'
 import { Language, Token } from '../utils/languages/language'
 import { MipsHighlighter } from '../utils/languages/mips/language'
-import { ErrorHighlight, useErrorHighlight } from '../utils/error-highlight'
+import { useErrorHighlight } from '../utils/error-highlight'
 import { regular } from '../utils/text-size'
 import { assembleText } from '../utils/mips'
 
@@ -38,6 +38,18 @@ async function checkSyntax() {
 
   if (result.status === 'Error' && result.marker) {
     setHighlight(result.marker.line, result.marker.offset, result.message)
+  } else {
+    errorState.highlight = null
+  }
+}
+
+function dispatchCheckSyntax() {
+  if (tab()?.profile?.kind === 'asm') {
+    if (storage.debounce) {
+      clearInterval(storage.debounce)
+    }
+
+    storage.debounce = window.setTimeout(checkSyntax, 500)
   }
 }
 
@@ -60,11 +72,7 @@ function handleDirty(line: number, deleted: number, lines: string[]) {
     // check breakpoints too
   }
 
-  if (storage.debounce) {
-    clearInterval(storage.debounce)
-  }
-
-  storage.debounce = window.setTimeout(checkSyntax, 2000)
+  dispatchCheckSyntax()
 }
 
 function createEditor(): Editor {
@@ -85,9 +93,7 @@ watch(() => tab(), tab => {
   storage.language = createLanguage()
   storage.highlights = [] // needs highlighting here
 
-  if (storage.debounce) {
-    clearInterval(storage.debounce)
-  }
+  dispatchCheckSyntax()
 
   errorState.highlight = null
 
