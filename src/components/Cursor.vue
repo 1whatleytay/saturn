@@ -30,7 +30,7 @@
   <div
     v-if="suggestions.results.length"
     class="
-      w-48 h-32
+      w-48 h-40
       text-sm font-mono
       overflow-clip
       rounded-lg
@@ -43,13 +43,20 @@
       top: `${cursor.offsetY}px`,
     }"
     @wheel="scrollSuggestions"
+    ref="suggestionsParent"
   >
-    <div :style="{ marginTop: `-${suggestionsScroll}px` }">
+    <div
+      ref="suggestionsPane"
+      :style="{ marginTop: `-${suggestionsScroll}px` }"
+      @mousedown.stop.prevent
+    >
       <div
         v-for="(suggestion, index) in suggestions.results"
         :key="suggestion.replace"
-        class="w-full h-6 rounded px-2 flex items-center"
+        class="w-full h-6 rounded px-2 flex items-center cursor-pointer transition-colors duration-150"
         :class="{ 'bg-neutral-700': index === suggestions.index }"
+        @click.stop="suggestions.index = index"
+        @dblclick.stop="merge(index)"
       >
         <!-- Ignoring Name for now while I figure out what replace does... -->
         <span v-if="suggestion.range">
@@ -82,16 +89,65 @@
 </template>
 
 <script setup lang="ts">
-import { cursor, selectionRange, suggestions, tabBody } from '../state/cursor-state'
-import { computed, ref } from 'vue'
+import { cursor, mergeCursorSuggestions, selectionRange, suggestions, tabBody } from '../state/cursor-state'
+import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
 
 const suggestionsScroll = ref(0)
+const suggestionsPane = ref(null as HTMLElement | null)
+const suggestionsParent = ref(null as HTMLElement | null)
+
+const suggestionHeight = 24 // h-6
+
+function merge(index: number) {
+  suggestions.index = index
+
+  mergeCursorSuggestions()
+}
+
+function scrollSuggestionsTo(point: number) {
+  let result = Math.max(point, 0)
+
+  if (suggestionsPane.value && suggestionsParent.value) {
+    const bottom = suggestionsPane.value.clientHeight - suggestionsParent.value.clientHeight + 16
+
+    if (bottom >= 0) {
+      result = Math.min(result, bottom)
+    }
+  }
+
+  suggestionsScroll.value = result
+}
 
 function scrollSuggestions(event: WheelEvent) {
-  suggestionsScroll.value = Math.max(suggestionsScroll.value + event.deltaY, 0)
+  scrollSuggestionsTo(suggestionsScroll.value + event.deltaY)
 }
+
+watch(() => suggestions.results, () => {
+  scrollSuggestionsTo(0)
+})
+
+watch(() => suggestions.index, value => {
+  const top = value * suggestionHeight
+  const bottom = top + suggestionHeight
+
+  if (!suggestionsParent.value) {
+    return
+  }
+
+  const parentHeight = suggestionsParent.value.clientHeight
+  const start = suggestionsScroll.value
+  const end = start + parentHeight
+
+  if (top < start) {
+    scrollSuggestionsTo(top)
+  } else if (bottom > end) {
+    const diff = bottom - end
+
+    scrollSuggestionsTo(bottom - parentHeight + 16)
+  }
+})
 
 function suggestionLetter(type: SuggestionType): string {
   switch (type) {
@@ -100,6 +156,9 @@ function suggestionLetter(type: SuggestionType): string {
 
     case SuggestionType.Register:
       return 'R'
+
+    case SuggestionType.Directive:
+      return 'D'
 
     default:
       return 'O'
@@ -113,6 +172,9 @@ function suggestionStyle(type: SuggestionType): string {
 
     case SuggestionType.Register:
       return 'bg-orange-300 text-orange-800'
+
+    case SuggestionType.Directive:
+      return 'bg-red-300 text-red-800'
 
     default:
       return 'bg-gray-700'

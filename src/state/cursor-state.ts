@@ -37,8 +37,34 @@ export const {
   flushSuggestions
 } = useSuggestions(storage.language)
 
-function showCursorSuggestions() {
+export function showCursorSuggestions() {
   showSuggestions(storage.highlights[cursor.line], cursor.index)
+}
+
+export function mergeCursorSuggestions(): boolean {
+  const suggestion = mergeSuggestion()
+
+  if (suggestion) {
+    editor().drop({
+      startLine: cursor.line,
+      endLine: cursor.line,
+      startIndex: suggestion.start,
+      endIndex: suggestion.start + suggestion.remove
+    })
+
+    putCursor(editor().paste({
+      line: cursor.line,
+      index: suggestion.start
+    }, suggestion.insert))
+
+    editor().commit()
+
+    dismissSuggestions()
+
+    return true
+  }
+
+  return false
 }
 
 export function selectionRange(): SelectionRange | null {
@@ -391,28 +417,8 @@ export function handleKey(event: KeyboardEvent) {
         })
 
         dismissSuggestions()
-      } else if (flushSuggestions()) {
-        const suggestion = mergeSuggestion()
-
-        if (suggestion) {
-          editor().drop({
-            startLine: cursor.line,
-            endLine: cursor.line,
-            startIndex: suggestion.start,
-            endIndex: suggestion.start + suggestion.remove
-          })
-
-          putCursor(editor().paste({
-            line: cursor.line,
-            index: suggestion.start
-          }, suggestion.insert))
-
-          editor().commit()
-
-          dismissSuggestions()
-
-          return
-        }
+      } else if (flushSuggestions() && mergeCursorSuggestions()) {
+        return
       }
 
       editor().commit()

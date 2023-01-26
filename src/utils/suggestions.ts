@@ -99,6 +99,12 @@ export function useSuggestions(language: Language): SuggestionsResult {
     suggestions.token = null
     suggestions.index = 0
     suggestions.results = []
+
+    if (suggestions.debounce) {
+      clearInterval(suggestions.debounce.interval)
+
+      suggestions.debounce = null
+    }
   }
 
   function mergeSuggestion(): MergeSuggestion | null {

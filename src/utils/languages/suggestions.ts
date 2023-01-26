@@ -8,6 +8,7 @@ export interface MatchRange {
 export enum SuggestionType {
   Instruction,
   Register,
+  Directive,
   Label
 }
 
