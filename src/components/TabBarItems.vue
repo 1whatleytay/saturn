@@ -77,6 +77,7 @@ import { computed } from 'vue'
 import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
 import { build, resume, step, pause, stop } from '../utils/editor-debug'
+import { ExecutionModeType } from '../utils/mips'
 
 import {
   ArrowDownIcon,
@@ -85,8 +86,6 @@ import {
   StopIcon,
   ChevronRightIcon
 } from '@heroicons/vue/24/solid'
-
-import { ExecutionModeType } from '../utils/mips'
 
 const profile = computed(() => tab()?.profile)
 

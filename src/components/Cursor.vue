@@ -4,18 +4,37 @@
       <div
         v-for="(text, index) in range.ranges"
         :key="index"
-        class="line"
+        class="h-6 flex items-center"
       >
         <span class="opacity-0">
           {{ text.leading }}
         </span>
 
-        <span class="selection">
+        <span class="rounded opacity-30 px-1 -mx-1 bg-blue-500">
           <span class="opacity-0">
             {{ text.body }}
           </span>
         </span>
       </div>
+    </div>
+  </div>
+
+  <div
+    v-if="errorState.highlight"
+    class="absolute h-6 border-b-2 border-red-500 bg-red-500 bg-opacity-25 group"
+    :style="{
+      top: `${lineHeight * errorState.highlight.line}px`,
+      left: `${errorState.highlight.offset}px`,
+      width: `${errorState.highlight.size}px`
+    }"
+  >
+    <div class="
+      mt-6 py-2 px-6 w-auto
+      bg-neutral-800 rounded
+      absolute z-30
+      text-red-500 font-medium font-sans
+      hidden group-hover:block">
+      {{ errorState.highlight.message }}
     </div>
   </div>
 
@@ -80,7 +99,7 @@
 
         <div class="ml-auto flex items-center">
            <span v-if="suggestion.name" class="text-neutral-500 mr-2 text-xs max-w-[12rem] shrink truncate">
-            {{ suggestion.name }}
+             {{ suggestion.name }}
            </span>
 
           <div
@@ -100,12 +119,13 @@ import { cursor, mergeCursorSuggestions, selectionRange, suggestions, tabBody } 
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
+import { errorState } from '../state/editor-state'
 
 const suggestionsScroll = ref(0)
 const suggestionsPane = ref(null as HTMLElement | null)
 const suggestionsParent = ref(null as HTMLElement | null)
 
-const suggestionHeight = 24 // h-6
+const lineHeight = 24 // h-6
 
 function merge(index: number) {
   suggestions.index = index
@@ -136,8 +156,8 @@ watch(() => suggestions.results, () => {
 })
 
 watch(() => suggestions.index, value => {
-  const top = value * suggestionHeight
-  const bottom = top + suggestionHeight
+  const top = value * lineHeight
+  const bottom = top + lineHeight
 
   if (!suggestionsParent.value) {
     return
@@ -154,7 +174,7 @@ watch(() => suggestions.index, value => {
   }
 })
 
-function suggestionLetter(type: SuggestionType): string {
+function suggestionLetter(type?: SuggestionType): string {
   switch (type) {
     case SuggestionType.Instruction:
       return 'I'
@@ -170,7 +190,7 @@ function suggestionLetter(type: SuggestionType): string {
   }
 }
 
-function suggestionStyle(type: SuggestionType): string {
+function suggestionStyle(type?: SuggestionType): string {
   switch (type) {
     case SuggestionType.Instruction:
       return 'bg-cyan-500 text-cyan-900'
@@ -276,13 +296,3 @@ const range = computed((): RangeSelection | null => {
   return { top: top ?? range.startLine * height, ranges: result }
 })
 </script>
-
-<style scoped>
-.line {
-  @apply h-6 flex items-center;
-}
-
-.selection {
-  @apply rounded opacity-30 px-1 -mx-1 bg-blue-500;
-}
-</style>

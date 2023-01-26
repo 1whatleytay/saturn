@@ -111,7 +111,7 @@ impl AssemblerResult {
                 let marker = details.as_ref()
                     .map(|details| LineMarker {
                         line: details.line_number,
-                        offset: details.line_number
+                        offset: details.line_offset
                     });
 
                 let body = details.as_ref()

@@ -1,4 +1,4 @@
-import { Token, TokenType } from './language'
+import { Token } from './language'
 
 export interface MatchRange {
   start: number
@@ -20,7 +20,7 @@ export interface Suggestion {
 
 export type SuggestionMatch = Suggestion & { range?: MatchRange }
 
-export function findToken(tokens: Token[], index: number): Token | null {
+export function findTokenIndex(tokens: Token[], index: number): number | null {
   let start = 0
   let end = tokens.length
 
@@ -30,7 +30,7 @@ export function findToken(tokens: Token[], index: number): Token | null {
 
     // Cursor can be on token if it's at the end.
     if (current.start < index && index <= current.start + current.text.length) {
-      return current
+      return middle
     }
 
     if (index <= current.start) {
@@ -41,4 +41,14 @@ export function findToken(tokens: Token[], index: number): Token | null {
   }
 
   return null
+}
+
+export function findToken(tokens: Token[], index: number): Token | null {
+  const point = findTokenIndex(tokens, index)
+
+  if (point === null) {
+    return null
+  }
+
+  return tokens[point]
 }

@@ -1,15 +1,27 @@
 import { reactive, watch } from 'vue'
 import { Editor } from '../utils/editor'
-import { tab } from './tabs-state'
+import { collectLines, tab } from './tabs-state'
 import { cursor } from './cursor-state'
 import { Language, Token } from '../utils/languages/language'
 import { MipsHighlighter } from '../utils/languages/mips/language'
+import { ErrorHighlight, useErrorHighlight } from '../utils/error-highlight'
+import { regular } from '../utils/text-size'
+import { assembleText } from '../utils/mips'
 
 export const storage = reactive({
   editor: createEditor(),
   language: createLanguage(),
-  highlights: [] as Token[][]
+  highlights: [] as Token[][],
+  debounce: null as number | null
 })
+
+export const {
+  state: errorState,
+  setHighlight
+} = useErrorHighlight(
+  text => regular.calculate(text).width,
+  line => storage.highlights[line]
+)
 
 export function editor() {
   return storage.editor
@@ -21,6 +33,14 @@ function highlight(line: number, deleted: number, lines: string[]) {
   storage.highlights.splice(line, deleted, ...tokens)
 }
 
+async function checkSyntax() {
+  const result = await assembleText(collectLines(tab()?.lines ?? []))
+
+  if (result.status === 'Error' && result.marker) {
+    setHighlight(result.marker.line, result.marker.offset, result.message)
+  }
+}
+
 function handleDirty(line: number, deleted: number, lines: string[]) {
   highlight(line, deleted, lines)
 
@@ -29,6 +49,22 @@ function handleDirty(line: number, deleted: number, lines: string[]) {
   if (current) {
     current.marked = true
   }
+
+  if (errorState.highlight) {
+    if (line <= errorState.highlight.line && errorState.highlight.line < line + deleted) {
+      errorState.highlight = null
+    } else if (lines.length !== deleted && errorState.highlight.line >= line + deleted) {
+      errorState.highlight.line += lines.length - deleted
+    }
+
+    // check breakpoints too
+  }
+
+  if (storage.debounce) {
+    clearInterval(storage.debounce)
+  }
+
+  storage.debounce = window.setTimeout(checkSyntax, 2000)
 }
 
 function createEditor(): Editor {
@@ -48,6 +84,12 @@ watch(() => tab(), tab => {
   storage.editor = createEditor()
   storage.language = createLanguage()
   storage.highlights = [] // needs highlighting here
+
+  if (storage.debounce) {
+    clearInterval(storage.debounce)
+  }
+
+  errorState.highlight = null
 
   if (tab && tab.lines) {
     highlight(0, 0, tab.lines)
