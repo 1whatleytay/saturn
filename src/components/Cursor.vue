@@ -85,7 +85,7 @@
 import { cursor, selectionRange, suggestions, tabBody } from '../state/cursor-state'
 import { computed, ref } from 'vue'
 import { regular } from '../utils/text-size'
-import { Suggestion, SuggestionType } from '../utils/languages/suggestions'
+import { SuggestionType } from '../utils/languages/suggestions'
 
 const suggestionsScroll = ref(0)
 
@@ -98,6 +98,9 @@ function suggestionLetter(type: SuggestionType): string {
     case SuggestionType.Instruction:
       return 'I'
 
+    case SuggestionType.Register:
+      return 'R'
+
     default:
       return 'O'
   }
@@ -107,6 +110,9 @@ function suggestionStyle(type: SuggestionType): string {
   switch (type) {
     case SuggestionType.Instruction:
       return 'bg-cyan-500 text-cyan-900'
+
+    case SuggestionType.Register:
+      return 'bg-orange-300 text-orange-800'
 
     default:
       return 'bg-gray-700'

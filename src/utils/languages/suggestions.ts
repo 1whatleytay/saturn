@@ -6,7 +6,9 @@ export interface MatchRange {
 }
 
 export enum SuggestionType {
-  Instruction
+  Instruction,
+  Register,
+  Label
 }
 
 export interface Suggestion {

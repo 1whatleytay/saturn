@@ -1,7 +1,7 @@
 import { Suggestion, SuggestionType } from '../suggestions'
 import Fuse from 'fuse.js'
 
-export const instructions = [
+const instructionParts = [
   { name: 'sll', replace: 'sll' },
   { name: 'srl', replace: 'srl' },
   { name: 'sra', replace: 'sra' },
@@ -65,7 +65,48 @@ export const instructions = [
   { name: 'msubu', replace: 'msubu' },
 ].map(x => ({ ...x, type: SuggestionType.Instruction })) as Suggestion[]
 
-export const suggestionFuse = new Fuse(instructions, {
+const registerParts = [
+  { name: '$zero', replace: '$zero' },
+  { name: '$at', replace: '$at' },
+  { name: '$v0', replace: '$v0' },
+  { name: '$v1', replace: '$v1' },
+  { name: '$a0', replace: '$a0' },
+  { name: '$a1', replace: '$a1' },
+  { name: '$a2', replace: '$a2' },
+  { name: '$a3', replace: '$a3' },
+  { name: '$t0', replace: '$t0' },
+  { name: '$t1', replace: '$t1' },
+  { name: '$t2', replace: '$t2' },
+  { name: '$t3', replace: '$t3' },
+  { name: '$t4', replace: '$t4' },
+  { name: '$t5', replace: '$t5' },
+  { name: '$t6', replace: '$t6' },
+  { name: '$t7', replace: '$t7' },
+  { name: '$s0', replace: '$s0' },
+  { name: '$s1', replace: '$s1' },
+  { name: '$s2', replace: '$s2' },
+  { name: '$s3', replace: '$s3' },
+  { name: '$s4', replace: '$s4' },
+  { name: '$s5', replace: '$s5' },
+  { name: '$s6', replace: '$s6' },
+  { name: '$s7', replace: '$s7' },
+  { name: '$t8', replace: '$t8' },
+  { name: '$t9', replace: '$t9' },
+  { name: '$k0', replace: '$k0' },
+  { name: '$k1', replace: '$k1' },
+  { name: '$gp', replace: '$gp' },
+  { name: '$sp', replace: '$sp' },
+  { name: '$fp', replace: '$fp' },
+  { name: '$ra', replace: '$ra' },
+].map(x => ({ ...x, type: SuggestionType.Register })) as Suggestion[]
+
+export const instructions = new Fuse(instructionParts, {
+  keys: ['replace'],
+  includeScore: true,
+  includeMatches: true
+})
+
+export const registers = new Fuse(registerParts, {
   keys: ['replace'],
   includeScore: true,
   includeMatches: true
