@@ -236,7 +236,6 @@ function moveRight(alt: boolean = false, shift: boolean = false) {
 
 function moveDown(shift: boolean = false) {
   if (hasSuggestions()) {
-    console.log('moving down')
     return moveIndex(+1)
   }
 

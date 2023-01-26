@@ -42,7 +42,7 @@
       left: `${cursor.offsetX}px`,
       top: `${cursor.offsetY}px`,
     }"
-    @wheel="myScroll"
+    @wheel="scrollSuggestions"
   >
     <div :style="{ marginTop: `-${suggestionsScroll}px` }">
       <div
@@ -51,22 +51,66 @@
         class="w-full h-6 rounded px-2 flex items-center"
         :class="{ 'bg-neutral-700': index === suggestions.index }"
       >
-        {{ suggestion.name }}
+        <!-- Ignoring Name for now while I figure out what replace does... -->
+        <span v-if="suggestion.range">
+          <span>
+            {{ suggestion.replace.substring(0, suggestion.range.start) }}
+          </span>
+
+          <span class="font-bold">
+            {{ suggestion.replace.substring(suggestion.range.start, suggestion.range.end + 1) }}
+          </span>
+
+          <span>
+            {{ suggestion.replace.substring(suggestion.range.end + 1) }}
+          </span>
+        </span>
+
+        <span v-else>
+          {{ suggestion.name }}
+        </span>
+
+        <div
+          class="ml-auto rounded w-4 h-4 text-black flex items-center justify-center text-xs"
+          :class="[suggestionStyle(suggestion.type)]"
+        >
+          {{ suggestionLetter(suggestion.type) }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { cursor, tabBody, selectionRange, suggestions } from '../state/cursor-state'
+import { cursor, selectionRange, suggestions, tabBody } from '../state/cursor-state'
 import { computed, ref } from 'vue'
 import { regular } from '../utils/text-size'
+import { Suggestion, SuggestionType } from '../utils/languages/suggestions'
 
 const suggestionsScroll = ref(0)
 
-function myScroll(event: WheelEvent) {
-  console.log(event)
+function scrollSuggestions(event: WheelEvent) {
   suggestionsScroll.value = Math.max(suggestionsScroll.value + event.deltaY, 0)
+}
+
+function suggestionLetter(type: SuggestionType): string {
+  switch (type) {
+    case SuggestionType.Instruction:
+      return 'I'
+
+    default:
+      return 'O'
+  }
+}
+
+function suggestionStyle(type: SuggestionType): string {
+  switch (type) {
+    case SuggestionType.Instruction:
+      return 'bg-cyan-500 text-cyan-900'
+
+    default:
+      return 'bg-gray-700'
+  }
 }
 
 const props = defineProps<{

@@ -20,10 +20,14 @@ export class MipsHighlighter implements Language {
         return results.map(x => {
           let range = undefined
 
-          if (x.matches && x.matches.length === 2) {
+          if (x.matches && x.matches.length > 0) {
+            const match = x.matches[0]
+
+            const first = match.indices[0]
+
             range = {
-              start: x.matches[0],
-              end: x.matches[1]
+              start: first[0],
+              end: first[1]
             }
           }
 

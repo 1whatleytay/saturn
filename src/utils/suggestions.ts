@@ -53,11 +53,6 @@ export function useSuggestions(language: Language): SuggestionsResult {
       return
     }
 
-    // I think I saw a case where this causes suggestions to show out-of-token.
-    if (suggestions.token && suggestions.token !== token) {
-      suggestions.results = []
-    }
-
     const debounceTimeout = 100
     const forceTimeout = 200
 
