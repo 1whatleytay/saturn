@@ -205,7 +205,7 @@ export class Editor {
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
 
-      this.mutate(range.startLine, range.endLine - range.startLine + 1, 2, () => {
+      this.mutate(range.startLine, range.endLine - range.startLine + 1, 1, () => {
         this.data[range.startLine] = leading + trailing
         this.data.splice(range.startLine + 1, range.endLine - range.startLine)
       })

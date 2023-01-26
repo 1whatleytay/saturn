@@ -1,4 +1,4 @@
-import { Suggestion } from './suggestions'
+import { Suggestion, SuggestionMatch } from './suggestions'
 
 export enum TokenType {
   Comment,
@@ -66,5 +66,5 @@ export function getStyle(type: TokenType, known: boolean = false): string {
 export interface Language {
   highlight(line: string): Token[]
   inspect(tokens: Token[]): Suggestion[] // for exports on a line
-  suggest(token: Token): Suggestion[] // for line while user is typing
+  suggest(token: Token): SuggestionMatch[] // for line while user is typing
 }

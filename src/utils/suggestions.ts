@@ -1,5 +1,5 @@
 import { Language, Token } from './languages/language'
-import { findToken, Suggestion } from './languages/suggestions'
+import { findToken, SuggestionMatch } from './languages/suggestions'
 import { reactive } from 'vue'
 
 export interface MergeSuggestion {
@@ -11,7 +11,7 @@ export interface MergeSuggestion {
 export interface SuggestionsState {
   index: number
   token: Token | null
-  results: Suggestion[]
+  results: SuggestionMatch[]
 }
 
 export interface SuggestionsResult {
@@ -28,7 +28,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
   const suggestions = reactive({
     index: 0,
     token: null as Token | null,
-    results: [] as Suggestion[],
+    results: [] as SuggestionMatch[],
     debounce: null as {
       interval: number,
       token: Token,
@@ -37,8 +37,6 @@ export function useSuggestions(language: Language): SuggestionsResult {
   })
 
   function makeSuggestions(token: Token) {
-    console.log('making suggestions')
-
     suggestions.index = 0
     suggestions.token = token
     suggestions.results = language.suggest(token)
@@ -55,6 +53,11 @@ export function useSuggestions(language: Language): SuggestionsResult {
       return
     }
 
+    // I think I saw a case where this causes suggestions to show out-of-token.
+    if (suggestions.token && suggestions.token !== token) {
+      suggestions.results = []
+    }
+
     const debounceTimeout = 100
     const forceTimeout = 200
 
@@ -64,12 +67,8 @@ export function useSuggestions(language: Language): SuggestionsResult {
       window.clearInterval(suggestions.debounce.interval)
 
       if (suggestions.debounce.end <= now) {
-        console.log('force')
-
         return makeSuggestions(token)
       }
-
-      console.log('cancel')
     }
 
     suggestions.debounce = {
@@ -79,7 +78,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
     }
   }
 
-  function moveCursor(direction: number) {
+  function moveIndex(direction: number) {
     const destination = suggestions.index + direction
 
     if (destination >= suggestions.results.length) {
@@ -142,7 +141,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
 
   return {
     suggestions,
-    moveIndex: moveCursor,
+    moveIndex,
     showSuggestions,
     dismissSuggestions,
     mergeSuggestion,

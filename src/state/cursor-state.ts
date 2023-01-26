@@ -195,6 +195,10 @@ function moveLeft(alt: boolean = false, shift: boolean = false) {
   }
 
   putCursor({ line, index: move })
+
+  if (hasSuggestions()) {
+    showCursorSuggestions()
+  }
 }
 
 function moveRight(alt: boolean = false, shift: boolean = false) {
@@ -224,6 +228,10 @@ function moveRight(alt: boolean = false, shift: boolean = false) {
   }
 
   putCursor({ line, index: move })
+
+  if (hasSuggestions()) {
+    showCursorSuggestions()
+  }
 }
 
 function moveDown(shift: boolean = false) {
@@ -320,6 +328,7 @@ function handleActionKey(event: KeyboardEvent) {
       
       if (value) {
         putCursor(value)
+        cursor.highlight = null
       }
       
       break
@@ -348,6 +357,11 @@ export function handleKey(event: KeyboardEvent) {
       moveUp(event.shiftKey)
       break
 
+    case 'Escape':
+      dismissSuggestions()
+      event.preventDefault()
+      break
+
     case 'Tab':
       hitTab(event.shiftKey)
       event.preventDefault()
@@ -371,7 +385,14 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Enter':
-      if (flushSuggestions()) {
+      if (event.shiftKey) {
+        putCursor({
+          line: cursor.line,
+          index: editor().lineAt(cursor.line).length
+        })
+
+        dismissSuggestions()
+      } else if (flushSuggestions()) {
         const suggestion = mergeSuggestion()
 
         if (suggestion) {

@@ -1,11 +1,21 @@
-import { Token } from './language'
+import { Token, TokenType } from './language'
 
-export interface Suggestion {
-  replace: string,
-  name: string
+export interface MatchRange {
+  start: number
+  end: number
 }
 
-export type SuggestionItem = Suggestion & { count: number }
+export enum SuggestionType {
+  Instruction
+}
+
+export interface Suggestion {
+  replace: string
+  name: string
+  type?: SuggestionType
+}
+
+export type SuggestionMatch = Suggestion & { range?: MatchRange }
 
 export function findToken(tokens: Token[], index: number): Token | null {
   let start = 0

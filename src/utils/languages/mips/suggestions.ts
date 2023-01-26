@@ -1,4 +1,4 @@
-import { Suggestion } from '../suggestions'
+import { Suggestion, SuggestionType } from '../suggestions'
 import Fuse from 'fuse.js'
 
 export const instructions = [
@@ -63,6 +63,10 @@ export const instructions = [
   { name: 'mul', replace: 'mul' },
   { name: 'msub', replace: 'msub' },
   { name: 'msubu', replace: 'msubu' },
-] as Suggestion[]
+].map(x => ({ ...x, type: SuggestionType.Instruction })) as Suggestion[]
 
-export const suggestionFuse = new Fuse(instructions, { keys: ['replace'] })
+export const suggestionFuse = new Fuse(instructions, {
+  keys: ['replace'],
+  includeScore: true,
+  includeMatches: true
+})

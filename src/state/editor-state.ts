@@ -17,8 +17,12 @@ export function editor() {
 
 function highlight(line: number, deleted: number, lines: string[]) {
   const tokens = lines.map(part => storage.language.highlight(part))
+  console.log(tokens)
 
   storage.highlights.splice(line, deleted, ...tokens)
+
+  console.log(`dirty ${line} -${deleted} +${lines.length}`)
+  console.log(storage.highlights.map(x => x.map(y => y.text).join('')))
 }
 
 function handleDirty(line: number, deleted: number, lines: string[]) {
