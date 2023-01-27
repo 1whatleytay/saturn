@@ -86,7 +86,7 @@ function postBuildMessage(result: AssemblerResult): boolean {
       return false
 
     case 'Success':
-      openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, p')}`)
+      openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`)
 
       return true
   }
