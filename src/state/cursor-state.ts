@@ -192,6 +192,7 @@ export function putCursor(index: SelectionIndex, set: Cursor = cursor) {
 }
 
 function moveLeft(alt: boolean = false, shift: boolean = false) {
+  bringCursorInline()
   const text = editor().lineAt(cursor.line)
 
   const consume = alt
@@ -228,6 +229,7 @@ function moveLeft(alt: boolean = false, shift: boolean = false) {
 }
 
 function moveRight(alt: boolean = false, shift: boolean = false) {
+  bringCursorInline()
   const text = editor().lineAt(cursor.line)
 
   const consume = alt ? consumeForwards(text, cursor.index) : 1
@@ -331,6 +333,14 @@ export function pasteText(text: string) {
   putCursor(editor().paste(cursor, text))
 }
 
+function bringCursorInline(index: SelectionIndex = cursor) {
+  const line = editor().lineAt(index.line)
+
+  if (index.index > line.length) {
+    index.index = line.length
+  }
+}
+
 function handleActionKey(event: KeyboardEvent) {
   // assert hasActionKey(event)
 
@@ -400,6 +410,7 @@ export function handleKey(event: KeyboardEvent) {
       cursor.pressedBackspace = true
 
       if (!dropSelection()) {
+        bringCursorInline()
         putCursor(editor().backspace(cursor, event.altKey))
       }
 
