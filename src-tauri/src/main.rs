@@ -23,7 +23,9 @@ use titan::debug::debugger::{Debugger, DebugFrame, DebuggerMode};
 use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
+use titan::elf::program::ProgramHeaderFlags;
 use crate::menu::{create_menu, handle_event};
+use crate::ResumeMode::Finished;
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
 use crate::syscall::{SyscallDelegate, SyscallState};
 
@@ -65,8 +67,7 @@ impl From<DebuggerMode> for ResumeMode {
             DebuggerMode::Recovered => ResumeMode::Breakpoint,
             DebuggerMode::Invalid(error) => ResumeMode::Invalid(format!("{}", error)),
             DebuggerMode::Paused => ResumeMode::Paused,
-            DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
-            DebuggerMode::Finished(address) => ResumeMode::Finished(address),
+            DebuggerMode::Breakpoint => ResumeMode::Breakpoint
         }
     }
 }
@@ -134,9 +135,18 @@ impl AssemblerResult {
 }
 
 impl ResumeResult {
-    fn from_frame(frame: DebugFrame) -> ResumeResult {
+    fn from_frame(frame: DebugFrame, finished_pcs: &Vec<u32>) -> ResumeResult {
+        let mode = {
+            // This is probably okay...
+            if finished_pcs.contains(&frame.registers.pc) {
+                Finished(frame.registers.pc)
+            } else {
+                frame.mode.into()
+            }
+        };
+
         ResumeResult {
-            mode: frame.mode.into(),
+            mode,
             registers: frame.registers.into()
         }
     }
@@ -174,11 +184,16 @@ fn configure_elf(
 ) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
+    let finished_pcs = elf.program_headers.iter()
+        .filter(|header| header.flags.contains(ProgramHeaderFlags::EXECUTABLE))
+        .map(|header| header.virtual_address + header.data.len() as u32)
+        .collect();
+
     let mut cpu_state = create_simple_state(&elf, 0x100000);
     setup_state(&mut cpu_state);
 
     let print = forward_print(app_handle);
-    swap(state.lock().unwrap(), Debugger::new(cpu_state), print);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, print);
 
     true
 }
@@ -193,49 +208,54 @@ fn configure_asm(
 
     let Some(binary) = binary else { return result };
 
+    // No EXECUTABLE marked regions from assembler yet.
+    let finished_pcs = binary.regions.iter()
+        .map(|region| region.address + region.data.len() as u32)
+        .collect();
+
     let mut cpu_state = state_from_binary(binary, 0x100000);
     setup_state(&mut cpu_state);
 
     let print = forward_print(app_handle);
-    swap(state.lock().unwrap(), Debugger::new(cpu_state), print);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, print);
 
     result
 }
 
-type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>);
+type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>, Vec<u32>);
 
 fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    Some((pointer.debugger.clone(), pointer.delegate.clone()))
+    Some((pointer.debugger.clone(), pointer.delegate.clone(), pointer.finished_pcs.clone()))
 }
 
 #[tauri::command]
 async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let (debugger, state) = lock_and_clone(state).ok_or(())?;
+    let (
+        debugger, state, finished_pcs
+    ) = lock_and_clone(state).ok_or(())?;
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 
     let frame = tokio::spawn(async move {
-        let frame = SyscallDelegate::new(state).run(&debugger).await;
-
-        println!("Actually stopped!");
-
-        frame
+        SyscallDelegate::new(state).run(&debugger).await
     }).await.unwrap();
 
-    Ok(ResumeResult::from_frame(frame))
+    Ok(ResumeResult::from_frame(frame, &finished_pcs))
 }
 
 #[tauri::command]
 async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let (debugger, state) = lock_and_clone(state).ok_or(())?;
+    let (
+        debugger, state, finished_pcs
+    ) = lock_and_clone(state).ok_or(())?;
 
     let frame = SyscallDelegate::new(state).cycle(&debugger).await;
 
-    Ok(ResumeResult::from_frame(frame))
+    Ok(ResumeResult::from_frame(frame, &finished_pcs))
 }
 
 #[tauri::command]
@@ -254,7 +274,7 @@ fn pause(state: tauri::State<'_, DebuggerBody>) -> Option<ResumeResult> {
     let mut debugger = pointer.debugger.lock().unwrap();
     debugger.pause();
 
-    Some(ResumeResult::from_frame(debugger.frame()))
+    Some(ResumeResult::from_frame(debugger.frame(), &vec![]))
 }
 
 #[tauri::command]

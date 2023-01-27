@@ -57,9 +57,9 @@ export enum ExecutionModeType {
   Running = 'Running',
   Invalid = 'Invalid',
   Paused = 'Paused',
+  Stopped = 'Stopped',
   Breakpoint = 'Breakpoint',
-  Finished = 'Finished',
-  BuildFailed = 'BuildFailed'
+  Finished = 'Finished'
 }
 
 export interface ExecutionModeInvalid {
@@ -72,18 +72,12 @@ export interface ExecutionModeFinished {
   value: number
 }
 
-export interface ExecutionModeBuildFailed {
-  type: ExecutionModeType.BuildFailed
-  value: AssemblerError
-}
-
 type ExecutionModeOther = ExecutionModeType.Running
   | ExecutionModeType.Breakpoint
   | ExecutionModeType.Paused
 
 export type ExecutionMode = ExecutionModeInvalid
   | ExecutionModeFinished
-  | ExecutionModeBuildFailed
   | { type: ExecutionModeOther }
 
 export interface Registers {
@@ -96,22 +90,6 @@ export interface Registers {
 export interface ExecutionResult {
   mode: ExecutionMode,
   registers: Registers
-}
-
-export function defaultRegisters(): Registers {
-  return {
-    pc: 0,
-    line: Array(32).fill(0),
-    lo: 0,
-    hi: 0
-  }
-}
-
-export function defaultResult(mode: ExecutionMode): ExecutionResult {
-  return {
-    mode,
-    registers: defaultRegisters()
-  }
 }
 
 class Breakpoints {
@@ -142,7 +120,7 @@ export class ExecutionState {
   configured: boolean = false
   public breakpoints: Breakpoints | null
 
-  async configure(): Promise<AssemblerError | null> {
+  async configure(): Promise<AssemblerResult | null> {
     if (this.configured) {
       return null
     }
@@ -155,7 +133,8 @@ export class ExecutionState {
           bytes: Array.from(new Uint8Array(this.profile.elf))
         })
 
-        return result ? null : {
+        return result ? { status: 'Success', breakpoints: { } } : {
+          status: 'Error',
           message: 'Configured ELF was not valid',
           body: null,
           marker: null
@@ -171,31 +150,38 @@ export class ExecutionState {
           case 'Success':
             this.breakpoints = new Breakpoints(result.breakpoints)
 
-            return null
+            return { status: 'Success', breakpoints: { } }
 
           case 'Error':
             return {
+              status: 'Error',
               message: result.message,
               body: result.body,
               marker: result.marker
             }
         }
 
-        throw new Error() // unknown status
+        break
       }
 
-      default: throw new Error()
+      default:
+        break
     }
+
+    throw new Error()
   }
 
-  public async resume(breakpoints: number[]): Promise<ExecutionResult> {
-    const assemblerError = await this.configure()
+  public async resume(
+    breakpoints: number[], listen: (result: AssemblerResult) => void = () => { }
+  ): Promise<ExecutionResult | null> {
+    const assemblerResult = await this.configure()
 
-    if (assemblerError) {
-      return defaultResult({
-        type: ExecutionModeType.BuildFailed,
-        value: assemblerError
-      })
+    if (assemblerResult) {
+      listen(assemblerResult)
+
+      if (assemblerResult.status === 'Error') {
+        return null
+      }
     }
 
     const result = await tauri.invoke('resume', {

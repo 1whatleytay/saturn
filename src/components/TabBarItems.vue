@@ -35,12 +35,14 @@
 
     <button v-if="!!consoleData.execution" class="
       w-10 h-10
-      hover:bg-slate-800
       shrink-0
       flex items-center justify-center
       font-black
       text-teal-300
-    " @click="step()">
+    " @click="step()" :class="{
+      'text-gray-300 cursor-default': !allowResume,
+      'hover:bg-slate-800': allowResume
+    }" :disabled="!allowResume">
       <ChevronRightIcon class="w-4 h-4" />
     </button>
 
@@ -76,21 +78,18 @@
 import { computed } from 'vue'
 import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
-import { build, resume, step, pause, stop } from '../utils/editor-debug'
+import { build, pause, resume, step, stop } from '../utils/editor-debug'
 import { ExecutionModeType } from '../utils/mips'
 
-import {
-  ArrowDownIcon,
-  PlayIcon,
-  PauseIcon,
-  StopIcon,
-  ChevronRightIcon
-} from '@heroicons/vue/24/solid'
+import { ArrowDownIcon, ChevronRightIcon, PauseIcon, PlayIcon, StopIcon } from '@heroicons/vue/24/solid'
 
 const profile = computed(() => tab()?.profile)
 
 const allowResume = computed(() =>
-  !consoleData.execution || consoleData.mode !== ExecutionModeType.Running
+  !consoleData.execution || (
+    consoleData.mode !== ExecutionModeType.Invalid &&
+    consoleData.mode !== ExecutionModeType.Running
+  )
 )
 
 const profileText = computed((): string | null => {

@@ -3,7 +3,6 @@ import { consoleData, DebugTab, openConsole, pushConsole } from '../state/consol
 import {
   AssemblerResult,
   assembleText,
-  ExecutionMode,
   ExecutionModeType,
   ExecutionResult,
   ExecutionState
@@ -32,13 +31,19 @@ export async function setBreakpoint(line: number, remove: boolean) {
 }
 
 function postDebugInformation(result: ExecutionResult) {
+  if (consoleData.mode === ExecutionModeType.Stopped) {
+    return
+  }
+
   consoleData.mode = result.mode.type
+  consoleData.registers = result.registers
   
   switch (result.mode.type) {
     case ExecutionModeType.Finished: {
       const address = result.mode.value.toString(16).padStart(8, '0')
 
-      pushConsole(`Execution finished at 0x${address}`)
+      pushConsole(`Execution finished at pc 0x${address}`)
+      closeExecution()
 
       break
     }
@@ -54,15 +59,20 @@ function postDebugInformation(result: ExecutionResult) {
     default:
       break
   }
-  
-  consoleData.registers = result.registers
+}
+
+function clearDebug() {
+  consoleData.registers = null
+}
+
+function closeExecution() {
+  clearDebug()
+
+  consoleData.execution = null
 }
 
 function postBuildMessage(result: AssemblerResult): boolean {
   consoleData.tab = DebugTab.Console
-
-  consoleData.mode = null
-  consoleData.registers = null
 
   switch (result.status) {
     case 'Error':
@@ -82,15 +92,6 @@ function postBuildMessage(result: AssemblerResult): boolean {
   }
 }
 
-function modeToResult(mode: ExecutionMode): AssemblerResult {
-  switch (mode.type) {
-    case ExecutionModeType.BuildFailed:
-      return { status: 'Error', ...mode.value }
-    default:
-      return { status: 'Success', breakpoints: [] }
-  }
-}
-
 export async function build() {
   await saveCurrentTab(PromptType.NeverPrompt)
 
@@ -101,6 +102,8 @@ export async function build() {
 }
 
 export async function resume() {
+  clearDebug()
+
   const usedProfile = tab()?.profile
   const usedBreakpoints = tab()?.breakpoints ?? []
 
@@ -108,34 +111,34 @@ export async function resume() {
     return
   }
 
-  let needsBuild = false
   if (!consoleData.execution) {
     const text = collectLines(tab()?.lines ?? [])
 
     await saveCurrentTab(PromptType.NeverPrompt)
 
-    needsBuild = true
     consoleData.execution = new ExecutionState(text, usedProfile)
   }
 
   consoleData.showConsole = true
   consoleData.mode = ExecutionModeType.Running
 
-  const result = await consoleData.execution.resume(usedBreakpoints)
+  const result = await consoleData.execution.resume(usedBreakpoints, result => {
+    postBuildMessage(result)
+  })
 
   consoleData.showConsole = true
 
-  if (needsBuild) {
-    if (postBuildMessage(modeToResult(result.mode))) {
-      postDebugInformation(result)
-    }
-  } else {
+  if (result) {
     postDebugInformation(result)
+  } else {
+    closeExecution()
   }
 }
 
 export async function pause() {
   if (consoleData.execution) {
+    clearDebug()
+
     consoleData.showConsole = true
 
     postDebugInformation(await consoleData.execution.pause())
@@ -144,6 +147,8 @@ export async function pause() {
 
 export async function step() {
   if (consoleData.execution) {
+    clearDebug()
+
     consoleData.showConsole = true
 
     postDebugInformation(await consoleData.execution.step())
@@ -152,8 +157,10 @@ export async function step() {
 
 export async function stop() {
   if (consoleData.execution) {
+    consoleData.mode = ExecutionModeType.Stopped
+
     await consoleData.execution.stop()
 
-    consoleData.execution = null
+    closeExecution()
   }
 }

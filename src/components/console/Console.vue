@@ -32,6 +32,12 @@
         </div>
 
         <Tab
+          title="Console"
+          :selected="consoleData.tab === DebugTab.Console"
+          @select="consoleData.tab = DebugTab.Console"
+        />
+
+        <Tab
           title="Registers"
           :selected="consoleData.tab === DebugTab.Registers"
           @select="consoleData.tab = DebugTab.Registers"
@@ -41,12 +47,6 @@
           title="Memory"
           :selected="consoleData.tab === DebugTab.Memory"
           @select="consoleData.tab = DebugTab.Memory"
-        />
-
-        <Tab
-          title="Console"
-          :selected="consoleData.tab === DebugTab.Console"
-          @select="consoleData.tab = DebugTab.Console"
         />
 
         <Tab
@@ -90,31 +90,23 @@ const closingHeight = 90
 const defaultHeight = 320
 
 const modeString = computed(() => {
-  if (!consoleData.execution) {
-    return 'Debug'
-  }
-
-  switch (consoleData.mode ?? ExecutionModeType.Running) {
+  switch (consoleData.mode) {
     case ExecutionModeType.Running: return 'Running'
     case ExecutionModeType.Breakpoint: return 'Breakpoint'
     case ExecutionModeType.Paused: return 'Paused'
     case ExecutionModeType.Invalid: return 'Exception'
-    case ExecutionModeType.BuildFailed: return 'Build Failed'
+    case ExecutionModeType.Finished: return 'Finished'
     default: return 'Debug'
   }
 })
 const modeClass = computed(() => {
-  if (!consoleData.execution) {
-    return 'bg-transparent'
-  }
-
-  switch (consoleData.mode ?? ExecutionModeType.Running) {
+  switch (consoleData.mode) {
     case ExecutionModeType.Running: return 'bg-teal-900'
     case ExecutionModeType.Breakpoint: return 'bg-red-900'
     case ExecutionModeType.Paused: return 'bg-yellow-900'
     case ExecutionModeType.Invalid: return 'bg-red-900'
-    case ExecutionModeType.BuildFailed: return 'bg-orange-900'
-    default: return 'bg-teal-900'
+    case ExecutionModeType.Finished: return 'bg-lime-700'
+    default: return 'bg-transparent'
   }
 })
 

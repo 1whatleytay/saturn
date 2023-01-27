@@ -12,7 +12,8 @@ pub type MemoryType = SectionMemory<KeyboardHandler>;
 pub struct DebuggerState {
     pub debugger: Arc<Mutex<Debugger<MemoryType>>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
-    pub delegate: Arc<Mutex<SyscallState>>
+    pub delegate: Arc<Mutex<SyscallState>>,
+    pub finished_pcs: Vec<u32>
 }
 
 pub type DebuggerBody = Mutex<Option<DebuggerState>>;
@@ -20,6 +21,7 @@ pub type DebuggerBody = Mutex<Option<DebuggerState>>;
 pub fn swap(
     mut pointer: MutexGuard<Option<DebuggerState>>,
     mut debugger: Debugger<MemoryType>,
+    finished_pcs: Vec<u32>,
     print: Box<dyn FnMut(&str) -> () + Send>
 ) {
     if let Some(state) = pointer.as_ref() {
@@ -39,7 +41,8 @@ pub fn swap(
     *pointer = Some(DebuggerState {
         debugger: wrapped,
         keyboard,
-        delegate
+        delegate,
+        finished_pcs
     });
 }
 

@@ -11,7 +11,9 @@
       </div>
 
       <div class="w-32 px-4 py-2 hover:bg-neutral-800 cursor-pointer">
-        0x{{ values[1].toString(16) }}
+        <span v-if="values[1] !== undefined && values[1] !== null">
+          0x{{ values[1].toString(16) }}
+        </span>
       </div>
     </div>
   </div>
@@ -34,14 +36,14 @@ const registers = [
 
 const registersMap = computed(() => {
   const core = registers.map(
-    (name, index) => [name, consoleData.registers?.line[index] ?? 0]
+    (name, index) => [name, consoleData.registers?.line[index]]
   ) as [string, number][]
   const other = [
-    ['hi', consoleData.registers?.hi ?? 0], ['lo', consoleData.registers?.lo ?? 0]
+    ['hi', consoleData.registers?.hi], ['lo', consoleData.registers?.lo]
   ] as [string, number][]
 
   const result = []
-  result.push(['pc', consoleData.registers?.pc ?? 0])
+  result.push(['pc', consoleData.registers?.pc])
   result.push(...core)
   result.push(...other)
 

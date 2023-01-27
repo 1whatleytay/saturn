@@ -145,8 +145,6 @@ export async function setupEvents() {
   await listen('print', event => {
     let text = event.payload as string
 
-    console.log(`printing: ${text}`)
-
     pushConsole(text)
   })
 }
