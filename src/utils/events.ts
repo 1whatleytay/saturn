@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
 import { resume, step, pause, stop, build } from "./editor-debug";
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
-import { consoleData } from '../state/console-data'
+import { consoleData, pushConsole } from '../state/console-data'
 
 export enum PromptType {
   NeverPrompt,
@@ -140,5 +140,13 @@ export async function setupEvents() {
 
       await openTab(file)
     }
+  })
+
+  await listen('print', event => {
+    let text = event.payload as string
+
+    console.log(`printing: ${text}`)
+
+    pushConsole(text)
   })
 }

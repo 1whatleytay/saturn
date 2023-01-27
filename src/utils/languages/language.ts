@@ -25,7 +25,7 @@ export const style = {
   known: 'font-bold',
   comment: 'text-neutral-400',
   hard: 'text-yellow-400',
-  label: 'text-yellow-400',
+  label: 'text-amber-400',
   directive: 'text-red-400',
   parameter: 'text-orange-300',
   instruction: 'text-sky-400',

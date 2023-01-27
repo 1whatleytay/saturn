@@ -1,14 +1,16 @@
 use std::cmp::min;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use titan::cpu::error::Error::CpuSyscall;
+use titan::cpu::error::Error;
+use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
+use titan::cpu::Memory;
 use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
-use titan::debug::debugger::DebuggerMode::Invalid;
+use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
 use tokio::time::Instant;
 use crate::keyboard::KeyboardHandler;
-use crate::syscall::SyscallResult::{Aborted, Completed, Terminated, Unimplemented, Unknown};
+use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Terminated, Unimplemented, Unknown};
 
 type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
@@ -18,11 +20,26 @@ pub enum SyscallResult {
     Terminated(u32),
     Aborted,
     Unimplemented,
+    Exception(Error),
     Unknown,
 }
 
+pub struct SyscallState {
+    pub abort: bool,
+    pub print: Box<dyn FnMut(&str) -> () + Send>
+}
+
+impl SyscallState {
+    pub fn new(print: Box<dyn FnMut(&str) -> () + Send>) -> SyscallState {
+        return SyscallState {
+            abort: false,
+            print
+        }
+    }
+}
+
 pub struct SyscallDelegate {
-    abort: bool
+    pub state: Arc<Mutex<SyscallState>>
 }
 
 // get $a0
@@ -30,13 +47,24 @@ fn a0(state: &Mutex<DebuggerType>) -> u32 {
     state.lock().unwrap().state().registers.line[4]
 }
 
+const PRINT_BUFFER_TIME: Duration = Duration::from_millis(50);
+
 impl SyscallDelegate {
-    pub fn new() -> SyscallDelegate {
-        SyscallDelegate { abort: false }
+    pub fn new(state: Arc<Mutex<SyscallState>>) -> SyscallDelegate {
+        SyscallDelegate { state }
     }
 
-    async fn print_integer(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_integer(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        {
+            let value = a0(state);
+
+            (self.state.lock().unwrap().print)(&format!("{}", value as i32));
+        }
+
+        // Artificial Sleep to Prevent Spam
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+
+        Completed
     }
 
     async fn print_float(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
@@ -47,8 +75,41 @@ impl SyscallDelegate {
         Unimplemented
     }
 
-    async fn print_string(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_string(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        {
+            let mut address = a0(state);
+
+            let mut buffer = String::new();
+
+            let mut lock = state.lock().unwrap();
+            let memory = lock.memory();
+
+            loop {
+                let byte = match memory.get(address) {
+                    Ok(value) => value,
+                    Err(error) => return Exception(error)
+                };
+
+                if byte == 0 {
+                    break
+                }
+
+                buffer.push(byte as char);
+
+                let Some(next_address) = address.checked_add(1) else {
+                    return Exception(CpuTrap)
+                };
+
+                address = next_address
+            }
+
+            (self.state.lock().unwrap().print)(&buffer);
+        }
+
+        // Artificial Sleep to Prevent Spam
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+
+        Completed
     }
 
     async fn read_integer(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
@@ -123,7 +184,7 @@ impl SyscallDelegate {
         while remaining > 0 {
             let wait = min(remaining, interval) as u64;
 
-            if self.abort {
+            if self.state.lock().unwrap().abort {
                 return Aborted
             }
 
@@ -139,16 +200,43 @@ impl SyscallDelegate {
         Unimplemented
     }
 
-    async fn print_hexadecimal(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_hexadecimal(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        {
+            let value = a0(state);
+
+            (self.state.lock().unwrap().print)(&format!("{:x}", value as i32));
+        }
+
+        // Artificial Sleep to Prevent Spam
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+
+        Completed
     }
 
-    async fn print_binary(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_binary(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        {
+            let value = a0(state);
+
+            (self.state.lock().unwrap().print)(&format!("{:b}", value as i32));
+        }
+
+        // Artificial Sleep to Prevent Spam
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+
+        Completed
     }
 
-    async fn print_unsigned(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_unsigned(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        {
+            let value = a0(state);
+
+            (self.state.lock().unwrap().print)(&format!("{}", value));
+        }
+
+        // Artificial Sleep to Prevent Spam
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+
+        Completed
     }
 
     async fn set_seed(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
@@ -211,9 +299,11 @@ impl SyscallDelegate {
     ) -> Option<DebugFrame> {
         match frame.mode {
              Invalid(CpuSyscall) => {
-                // $v0
-                let code = debugger.lock().unwrap().state().registers.line[2];
-                let _ = self.dispatch(debugger, code).await;
+                 // $v0
+                 let code = debugger.lock().unwrap().state().registers.line[2];
+                 let _ = self.dispatch(debugger, code).await;
+
+                 debugger.lock().unwrap().invalid_handled();
 
                  None
             }
@@ -227,6 +317,13 @@ impl SyscallDelegate {
             let frame = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
+                return frame
+            }
+
+            // Need to re-check.
+            let frame = debugger.lock().unwrap().frame();
+
+            if frame.mode != Recovered {
                 return frame
             }
         }

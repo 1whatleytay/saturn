@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 use serde::Serialize;
+use tauri::{Manager, Wry};
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::source::{assemble_from, SourceError};
@@ -24,7 +25,7 @@ use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
 use crate::menu::{create_menu, handle_event};
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
-use crate::syscall::SyscallDelegate;
+use crate::syscall::{SyscallDelegate, SyscallState};
 
 #[derive(Serialize)]
 struct DisassembleResult {
@@ -61,6 +62,7 @@ impl From<DebuggerMode> for ResumeMode {
     fn from(value: DebuggerMode) -> Self {
         match value {
             DebuggerMode::Running => ResumeMode::Running,
+            DebuggerMode::Recovered => ResumeMode::Breakpoint,
             DebuggerMode::Invalid(error) => ResumeMode::Invalid(format!("{}", error)),
             DebuggerMode::Paused => ResumeMode::Paused,
             DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
@@ -159,44 +161,33 @@ fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
     }
 }
 
+fn forward_print(app_handle: tauri::AppHandle<Wry>) -> Box<dyn FnMut(&str) -> () + Send> {
+    Box::new(move |text: &str| {
+        app_handle.emit_all("print", text).ok();
+    })
+}
+
 #[tauri::command]
-fn configure_elf(bytes: Vec<u8>, state: tauri::State<'_, DebuggerBody>) -> bool {
+fn configure_elf(
+    bytes: Vec<u8>, state: tauri::State<'_, DebuggerBody>,
+    app_handle: tauri::AppHandle<Wry>
+) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
     let mut cpu_state = create_simple_state(&elf, 0x100000);
     setup_state(&mut cpu_state);
 
-    swap(state.lock().unwrap(), Debugger::new(cpu_state));
+    let print = forward_print(app_handle);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), print);
 
     true
 }
 
-pub fn source_breakpoints(map: &HashMap<usize, u32>, source: &str) -> HashMap<usize, u32> {
-    let mut result = HashMap::new();
-
-    let mut line_number = 0;
-    let mut input = source;
-
-    while let Some(c) = input.chars().next() {
-        let next = &input[1..];
-
-        let start = input.as_ptr() as usize - source.as_ptr() as usize;
-        if let Some(pc) = map.get(&start).copied() {
-            result.insert(line_number, pc);
-        }
-
-        if c == '\n' {
-            line_number += 1;
-        }
-
-        input = next;
-    }
-
-    result
-}
-
 #[tauri::command]
-fn configure_asm(text: &str, state: tauri::State<'_, DebuggerBody>) -> AssemblerResult {
+fn configure_asm(
+    text: &str, state: tauri::State<'_, DebuggerBody>,
+    app_handle: tauri::AppHandle<Wry>
+) -> AssemblerResult {
     let binary = assemble_from(text);
     let (binary, result) = AssemblerResult::from_result_with_binary(binary, text);
 
@@ -205,27 +196,34 @@ fn configure_asm(text: &str, state: tauri::State<'_, DebuggerBody>) -> Assembler
     let mut cpu_state = state_from_binary(binary, 0x100000);
     setup_state(&mut cpu_state);
 
-    swap(state.lock().unwrap(), Debugger::new(cpu_state));
+    let print = forward_print(app_handle);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), print);
 
     result
 }
 
-fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<Arc<Mutex<Debugger<MemoryType>>>> {
+type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>);
+
+fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    Some(pointer.debugger.clone())
+    Some((pointer.debugger.clone(), pointer.delegate.clone()))
 }
 
 #[tauri::command]
 async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let debugger = lock_and_clone(state).ok_or(())?;
+    let (debugger, state) = lock_and_clone(state).ok_or(())?;
 
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 
     let frame = tokio::spawn(async move {
-        SyscallDelegate::new().run(&debugger).await
+        let frame = SyscallDelegate::new(state).run(&debugger).await;
+
+        println!("Actually stopped!");
+
+        frame
     }).await.unwrap();
 
     Ok(ResumeResult::from_frame(frame))
@@ -233,9 +231,9 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) ->
 
 #[tauri::command]
 async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
-    let debugger = lock_and_clone(state).ok_or(())?;
+    let (debugger, state) = lock_and_clone(state).ok_or(())?;
 
-    let frame = SyscallDelegate::new().cycle(&debugger).await;
+    let frame = SyscallDelegate::new(state).cycle(&debugger).await;
 
     Ok(ResumeResult::from_frame(frame))
 }
@@ -265,6 +263,7 @@ fn stop(state: tauri::State<'_, DebuggerBody>) {
 
     if let Some(pointer) = debugger {
         pointer.debugger.lock().unwrap().pause();
+        pointer.delegate.lock().unwrap().abort = true;
     }
 
     *debugger = None;
