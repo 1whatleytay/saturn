@@ -297,11 +297,13 @@ export class Editor {
   backspace(index: SelectionIndex, alt: boolean = false): SelectionIndex {
     const line = this.data[index.line]
 
-    if (index.index > 0) {
-      const consumption = alt ? consumeBackwards(line, index.index) : 1
+    const subindex = Math.min(line.length, index.index)
 
-      const leading = line.substring(0, index.index - consumption)
-      const trailing = line.substring(index.index)
+    if (subindex > 0) {
+      const consumption = alt ? consumeBackwards(line, subindex) : 1
+
+      const leading = line.substring(0, subindex - consumption)
+      const trailing = line.substring(subindex)
 
       // Mutate
       this.mutateLine(index.line, () => {
