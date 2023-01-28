@@ -351,6 +351,31 @@ fn assemble(text: &str) -> AssemblerResult {
     AssemblerResult::from_result(result, text)
 }
 
+#[tauri::command]
+fn assemble_binary(text: &str) -> (Option<Vec<u8>>, AssemblerResult) {
+    let result = assemble_from(text);
+    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+
+    let Some(binary) = binary else {
+        return (None, result)
+    };
+
+    let elf: Elf = binary.into();
+
+    let mut out: Vec<u8> = vec![];
+    let mut cursor = Cursor::new(&mut out);
+
+    if let Err(error) = elf.write(&mut cursor) {
+        return (None, AssemblerResult::Error {
+            marker: None,
+            message: error.to_string(),
+            body: None,
+        })
+    }
+
+    (Some(out), result)
+}
+
 fn main() {
     let menu = create_menu();
 
@@ -371,7 +396,8 @@ fn main() {
             set_register,
             assemble,
             post_key,
-            swap_breakpoints
+            swap_breakpoints,
+            assemble_binary
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
