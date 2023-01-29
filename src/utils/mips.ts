@@ -53,6 +53,24 @@ export async function assembleText(text: string): Promise<AssemblerResult> {
   return result as AssemblerResult
 }
 
+export type BinaryResult = {
+  binary: Uint8Array | null,
+  result: AssemblerResult
+}
+
+export async function assembleWithBinary(text: string): Promise<BinaryResult> {
+  const result = await tauri.invoke(
+    'assemble_binary', { text }
+  ) as [number[] | null, AssemblerResult]
+
+  const [binary, assemblerResult] = result
+
+  return {
+    binary: binary ? Uint8Array.from(binary) : null,
+    result: assemblerResult
+  }
+}
+
 export enum ExecutionModeType {
   Running = 'Running',
   Invalid = 'Invalid',

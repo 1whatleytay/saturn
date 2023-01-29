@@ -71,7 +71,7 @@ function closeExecution() {
   consoleData.execution = null
 }
 
-function postBuildMessage(result: AssemblerResult): boolean {
+export function postBuildMessage(result: AssemblerResult): boolean {
   consoleData.tab = DebugTab.Console
 
   switch (result.status) {

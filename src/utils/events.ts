@@ -1,9 +1,10 @@
 import { listen } from '@tauri-apps/api/event'
 
 import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
-import { resume, step, pause, stop, build } from "./editor-debug";
+import { resume, step, pause, stop, build, postBuildMessage } from './editor-debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
 import { consoleData, pushConsole } from '../state/console-data'
+import { assembleText, assembleWithBinary } from './mips'
 
 export enum PromptType {
   NeverPrompt,
@@ -66,6 +67,12 @@ export async function saveCurrentTab(type: PromptType = PromptType.PromptWhenNee
 }
 
 export async function setupEvents() {
+  await listen('print', event => {
+    let text = event.payload as string
+
+    pushConsole(text)
+  })
+
   await listen('new-tab', () => {
     createTab('Untitled', [''])
   })
@@ -114,6 +121,20 @@ export async function setupEvents() {
     await stop()
   })
 
+  await listen('assemble', async () => {
+    const result = await assembleWithBinary(collectLines(tab()?.lines ?? []))
+
+    if (result.binary) {
+      const name = tab()?.title
+      const extended = name ? `${name}.elf` : 'Untitled Elf'
+
+      await loadElf(extended, result.binary)
+    }
+
+    consoleData.showConsole = true
+    postBuildMessage(result.result)
+  })
+
   await listen('disassemble', async () => {
     const result = await openElf()
 
@@ -140,11 +161,5 @@ export async function setupEvents() {
 
       await openTab(file)
     }
-  })
-
-  await listen('print', event => {
-    let text = event.payload as string
-
-    pushConsole(text)
   })
 }
