@@ -7,8 +7,8 @@ import { consumeBackwards, consumeForwards } from '../utils/alt-consume'
 import { hasActionKey } from '../utils/shortcut-key'
 import { settings } from './settings-state'
 import { SelectionIndex, SelectionRange } from '../utils/editor'
-import { editor, storage } from './editor-state'
-import { useSuggestions } from '../utils/suggestions'
+import { editor, findState, storage } from './editor-state'
+import { MergeSuggestion, useSuggestions } from '../utils/suggestions'
 
 export type Cursor = SelectionIndex & {
   offsetX: number
@@ -41,30 +41,22 @@ export function showCursorSuggestions() {
   showSuggestions(storage.highlights[cursor.line], cursor.index)
 }
 
-export function mergeCursorSuggestions(): boolean {
-  const suggestion = mergeSuggestion()
+export function applyMergeSuggestion(suggestion: MergeSuggestion) {
+  editor().drop({
+    startLine: cursor.line,
+    endLine: cursor.line,
+    startIndex: suggestion.start,
+    endIndex: suggestion.start + suggestion.remove
+  })
 
-  if (suggestion) {
-    editor().drop({
-      startLine: cursor.line,
-      endLine: cursor.line,
-      startIndex: suggestion.start,
-      endIndex: suggestion.start + suggestion.remove
-    })
+  putCursor(editor().paste({
+    line: cursor.line,
+    index: suggestion.start
+  }, suggestion.insert))
 
-    putCursor(editor().paste({
-      line: cursor.line,
-      index: suggestion.start
-    }, suggestion.insert))
+  editor().commit()
 
-    editor().commit()
-
-    dismissSuggestions()
-
-    return true
-  }
-
-  return false
+  dismissSuggestions()
 }
 
 export function selectionRange(): SelectionRange | null {
@@ -393,8 +385,14 @@ export function handleKey(event: KeyboardEvent) {
       break
 
     case 'Escape':
-      dismissSuggestions()
+      if (hasSuggestions()) {
+        dismissSuggestions()
+      } else {
+        findState.show = false
+      }
+
       event.preventDefault()
+
       break
 
     case 'Tab':
@@ -428,8 +426,12 @@ export function handleKey(event: KeyboardEvent) {
         })
 
         dismissSuggestions()
-      } else if (flushSuggestions() && mergeCursorSuggestions()) {
-        return
+      } else if (flushSuggestions()) {
+        const suggestion = mergeSuggestion()
+
+        if (suggestion) {
+          return applyMergeSuggestion(suggestion)
+        }
       }
 
       editor().commit()

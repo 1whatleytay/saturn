@@ -7,6 +7,7 @@ enum MenuOptions {
     CloseTab,
     Save,
     SaveAs,
+    Find,
     Disassemble,
     Assemble,
     Export,
@@ -26,6 +27,7 @@ impl ToString for MenuOptions {
             MenuOptions::CloseTab => "close-tab",
             MenuOptions::Save => "save",
             MenuOptions::SaveAs => "save-as",
+            MenuOptions::Find => "find",
             MenuOptions::Disassemble => "disassemble",
             MenuOptions::Assemble => "assemble",
             MenuOptions::Export => "export",
@@ -49,6 +51,7 @@ impl FromStr for MenuOptions {
             "close-tab" => MenuOptions::CloseTab,
             "save" => MenuOptions::Save,
             "save-as" => MenuOptions::SaveAs,
+            "find" => MenuOptions::Find,
             "disassemble" => MenuOptions::Disassemble,
             "assemble" => MenuOptions::Assemble,
             "export" => MenuOptions::Export,
@@ -71,6 +74,7 @@ impl MenuOptions {
             MenuOptions::CloseTab => "Close Tab",
             MenuOptions::Save => "Save",
             MenuOptions::SaveAs => "Save As",
+            MenuOptions::Find => "Find",
             MenuOptions::Disassemble => "Disassemble Elf",
             MenuOptions::Assemble => "Assemble Elf",
             MenuOptions::Export => "Export Elf",
@@ -83,8 +87,32 @@ impl MenuOptions {
         }
     }
 
+    fn accelerator(&self) -> Option<String> {
+        Some(match self {
+            MenuOptions::NewTab => meta_key("N"),
+            MenuOptions::OpenFile => meta_key("O"),
+            MenuOptions::CloseTab => meta_key("W"),
+            MenuOptions::Save => meta_key("S"),
+            MenuOptions::SaveAs => meta_key("Shift+S"),
+            MenuOptions::Find => meta_key("F"),
+            MenuOptions::Build => meta_key("B"),
+            MenuOptions::Run => meta_key("K"),
+            MenuOptions::Step => meta_key("L"),
+            MenuOptions::Pause => meta_key("J"),
+            MenuOptions::Stop => meta_key("P"),
+            MenuOptions::ToggleConsole => meta_key("T"),
+            _ => return None
+        })
+    }
+
     fn make_item(&self) -> CustomMenuItem {
-        CustomMenuItem::new(self.to_string(), self.label())
+        let item = CustomMenuItem::new(self.to_string(), self.label());
+
+        if let Some(accelerator) = self.accelerator() {
+            item.accelerator(accelerator)
+        } else {
+            item
+        }
     }
 }
 
@@ -123,17 +151,12 @@ pub fn create_menu() -> Menu {
     }
 
     menu = menu.add_submenu(Submenu::new("File", Menu::new()
-        .add_item(MenuOptions::NewTab.make_item()
-            .accelerator(meta_key("N")))
-        .add_item(MenuOptions::OpenFile.make_item()
-            .accelerator(meta_key("O")))
-        .add_item(MenuOptions::CloseTab.make_item()
-            .accelerator(meta_key("W")))
+        .add_item(MenuOptions::NewTab.make_item())
+        .add_item(MenuOptions::OpenFile.make_item())
+        .add_item(MenuOptions::CloseTab.make_item())
         .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Save.make_item()
-            .accelerator(meta_key("S")))
-        .add_item(MenuOptions::SaveAs.make_item()
-            .accelerator(meta_key("Shift+S")))
+        .add_item(MenuOptions::Save.make_item())
+        .add_item(MenuOptions::SaveAs.make_item())
         .add_native_item(MenuItem::Separator)
         // .add_item(MenuOptions::Export.make_item())
         .add_item(MenuOptions::Assemble.make_item())
@@ -147,27 +170,22 @@ pub fn create_menu() -> Menu {
         .add_native_item(MenuItem::Paste)
         .add_native_item(MenuItem::Separator)
         .add_native_item(MenuItem::Undo)
+        .add_item(MenuOptions::Find.make_item())
         .add_native_item(MenuItem::SelectAll)
     ));
 
     menu = menu.add_submenu(Submenu::new("Build", Menu::new()
-        .add_item(MenuOptions::Build.make_item()
-            .accelerator(meta_key("B")))
-        .add_item(MenuOptions::Run.make_item()
-            .accelerator(meta_key("K")))
+        .add_item(MenuOptions::Build.make_item())
+        .add_item(MenuOptions::Run.make_item())
         .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Step.make_item()
-            .accelerator(meta_key("L")))
-        .add_item(MenuOptions::Pause.make_item()
-            .accelerator(meta_key("J")))
-        .add_item(MenuOptions::Stop.make_item()
-            .accelerator(meta_key("P")))
+        .add_item(MenuOptions::Step.make_item())
+        .add_item(MenuOptions::Pause.make_item())
+        .add_item(MenuOptions::Stop.make_item())
     ));
 
     menu = menu.add_submenu(Submenu::new("Window", Menu::new()
         .add_native_item(MenuItem::Minimize)
-        .add_item(MenuOptions::ToggleConsole.make_item()
-            .accelerator(meta_key("T")))
+        .add_item(MenuOptions::ToggleConsole.make_item())
         .add_native_item(MenuItem::CloseWindow)
     ));
 

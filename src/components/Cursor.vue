@@ -115,7 +115,14 @@
 </template>
 
 <script setup lang="ts">
-import { cursor, mergeCursorSuggestions, selectionRange, suggestions, tabBody } from '../state/cursor-state'
+import {
+  cursor,
+  applyMergeSuggestion,
+  mergeSuggestion,
+  selectionRange,
+  suggestions,
+  tabBody
+} from '../state/cursor-state'
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
@@ -130,7 +137,11 @@ const lineHeight = 24 // h-6
 function merge(index: number) {
   suggestions.index = index
 
-  mergeCursorSuggestions()
+  const suggestion = mergeSuggestion()
+
+  if (suggestion) {
+    applyMergeSuggestion(suggestion)
+  }
 }
 
 function scrollSuggestionsTo(point: number) {

@@ -7,6 +7,7 @@ import { MipsHighlighter } from '../utils/languages/mips/language'
 import { useErrorHighlight } from '../utils/error-highlight'
 import { regular } from '../utils/text-size'
 import { assembleText } from '../utils/mips'
+import { useFind } from '../utils/find'
 
 export const storage = reactive({
   editor: createEditor(),
@@ -22,6 +23,10 @@ export const {
   text => regular.calculate(text).width,
   line => storage.highlights[line]
 )
+
+export const {
+  state: findState
+} = useFind()
 
 export function editor() {
   return storage.editor

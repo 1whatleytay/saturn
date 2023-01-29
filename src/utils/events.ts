@@ -5,6 +5,8 @@ import { resume, step, pause, stop, build, postBuildMessage } from './editor-deb
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
 import { consoleData, pushConsole } from '../state/console-data'
 import { assembleText, assembleWithBinary } from './mips'
+import { list } from 'postcss'
+import { findState } from '../state/editor-state'
 
 export enum PromptType {
   NeverPrompt,
@@ -119,6 +121,10 @@ export async function setupEvents() {
 
   await listen('stop', async () => {
     await stop()
+  })
+
+  await listen('find', () => {
+    findState.show = !findState.show
   })
 
   await listen('assemble', async () => {
