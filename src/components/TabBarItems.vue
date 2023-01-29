@@ -78,7 +78,7 @@
 import { computed } from 'vue'
 import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
-import { build, pause, resume, step, stop } from '../utils/editor-debug'
+import { build, pause, resume, step, stop } from '../utils/debug'
 import { ExecutionModeType } from '../utils/mips'
 
 import { ArrowDownIcon, ChevronRightIcon, PauseIcon, PlayIcon, StopIcon } from '@heroicons/vue/24/solid'

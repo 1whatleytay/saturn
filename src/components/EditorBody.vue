@@ -96,7 +96,7 @@ import {
   lineStart
 } from '../state/cursor-state'
 import { storage } from '../state/editor-state'
-import { setBreakpoint } from '../utils/editor-debug'
+import { setBreakpoint } from '../utils/debug'
 import { useVirtualize } from '../utils/virtualization'
 
 import Cursor from './Cursor.vue'

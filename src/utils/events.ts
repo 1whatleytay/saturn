@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 
 import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
-import { resume, step, pause, stop, build, postBuildMessage } from './editor-debug'
+import { resume, step, pause, stop, build, postBuildMessage } from './debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
 import { consoleData, pushConsole } from '../state/console-data'
 import { assembleText, assembleWithBinary } from './mips'
