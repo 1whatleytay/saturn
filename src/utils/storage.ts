@@ -5,6 +5,7 @@ import { Language, Token } from './languages/language'
 import { MipsHighlighter } from './languages/mips/language'
 import { assembleText } from './mips'
 import { HighlightsInterface } from './highlights'
+import { FindInterface } from './find'
 
 export interface StorageState {
   editor: Editor
@@ -17,7 +18,7 @@ export interface StorageResult {
   storage: StorageState
 }
 
-export function useStorage(highlights: HighlightsInterface): StorageResult {
+export function useStorage(highlights: HighlightsInterface, find: FindInterface): StorageResult {
   const storage = reactive({
     editor: createEditor(),
     language: createLanguage(),
@@ -62,6 +63,7 @@ export function useStorage(highlights: HighlightsInterface): StorageResult {
       current.marked = true
     }
 
+    find.dirty(line, deleted, lines)
     highlights.shiftHighlight(line, deleted, lines.length)
 
     dispatchCheckSyntax()

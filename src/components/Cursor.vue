@@ -1,4 +1,5 @@
 <template>
+  <!-- Selection -->
   <div class="absolute top-0 pointer-events-none" v-if="range">
     <div class="absolute" :style="{ top: `${range.top}px` }">
       <div
@@ -19,6 +20,7 @@
     </div>
   </div>
 
+  <!-- Error Highlights -->
   <div
     v-if="highlights.state.highlight"
     class="absolute h-6 border-b-2 border-red-500 bg-red-500 bg-opacity-25 group"
@@ -28,7 +30,7 @@
       width: `${highlights.state.highlight.size}px`
     }"
   >
-    <div class="
+    <div v-if="highlights.state.highlight.message" class="
       mt-6 py-2 px-4 w-auto
       bg-neutral-900 rounded
       shadow-xl
@@ -40,6 +42,30 @@
     </div>
   </div>
 
+  <!-- Find Results -->
+  <div
+    v-if="find.state.show"
+    class="absolute"
+    :style="{
+      top: `${lineHeight * props.start}px`
+    }"
+  >
+    <div
+      v-for="index in props.count"
+      class="h-6 relative"
+    >
+      <div
+        v-for="match in find.state.matches[index - 1 + start]"
+        class="bg-yellow-500 h-6 bg-opacity-20 absolute"
+        :style="{
+          left: `${match.offset}px`,
+          width: `${match.size}px`
+        }"
+      />
+    </div>
+  </div>
+
+  <!-- Cursor Indicator -->
   <div
     class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
     :style="{
@@ -48,6 +74,7 @@
     }"
   />
 
+  <!-- Suggestions -->
   <div
     v-if="suggestions.state.results.length"
     class="
@@ -117,11 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  applyMergeSuggestion, highlights, position,
-  suggestions
-
-} from '../state/state'
+import { applyMergeSuggestion, highlights, position, suggestions, find } from '../state/state'
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'

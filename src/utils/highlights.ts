@@ -6,7 +6,7 @@ export interface Highlights {
   line: number
   offset: number
   size: number
-  message: string
+  message: string | null
 }
 
 export interface HighlightsInterface {
@@ -28,7 +28,7 @@ export function useHighlights(
     highlight: null as Highlights | null
   })
 
-  function setHighlight(line: number, tokens: Token[], index: number, message: string) {
+  function setHighlight(line: number, tokens: Token[], index: number, message: string | null) {
     const tokenIndex = findTokenIndex(tokens, index + 1)
 
     if (tokenIndex === null) {

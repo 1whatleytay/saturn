@@ -8,6 +8,8 @@
         id="find"
         ref="findInput"
         type="text"
+        autocomplete="off"
+        spellcheck="false"
         class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
         v-model="find.state.text"
       />
