@@ -56,4 +56,4 @@ export class SizeCalculator {
   }
 }
 
-export const regular = new SizeCalculator('h-6 text-sm font-mono absolute whitespace-pre opacity-0')
+export const regular = new SizeCalculator('h-6 text-sm font-mono absolute top-0 -z-10 whitespace-pre')

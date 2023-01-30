@@ -6,7 +6,8 @@
     @resize="updateBounds"
   >
     <div
-      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 fixed left-0 bg-neutral-900 pt-2"
+      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0 bg-neutral-900 pt-2"
+      @click.self
       @wheel.stop
       :style="{ top: `${lineOffset}px` }"
     >
@@ -156,6 +157,20 @@ const focusHandler = () => {
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
+    console.log({
+      pageX: event.pageX,
+      pageY: event.pageY,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      offsetX: event.offsetX,
+      offsetY: event.offsetY,
+      offsetTop: code.value.offsetTop,
+      scrollTop: code.value.scrollTop,
+      clientTop: code.value.clientTop,
+      rect: (event.target as HTMLElement)?.getBoundingClientRect(),
+
+    })
+
     return {
       x: event.pageX - code.value.offsetLeft + (scroll.value?.scrollLeft ?? 0),
       y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0)
