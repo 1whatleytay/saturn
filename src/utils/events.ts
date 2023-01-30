@@ -5,7 +5,7 @@ import { resume, step, pause, stop, build, postBuildMessage } from './debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
 import { consoleData, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
-import { find } from '../state/state'
+import { find, suggestions } from '../state/state'
 
 export enum PromptType {
   NeverPrompt,
@@ -124,6 +124,7 @@ export async function setupEvents() {
 
   await listen('find', () => {
     find.state.show = !find.state.show
+    suggestions.dismissSuggestions()
   })
 
   await listen('assemble', async () => {

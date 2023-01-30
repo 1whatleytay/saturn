@@ -157,20 +157,6 @@ const focusHandler = () => {
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
-    console.log({
-      pageX: event.pageX,
-      pageY: event.pageY,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      offsetX: event.offsetX,
-      offsetY: event.offsetY,
-      offsetTop: code.value.offsetTop,
-      scrollTop: code.value.scrollTop,
-      clientTop: code.value.clientTop,
-      rect: (event.target as HTMLElement)?.getBoundingClientRect(),
-
-    })
-
     return {
       x: event.pageX - code.value.offsetLeft + (scroll.value?.scrollLeft ?? 0),
       y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0)
@@ -254,7 +240,6 @@ function handlePaste(event: ClipboardEvent) {
 }
 
 onMounted(() => {
-  // putCursor({ line: 0, index: 0 })
   handleScroll()
 
   window.addEventListener('mousemove', handleMove)
