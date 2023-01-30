@@ -14,17 +14,20 @@ export interface SuggestionsState {
   results: SuggestionMatch[]
 }
 
-export interface SuggestionsResult {
-  suggestions: SuggestionsState
-  moveIndex: (direction: number) => void
-  showSuggestions: (tokens: Token[], index: number) => void
-  mergeSuggestion: () => MergeSuggestion | null
-  dismissSuggestions: () => void
-  hasSuggestions: () => boolean // convenience
-  flushSuggestions: () => boolean // flushes and returns hasSuggestions
+export interface SuggestionsInterface {
+  moveIndex(direction: number): void
+  showSuggestions(tokens: Token[], index: number): void
+  mergeSuggestion(): MergeSuggestion | null
+  dismissSuggestions(): void
+  hasSuggestions(): boolean // convenience
+  flushSuggestions(): boolean // flushes and returns hasSuggestions
 }
 
-export function useSuggestions(language: Language): SuggestionsResult {
+export type SuggestionsResult = SuggestionsInterface & {
+  state: SuggestionsState
+}
+
+export function useSuggestions(language: () => Language): SuggestionsResult {
   const suggestions = reactive({
     index: 0,
     token: null as Token | null,
@@ -39,7 +42,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
   function makeSuggestions(token: Token) {
     suggestions.index = 0
     suggestions.token = token
-    suggestions.results = language.suggest(token)
+    suggestions.results = language().suggest(token)
 
     suggestions.debounce = null
   }
@@ -131,7 +134,7 @@ export function useSuggestions(language: Language): SuggestionsResult {
   }
 
   return {
-    suggestions,
+    state: suggestions,
     moveIndex,
     showSuggestions,
     dismissSuggestions,

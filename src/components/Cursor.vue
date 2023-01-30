@@ -20,34 +20,35 @@
   </div>
 
   <div
-    v-if="errorState.highlight"
+    v-if="highlights.state.highlight"
     class="absolute h-6 border-b-2 border-red-500 bg-red-500 bg-opacity-25 group"
     :style="{
-      top: `${lineHeight * errorState.highlight.line}px`,
-      left: `${errorState.highlight.offset}px`,
-      width: `${errorState.highlight.size}px`
+      top: `${lineHeight * highlights.state.highlight.line}px`,
+      left: `${highlights.state.highlight.offset}px`,
+      width: `${highlights.state.highlight.size}px`
     }"
   >
     <div class="
       mt-6 py-2 px-6 w-auto
-      bg-neutral-800 rounded
+      bg-neutral-900 rounded
+      shadow-xl
       absolute z-30
       text-red-400 font-medium font-sans
       hidden group-hover:block">
-      {{ errorState.highlight.message }}
+      {{ highlights.state.highlight.message }}
     </div>
   </div>
 
   <div
     class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
     :style="{
-      left: `${cursor.offsetX}px`,
-      top: `${cursor.offsetY}px`
+      left: `${position.offsetX}px`,
+      top: `${position.offsetY}px`
     }"
   />
 
   <div
-    v-if="suggestions.results.length"
+    v-if="suggestions.state.results.length"
     class="
       w-80 h-40
       text-sm font-mono
@@ -58,8 +59,8 @@
       bg-neutral-900 border border-neutral-800
       absolute mx-[-0.08rem]
     " :style="{
-      left: `${cursor.offsetX}px`,
-      top: `${cursor.offsetY}px`,
+      left: `${position.offsetX}px`,
+      top: `${position.offsetY}px`,
     }"
     @wheel="scrollSuggestions"
     ref="suggestionsParent"
@@ -70,11 +71,11 @@
       @mousedown.stop.prevent
     >
       <div
-        v-for="(suggestion, index) in suggestions.results"
+        v-for="(suggestion, index) in suggestions.state.results"
         :key="suggestion.replace"
         class="w-full h-6 rounded px-2 flex items-center cursor-pointer transition-colors duration-150"
-        :class="{ 'bg-neutral-700': index === suggestions.index }"
-        @click.stop="suggestions.index = index"
+        :class="{ 'bg-neutral-700': index === suggestions.state.index }"
+        @click.stop="suggestions.state.index = index"
         @dblclick.stop="merge(index)"
       >
         <span class="truncate">
@@ -116,17 +117,14 @@
 
 <script setup lang="ts">
 import {
-  cursor,
-  applyMergeSuggestion,
-  mergeSuggestion,
-  selectionRange,
-  suggestions,
-  tabBody
-} from '../state/cursor-state'
+  applyMergeSuggestion, highlights, position,
+  suggestions
+
+} from '../state/state'
 import { computed, ref, watch } from 'vue'
-import { regular } from '../utils/text-size'
+import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
-import { errorState } from '../state/editor-state'
+import { selectionRange, tab, tabBody } from '../state/tabs-state'
 
 const suggestionsScroll = ref(0)
 const suggestionsPane = ref(null as HTMLElement | null)
@@ -135,9 +133,9 @@ const suggestionsParent = ref(null as HTMLElement | null)
 const lineHeight = 24 // h-6
 
 function merge(index: number) {
-  suggestions.index = index
+  suggestions.state.index = index
 
-  const suggestion = mergeSuggestion()
+  const suggestion = suggestions.mergeSuggestion()
 
   if (suggestion) {
     applyMergeSuggestion(suggestion)
@@ -162,11 +160,11 @@ function scrollSuggestions(event: WheelEvent) {
   scrollSuggestionsTo(suggestionsScroll.value + event.deltaY)
 }
 
-watch(() => suggestions.results, () => {
+watch(() => suggestions.state.results, () => {
   scrollSuggestionsTo(0)
 })
 
-watch(() => suggestions.index, value => {
+watch(() => suggestions.state.index, value => {
   const top = value * lineHeight
   const bottom = top + lineHeight
 
@@ -238,7 +236,13 @@ function inBounds(line: number): boolean {
 }
 
 const range = computed((): RangeSelection | null => {
-  const range = selectionRange()
+  const current = tab()
+
+  if (!current) {
+    return null
+  }
+
+  const range = selectionRange(current.cursor)
 
   if (!range) {
     return null

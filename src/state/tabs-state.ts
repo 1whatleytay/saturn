@@ -1,16 +1,52 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 import { v4 as uuid } from 'uuid'
 import {
+  ExecutionProfile,
   AssemblyExecutionProfile,
-  disassembleElf, ElfExecutionProfile,
-  ExecutionProfile
+  ElfExecutionProfile,
+  disassembleElf
 } from '../utils/mips'
+import { SelectionIndex, SelectionRange } from '../utils/editor'
+
+export type CursorState = SelectionIndex & {
+  highlight: SelectionIndex | null
+}
+
+export function selectionRange(cursor: CursorState): SelectionRange | null {
+  if (!cursor.highlight) {
+    return null
+  }
+
+  // Took out technical debt here and the methods in EditorBody for selection.
+  const highlightBeforeLine = cursor.highlight.line < cursor.line
+  const highlightBeforeIndex = cursor.highlight.line === cursor.line
+    && cursor.highlight.index < cursor.index
+
+  if (highlightBeforeLine || highlightBeforeIndex) {
+    // assert cursor.highlight.line <= cursor.line
+    return {
+      startLine: cursor.highlight.line,
+      startIndex: cursor.highlight.index,
+      endLine: cursor.line,
+      endIndex: cursor.index
+    }
+  } else {
+    // assert cursor.highlight.line >= cursor.line
+    return {
+      startLine: cursor.line,
+      startIndex: cursor.index,
+      endLine: cursor.highlight.line,
+      endIndex: cursor.highlight.index
+    }
+  }
+}
 
 export interface EditorTab {
   uuid: string,
   title: string,
   lines: string[],
+  cursor: CursorState,
   breakpoints: number[],
   path: string | null,
   marked: boolean, // needs saving
@@ -40,6 +76,8 @@ export function tab(): EditorTab | null {
 
   return null
 }
+
+export const tabBody = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
 export function closeTab(uuid: string) {
   const index = editor.tabs.findIndex(tab => tab.uuid === uuid)
@@ -76,6 +114,11 @@ export function createTab(
     title: named,
     lines: content,
     breakpoints: [],
+    cursor: {
+      line: 0,
+      index: 0,
+      highlight: null
+    },
     path,
     marked: false,
     profile

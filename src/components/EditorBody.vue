@@ -59,13 +59,14 @@
           'bg-breakpoint-stopped': getIndex(i) === stoppedIndex
         }"
       >
-        <div v-if="getIndex(i) < storage.highlights.length">
-          <span v-for="(token, index) in storage.highlights[getIndex(i)]" :key="index" :class="[token.color]">
+        <div>
+          <span
+            v-for="(token, index) in storage.highlights[getIndex(i)]"
+            :key="index"
+            :class="[token.color]"
+          >
             {{ token.text }}
           </span>
-        </div>
-        <div v-else>
-          {{ tabBody[getIndex(i)] }}
         </div>
       </div>
 
@@ -80,24 +81,21 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { tab } from '../state/tabs-state'
+import { tab, tabBody } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
+import { setBreakpoint } from '../utils/debug'
+import { useVirtualize } from '../utils/virtualization'
 import {
-  cursor,
-  tabBody,
-  putCursor,
-  handleKey,
+  getSelection,
+  dropSelection,
+  lineStart,
+  position,
   dropCursor,
   dragTo,
   pasteText,
-  getSelection,
-  clearSelection,
-  dropSelection,
-  lineStart
-} from '../state/cursor-state'
-import { storage } from '../state/editor-state'
-import { setBreakpoint } from '../utils/debug'
-import { useVirtualize } from '../utils/virtualization'
+  storage,
+  handleKey
+} from '../state/state'
 
 import Cursor from './Cursor.vue'
 
@@ -241,7 +239,7 @@ function handlePaste(event: ClipboardEvent) {
 }
 
 onMounted(() => {
-  putCursor({ line: 0, index: 0 })
+  // putCursor({ line: 0, index: 0 })
   handleScroll()
 
   window.addEventListener('mousemove', handleMove)
@@ -265,13 +263,8 @@ function makeVisible(offset: number) {
   }
 }
 
-watch(() => cursor.offsetY, (value) => {
+watch(() => position.offsetY, (value) => {
   makeVisible(value)
-})
-
-watch(() => tab()?.uuid, () => {
-  clearSelection()
-  putCursor({ line: 0, index: 0 })
 })
 
 watch(() => stoppedIndex.value, (index) => {

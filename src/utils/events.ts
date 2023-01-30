@@ -2,11 +2,10 @@ import { listen } from '@tauri-apps/api/event'
 
 import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
-import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './select-file'
+import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
 import { consoleData, pushConsole } from '../state/console-data'
-import { assembleText, assembleWithBinary } from './mips'
-import { list } from 'postcss'
-import { findState } from '../state/editor-state'
+import { assembleWithBinary } from './mips'
+import { find } from '../state/state'
 
 export enum PromptType {
   NeverPrompt,
@@ -124,7 +123,7 @@ export async function setupEvents() {
   })
 
   await listen('find', () => {
-    findState.show = !findState.show
+    find.state.show = !find.state.show
   })
 
   await listen('assemble', async () => {

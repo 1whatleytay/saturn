@@ -1,4 +1,4 @@
-import { consumeBackwards } from './alt-consume'
+import { consumeBackwards } from './query/alt-consume'
 
 export interface SelectionIndex {
   line: number,
@@ -128,11 +128,9 @@ export class Editor {
     if (lastCursor) {
       return lastCursor
     } else {
-      const cursor = this.cursor()
-
       return {
-        line: cursor.line,
-        index: cursor.index
+        line: this.cursor.line,
+        index: this.cursor.index
       }
     }
   }
@@ -350,7 +348,7 @@ export class Editor {
 
   constructor(
     public data: LineData,
-    public cursor: () => SelectionIndex,
+    public cursor: SelectionIndex,
     public onDirty: DirtyHandler = () => { },
     private backlog: number = 50,
     private debounce: number = 800,
