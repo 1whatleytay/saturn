@@ -450,7 +450,7 @@ export function useCursor(
     }
   }
 
-  const defaultCursorPush = 4
+  const defaultCursorPush = 0
   function putCursorAtCoordinates(x: number, y: number) {
     const count = editor().lineCount()
 
