@@ -94,7 +94,7 @@ import {
   dragTo,
   pasteText,
   storage,
-  handleKey
+  handleKey, find
 } from '../state/state'
 
 import Cursor from './Cursor.vue'
@@ -273,5 +273,9 @@ watch(() => stoppedIndex.value, (index) => {
 
     makeVisible(start)
   }
+})
+
+watch(() => find.state.show, () => {
+  handleScroll()
 })
 </script>

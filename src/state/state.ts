@@ -24,10 +24,6 @@ function showSuggestionsAt(cursor: SelectionIndex) {
   suggestions.showSuggestions(storage.highlights[cursor.line], cursor.index)
 }
 
-function dismissFindState() {
-  find.state.show = false
-}
-
 export const {
   position,
   lineStart,
@@ -43,6 +39,5 @@ export const {
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
   settings,
   suggestions,
-  showSuggestionsAt,
-  dismissFindState
+  showSuggestionsAt
 )

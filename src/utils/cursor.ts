@@ -33,8 +33,7 @@ export function useCursor(
   cursor: () => CursorState,
   settings: Settings,
   suggestions: SuggestionsInterface,
-  showSuggestionsAt: (cursor: SelectionIndex) => void,
-  dismissFindState: () => void
+  showSuggestionsAt: (cursor: SelectionIndex) => void
 ): CursorResult {
   const position = reactive({
     offsetX: 0,
@@ -378,8 +377,6 @@ export function useCursor(
       case 'Escape':
         if (suggestions.hasSuggestions()) {
           suggestions.dismissSuggestions()
-        } else {
-          dismissFindState()
         }
 
         event.preventDefault()
