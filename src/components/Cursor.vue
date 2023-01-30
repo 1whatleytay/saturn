@@ -29,12 +29,13 @@
     }"
   >
     <div class="
-      mt-6 py-2 px-6 w-auto
+      mt-6 py-2 px-4 w-auto
       bg-neutral-900 rounded
       shadow-xl
       absolute z-30
       text-red-400 font-medium font-sans
-      hidden group-hover:block">
+      hidden group-hover:block"
+    >
       {{ highlights.state.highlight.message }}
     </div>
   </div>
