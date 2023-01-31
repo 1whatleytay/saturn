@@ -29,7 +29,9 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 # Important Tasks
 - [ ] Memory Editing and Copying
 - [ ] Register Editing and Copying
-- [ ] Find and Replace
-- [ ] Finished Execution State
+- [x] Finding Text (Cmd + F)
+- [x] Finished Execution State
 - [x] Editor Performance (Smooth Cmd + A @ 4000 lines)
 - [ ] Floating Point Co-processor
+- [ ] MIDI and Other Syscalls
+- [ ] Variable Name Suggestions
