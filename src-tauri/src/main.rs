@@ -139,6 +139,7 @@ impl AssemblerResult {
 impl ResumeResult {
     fn from_frame(frame: DebugFrame, finished_pcs: &Vec<u32>, result: Option<SyscallResult>) -> ResumeResult {
         let mode = match result {
+            Some(SyscallResult::Failure(message)) => Invalid { message },
             Some(SyscallResult::Terminated(code)) => Finished {
                 pc: frame.registers.pc, code: Some(code)
             },

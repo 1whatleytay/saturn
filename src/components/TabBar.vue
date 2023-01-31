@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import Tab from './Tab.vue'
-import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
+import { PlusIcon } from '@heroicons/vue/24/solid'
 
 import { loadElf, closeTab, createTab, editor } from '../state/tabs-state'
 import TabBarItems from './TabBarItems.vue'

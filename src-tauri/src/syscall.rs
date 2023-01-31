@@ -1,6 +1,10 @@
 use std::cmp::min;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use rand::Rng;
+use rand_chacha::ChaCha8Rng;
+use rand_chacha::rand_core::SeedableRng;
 use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::Memory;
@@ -10,30 +14,33 @@ use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
 use tokio::time::Instant;
 use crate::keyboard::KeyboardHandler;
-use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Terminated, Unimplemented, Unknown};
+use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Terminated, Unimplemented, Unknown};
 
 type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
 
 pub enum SyscallResult {
-    Completed,
-    Terminated(u32),
-    Aborted,
-    Unimplemented(u32),
-    Exception(Error),
-    Unknown(u32),
+    Completed, // Syscall completed successfully.
+    Failure(String), // Failed to complete with message.
+    Terminated(u32), // User asked process to be terminated!
+    Aborted, // User paused/stopped/asked the program to stop ASAP.
+    Unimplemented(u32), // User executed a recognized syscall that is not implemented yet.
+    Unknown(u32), // User executed a totally unknown syscall.
+    Exception(Error), // Some Memory/CPU error should be reported.
 }
 
 pub struct SyscallState {
     pub abort: bool,
-    pub print: Box<dyn FnMut(&str) -> () + Send>
+    print: Box<dyn FnMut(&str) -> () + Send>,
+    generators: HashMap<u32, ChaCha8Rng>
 }
 
 impl SyscallState {
     pub fn new(print: Box<dyn FnMut(&str) -> () + Send>) -> SyscallState {
         return SyscallState {
             abort: false,
-            print
+            print,
+            generators: HashMap::from([(0, ChaCha8Rng::from_entropy())])
         }
     }
 }
@@ -42,9 +49,16 @@ pub struct SyscallDelegate {
     pub state: Arc<Mutex<SyscallState>>
 }
 
-// get $a0
+fn reg(state: &Mutex<DebuggerType>, index: usize) -> u32 {
+    state.lock().unwrap().state().registers.line[index]
+}
+
+const V0_REG: usize = 2;
+const A0_REG: usize = 4;
+const A1_REG: usize = 5;
+
 fn a0(state: &Mutex<DebuggerType>) -> u32 {
-    state.lock().unwrap().state().registers.line[4]
+    reg(state, A0_REG)
 }
 
 const PRINT_BUFFER_TIME: Duration = Duration::from_millis(50);
@@ -239,16 +253,56 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn set_seed(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(40)
+    async fn set_seed(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut syscall = self.state.lock().unwrap();
+        let mut debugger = state.lock().unwrap();
+
+        let id = debugger.state().registers.line[A0_REG]; // $a0
+        let seed = debugger.state().registers.line[A1_REG]; // $a1
+
+        syscall.generators.insert(id, ChaCha8Rng::seed_from_u64(seed as u64));
+
+        Completed
     }
 
-    async fn random_int(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(41)
+    fn fail_generator(id: u32) -> SyscallResult {
+        Failure(format!(
+            "No generator initialized for id {}, try using the default $a0 = 0 generator or create one with syscall 40.",
+            id
+        ))
     }
 
-    async fn random_int_ranged(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(42)
+    async fn random_int(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut syscall = self.state.lock().unwrap();
+
+        let mut debugger = state.lock().unwrap();
+        let id = debugger.state().registers.line[A0_REG];
+        let Some(generator) = syscall.generators.get_mut(&id) else {
+            return Self::fail_generator(id)
+        };
+
+        let value: u32 = generator.gen();
+
+        debugger.state().registers.line[A0_REG] = value;
+
+        Completed
+    }
+
+    async fn random_int_ranged(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut syscall = self.state.lock().unwrap();
+
+        let mut debugger = state.lock().unwrap();
+        let id = debugger.state().registers.line[A0_REG];
+        let max = debugger.state().registers.line[A1_REG];
+        let Some(generator) = syscall.generators.get_mut(&id) else {
+            return Self::fail_generator(id)
+        };
+
+        let value: u32 = generator.gen_range(0 .. max);
+
+        debugger.state().registers.line[A0_REG] = value;
+
+        Completed
     }
 
     async fn random_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
@@ -300,11 +354,15 @@ impl SyscallDelegate {
         match frame.mode {
              Invalid(CpuSyscall) => {
                  // $v0
-                 let code = debugger.lock().unwrap().state().registers.line[2];
+                 let code = debugger.lock().unwrap().state().registers.line[V0_REG];
                  let result = self.dispatch(debugger, code).await;
 
                  (match result {
-                     Completed => None,
+                     Completed => {
+                         debugger.lock().unwrap().invalid_handled();
+
+                         None
+                     },
                      _ => Some(frame)
                  }, Some(result))
             }
@@ -316,7 +374,7 @@ impl SyscallDelegate {
         loop {
             let frame = Debugger::run(debugger);
             let (frame, result) = self.handle_frame(debugger, frame).await;
-            
+
             if let Some(frame) = frame {
                 return (frame, result)
             }
@@ -342,7 +400,7 @@ impl SyscallDelegate {
         } else {
             (None, None)
         };
-        
+
         (frame.unwrap_or_else(|| debugger.lock().unwrap().frame()), result)
     }
 }
