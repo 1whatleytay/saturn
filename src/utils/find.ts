@@ -103,7 +103,7 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
       window.clearTimeout(state.debounce)
     }
 
-    window.setTimeout(findAll, 300)
+    state.debounce = window.setTimeout(findAll, 200)
   })
 
   return {

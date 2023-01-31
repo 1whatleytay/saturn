@@ -11,7 +11,7 @@
         autocomplete="off"
         spellcheck="false"
         @keydown.esc.prevent="close()"
-        class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+        class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-64 rounded"
         v-model="find.state.text"
       />
 
@@ -53,7 +53,7 @@ const count = computed(() => {
     .reduce((a, b) => a + b, 0)
 })
 
-const findInput = ref(null as HTMLElement | null)
+const findInput = ref(null as HTMLInputElement | null)
 
 let needsFocus = false
 
@@ -64,6 +64,7 @@ function close() {
 function queueFocus() {
   if (findInput.value) {
     findInput.value.focus()
+    findInput.value.select()
     needsFocus = false
   } else {
     needsFocus = true
