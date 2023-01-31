@@ -406,6 +406,17 @@ export function useCursor(
 
         break
 
+      case 'Delete':
+        // Don't move cursor.
+        editor().drop({
+          startLine: value.line,
+          endLine: value.line,
+          startIndex: value.index,
+          endIndex: value.index + 1
+        })
+
+        break
+
       case 'Enter':
         if (event.shiftKey) {
           putCursor({
