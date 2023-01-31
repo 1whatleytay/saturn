@@ -1,4 +1,4 @@
-import { Editor, SelectionIndex, SelectionRange } from './editor'
+import { Editor, SelectionIndex } from './editor'
 import { reactive } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { regular } from './query/text-size'
@@ -15,6 +15,7 @@ export interface CursorPosition {
 export type CursorPositionState = CursorPosition & { highlight: CursorPosition | null }
 
 export interface CursorInterface {
+  jump(index: SelectionIndex): void
   getSelection(): string | null
   dropSelection(): void
   pasteText(text: string): void
@@ -498,6 +499,13 @@ export function useCursor(
     }
   }
 
+  function jump(index: SelectionIndex) {
+    putCursor(index)
+
+    cursor().highlight = null
+    position.highlight = null
+  }
+
   function lineStart(line: number): number {
     const { height } = regular.calculate('')
 
@@ -506,6 +514,7 @@ export function useCursor(
 
   return {
     position,
+    jump,
     lineStart,
     getSelection,
     dropSelection,

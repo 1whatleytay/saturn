@@ -10,18 +10,15 @@
         type="text"
         autocomplete="off"
         spellcheck="false"
+        @keydown.enter="jumpToNext()"
         @keydown.esc.prevent="close()"
         class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-64 rounded"
         v-model="find.state.text"
       />
 
       <div class="flex px-2 space-x-1">
-        <button class="p-1 rounded hover:bg-neutral-700">
-          <ArrowUpIcon class="w-4 h-4" />
-        </button>
-
-        <button class="p-1 rounded hover:bg-neutral-700">
-          <ArrowDownIcon class="w-4 h-4" />
+        <button class="p-1 rounded hover:bg-neutral-700" @click="jumpToNext()">
+          <ArrowRightIcon class="w-4 h-4" />
         </button>
       </div>
 
@@ -43,9 +40,26 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/vue/24/solid'
-import { find } from '../state/state'
+import { ArrowRightIcon, XMarkIcon } from '@heroicons/vue/24/solid'
+import { find, jump } from '../state/state'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { tab } from '../state/tabs-state'
+
+function jumpToNext() {
+  const current = tab()?.cursor
+
+  if (!current) {
+    return
+  }
+
+  const next = find.nextItem(current.line, current.index)
+
+  if (!next) {
+    return
+  }
+
+  jump({ line: next.line, index: next.match.index })
+}
 
 const count = computed(() => {
   return find.state.matches

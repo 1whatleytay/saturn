@@ -28,6 +28,7 @@ function showSuggestionsAt(cursor: SelectionIndex) {
 
 export const {
   position,
+  jump,
   lineStart,
   getSelection,
   dropSelection,

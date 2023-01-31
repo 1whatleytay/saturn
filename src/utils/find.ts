@@ -1,6 +1,7 @@
 import { reactive, watch } from 'vue'
 
 export interface FindMatch {
+  index: number
   offset: number
   size: number
 }
@@ -10,10 +11,18 @@ export interface FindState {
   focus: boolean
   text: string
   matches: FindMatch[][]
+  lastMatch: FindMatch | null
+  paused: boolean
+}
+
+export interface FindNextItem {
+  line: number
+  match: FindMatch
 }
 
 export interface FindInterface {
   dirty(line: number, deleted: number, lines: string[]): void
+  nextItem(line: number, index: number): FindNextItem | null
 }
 
 export type FindResult = FindInterface & {
@@ -44,6 +53,7 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
     }
 
     result.push({
+      index,
       offset: lastOffset,
       size
     })
@@ -63,34 +73,106 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
     focus: false,
     text: '',
     matches: [],
-    debounce: null as number | null
+    lastMatch: null,
+    paused: false, // true when item is last in list
+    debounce: null
   } as FindState & { debounce: number | null })
 
-  async function matchesFor(lines: string[]): Promise<FindMatch[][]> {
+  function matchesFor(lines: string[]): FindMatch[][] {
     return lines
       .map(value => findPin(value, state.text, widthQuery))
   }
 
-  async function dirty(line: number, deleted: number, lines: string[]) {
+  function dirty(line: number, deleted: number, lines: string[]) {
     if (!state.show) {
       return
     }
 
-    const results = await matchesFor(lines)
+    const results = matchesFor(lines)
 
     state.matches.splice(line, deleted, ...results)
   }
 
-  async function findAll() {
+  function findAll() {
     if (state.show) {
-      state.matches = await matchesFor(lines())
+      state.matches = matchesFor(lines())
     }
+  }
+
+  function findNextIndex(matches: FindMatch[], index: number, exclude: FindMatch | null): number | null {
+    let start = 0
+    let end = matches.length
+
+    while (start < end) {
+      const middle = Math.floor((start + end) / 2)
+      const item = matches[middle]
+
+      const next = middle + 1 < matches.length ? matches[middle + 1] : null
+
+      if (index < item.index) {
+        end = middle
+      } else if (index >= item.index) {
+        if (!next || index < next.index) {
+          if (item === exclude) {
+            return next ? middle + 1 : null
+          } else {
+            return middle
+          }
+        }
+
+        // next && the cursor is after next
+        start = middle + 1
+      }
+    }
+
+    return null
+  }
+
+  function nextItem(line: number, index: number): FindNextItem | null {
+    const current = state.matches[line]
+    const next = findNextIndex(current, index, state.lastMatch)
+
+    if (next !== null) {
+      const match = current[next]
+      state.lastMatch = match
+
+      return { line, match } // weird approach
+    }
+
+    function searchFrom(start: number): FindNextItem | null {
+      for (let a = start; a < state.matches.length; a++) {
+        const followup = state.matches[a]
+
+        if (followup.length) {
+          const match = followup[0]
+          state.lastMatch = match
+
+          return { line: a, match }
+        }
+      }
+
+      return null
+    }
+
+    const result = searchFrom(line + 1)
+
+    if (result) {
+      state.paused = false
+      return result
+    }
+
+    if (!state.paused) {
+      state.paused = true
+      return null // pause for a second at the last search
+    }
+
+    return searchFrom(0)
   }
 
   // Intentionally avoiding using computed.
   watch(() => state.show, value => {
     if (value) {
-      findAll().then(() => { /* nothing */ })
+      findAll()
     } else {
       state.matches = []
     }
@@ -99,6 +181,9 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
   // Not deep, which is good!
   watch(() => lines(), findAll)
   watch(() => state.text, () => {
+    state.lastMatch = null
+    state.paused = true
+
     if (state.debounce) {
       window.clearTimeout(state.debounce)
     }
@@ -108,6 +193,7 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
 
   return {
     state,
-    dirty
+    dirty,
+    nextItem
   }
 }

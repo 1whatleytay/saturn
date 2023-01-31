@@ -54,6 +54,7 @@
       <div
         v-for="match in matches.matches"
         class="bg-yellow-500 h-6 bg-opacity-30 absolute"
+        :class="{ 'bg-opacity-50': match === find.state.lastMatch }"
         :style="{
           left: `${match.offset}px`,
           width: `${match.size}px`
