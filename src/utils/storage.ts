@@ -47,7 +47,7 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface)
   function dispatchCheckSyntax() {
     if (tab()?.profile?.kind === 'asm') {
       if (storage.debounce) {
-        clearInterval(storage.debounce)
+        window.clearTimeout(storage.debounce)
       }
 
       storage.debounce = window.setTimeout(checkSyntax, 500)

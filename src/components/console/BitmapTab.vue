@@ -67,14 +67,14 @@ watch(() => state.connected, connect => {
       reloadDisplay()
     }, 60)
   } else if (state.interval) {
-    clearInterval(state.interval)
+    window.clearInterval(state.interval)
     state.interval = null
   }
 })
 
 onUnmounted(() => {
   if (state.interval) {
-    clearInterval(state.interval)
+    window.clearInterval(state.interval)
   }
 })
 

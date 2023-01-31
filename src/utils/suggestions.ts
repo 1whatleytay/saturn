@@ -62,7 +62,7 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
     const now = Date.now()
 
     if (suggestions.debounce) {
-      window.clearInterval(suggestions.debounce.interval)
+      window.clearTimeout(suggestions.debounce.interval)
 
       if (suggestions.debounce.end <= now) {
         return makeSuggestions(token)
@@ -94,7 +94,7 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
     suggestions.results = []
 
     if (suggestions.debounce) {
-      clearInterval(suggestions.debounce.interval)
+      window.clearTimeout(suggestions.debounce.interval)
 
       suggestions.debounce = null
     }

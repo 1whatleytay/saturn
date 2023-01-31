@@ -43,19 +43,16 @@
   </div>
 
   <!-- Find Results -->
-  <div
-    v-if="find.state.show"
-    class="absolute"
-    :style="{
-      top: `${lineHeight * props.start}px`
-    }"
-  >
+  <div v-if="find.state.show">
     <div
-      v-for="index in props.count"
-      class="h-6 relative"
+      v-for="matches in findIndices"
+      class="absolute"
+      :style="{
+        top: `${matches.height}px`,
+      }"
     >
       <div
-        v-for="match in find.state.matches[index - 1 + start]"
+        v-for="match in matches.matches"
         class="bg-yellow-500 h-6 bg-opacity-30 absolute"
         :style="{
           left: `${match.offset}px`,
@@ -149,12 +146,36 @@ import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
 import { selectionRange, tab, tabBody } from '../state/tabs-state'
+import { FindMatch } from '../utils/find'
 
 const suggestionsScroll = ref(0)
 const suggestionsPane = ref(null as HTMLElement | null)
 const suggestionsParent = ref(null as HTMLElement | null)
 
 const lineHeight = 24 // h-6
+
+const findIndices = computed(() => {
+  const pairs = [] as { height: number, matches: FindMatch[] }[]
+
+  for (let a = 0; a < props.count; a++) {
+    const line = a + props.start
+    if (line < 0 || line >= find.state.matches.length) {
+      continue
+    }
+
+    const matches = find.state.matches[line]
+    if (!matches.length) {
+      continue
+    }
+
+    pairs.push({
+      height: lineHeight * line,
+      matches
+    })
+  }
+
+  return pairs
+})
 
 function merge(index: number) {
   suggestions.state.index = index

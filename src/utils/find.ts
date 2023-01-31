@@ -22,8 +22,6 @@ export type FindResult = FindInterface & {
 
 export type WidthQuery = (text: string) => number
 
-let queries = 0
-
 function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[] {
   if (!pin.length) {
     return []
@@ -39,8 +37,6 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
   let size = null as number | null
 
   while (index >= 0) {
-    queries++
-    console.log(`queries: ${queries}`)
     lastOffset += widthQuery(line.substring(lastIndex, index))
 
     if (!size) {
@@ -66,8 +62,9 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
     show: false,
     focus: false,
     text: '',
-    matches: []
-  } as FindState)
+    matches: [],
+    debounce: null as number | null
+  } as FindState & { debounce: number | null })
 
   async function matchesFor(lines: string[]): Promise<FindMatch[][]> {
     return lines
@@ -101,7 +98,13 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
 
   // Not deep, which is good!
   watch(() => lines(), findAll)
-  watch(() => state.text, findAll)
+  watch(() => state.text, () => {
+    if (state.debounce) {
+      window.clearTimeout(state.debounce)
+    }
+
+    window.setTimeout(findAll, 300)
+  })
 
   return {
     state,
