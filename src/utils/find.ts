@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 export interface FindMatch {
   index: number
@@ -35,6 +35,8 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
   if (!pin.length) {
     return []
   }
+
+  // assert pin.toLowerCase() === pin && line.toLowerCase() === line
 
   const result = [] as FindMatch[]
 
@@ -78,9 +80,11 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
     debounce: null
   } as FindState & { debounce: number | null })
 
+  const lower = computed(() => state.text.toLowerCase())
+
   function matchesFor(lines: string[]): FindMatch[][] {
     return lines
-      .map(value => findPin(value, state.text, widthQuery))
+      .map(value => findPin(value.toLowerCase(), lower.value, widthQuery))
   }
 
   function dirty(line: number, deleted: number, lines: string[]) {
