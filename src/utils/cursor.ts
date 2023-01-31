@@ -389,6 +389,9 @@ export function useCursor(
         break
 
       case 'Backspace':
+      case 'Delete':
+        const doDelete = event.key === 'Delete'
+
         if (!last) {
           editor().commit()
         }
@@ -397,23 +400,20 @@ export function useCursor(
 
         if (!dropSelection()) {
           bringCursorInline()
-          putCursor(editor().backspace(value, event.altKey))
+          let nextPosition: SelectionIndex
+
+          if (doDelete) {
+            nextPosition = editor().deleteForwards(value, event.altKey)
+          } else {
+            nextPosition = editor().backspace(value, event.altKey)
+          }
+
+          putCursor(nextPosition)
         }
 
         if (suggestions.hasSuggestions()) {
           showSuggestionsAt(cursor())
         }
-
-        break
-
-      case 'Delete':
-        // Don't move cursor.
-        editor().drop({
-          startLine: value.line,
-          endLine: value.line,
-          startIndex: value.index,
-          endIndex: value.index + 1
-        })
 
         break
 

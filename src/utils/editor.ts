@@ -1,4 +1,4 @@
-import { consumeBackwards } from './query/alt-consume'
+import { consumeBackwards, consumeForwards } from './query/alt-consume'
 
 export interface SelectionIndex {
   line: number,
@@ -317,6 +317,36 @@ export class Editor {
       })
 
       return { line: index.line - 1, index: leading.length }
+    }
+
+    return index
+  }
+
+  deleteForwards(index: SelectionIndex, alt: boolean = false): SelectionIndex {
+    const line = this.data[index.line]
+
+    if (index.index < line.length) {
+      const consumption = alt ? consumeForwards(line, index.index) : 1
+
+      const leading = line.substring(0, index.index)
+      const trailing = line.substring(index.index + consumption)
+
+      // Mutate
+      this.mutateLine(index.line, () => {
+        this.data[index.line] = leading + trailing
+      })
+
+      return { line: index.line, index: leading.length }
+    } else if (index.line + 1 < this.data.length) {
+      const leading = this.data[index.line]
+      const trailing = this.data[index.line + 1]
+
+      this.mutate(index.line, 2, 1, () => {
+        this.data[index.line] = leading + trailing
+        this.data.splice(index.line + 1, 1)
+      })
+
+      return { line: index.line, index: leading.length }
     }
 
     return index
