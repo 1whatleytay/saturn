@@ -276,6 +276,9 @@ watch(() => stoppedIndex.value, (index) => {
 })
 
 watch(() => find.state.show, () => {
-  handleScroll()
+  // Wait until resize occurs...
+  Promise.resolve().then(() => {
+    handleScroll()
+  })
 })
 </script>

@@ -123,7 +123,8 @@ export async function setupEvents() {
   })
 
   await listen('find', () => {
-    find.state.show = !find.state.show
+    find.state.show = true
+    find.state.focus = true // send focus event
     suggestions.dismissSuggestions()
   })
 

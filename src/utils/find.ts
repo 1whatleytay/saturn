@@ -7,6 +7,7 @@ export interface FindMatch {
 
 export interface FindState {
   show: boolean
+  focus: boolean
   text: string
   matches: FindMatch[][]
 }
@@ -21,6 +22,8 @@ export type FindResult = FindInterface & {
 
 export type WidthQuery = (text: string) => number
 
+let queries = 0
+
 function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[] {
   if (!pin.length) {
     return []
@@ -33,10 +36,16 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
   let lastIndex = 0
   let lastOffset = 0
 
-  const size = widthQuery(pin)
+  let size = null as number | null
 
   while (index >= 0) {
+    queries++
+    console.log(`queries: ${queries}`)
     lastOffset += widthQuery(line.substring(lastIndex, index))
+
+    if (!size) {
+      size = widthQuery(pin)
+    }
 
     result.push({
       offset: lastOffset,
@@ -55,33 +64,36 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
 export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResult {
   const state = reactive({
     show: false,
+    focus: false,
     text: '',
     matches: []
   } as FindState)
 
-  function matchesFor(line: number, lines: string[]): FindMatch[][] {
+  async function matchesFor(lines: string[]): Promise<FindMatch[][]> {
     return lines
       .map(value => findPin(value, state.text, widthQuery))
   }
 
-  function dirty(line: number, deleted: number, lines: string[]) {
+  async function dirty(line: number, deleted: number, lines: string[]) {
     if (!state.show) {
       return
     }
 
-    state.matches.splice(line, deleted, ...matchesFor(line, lines))
+    const results = await matchesFor(lines)
+
+    state.matches.splice(line, deleted, ...results)
   }
 
-  function findAll() {
+  async function findAll() {
     if (state.show) {
-      state.matches = matchesFor(0, lines())
+      state.matches = await matchesFor(lines())
     }
   }
 
   // Intentionally avoiding using computed.
   watch(() => state.show, value => {
     if (value) {
-      findAll()
+      findAll().then(() => { /* nothing */ })
     } else {
       state.matches = []
     }

@@ -10,6 +10,7 @@
         type="text"
         autocomplete="off"
         spellcheck="false"
+        @keydown.esc.prevent="close()"
         class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
         v-model="find.state.text"
       />
@@ -23,19 +24,42 @@
           <ArrowDownIcon class="w-4 h-4" />
         </button>
       </div>
+
+      <div class="text-neutral-600 text-sm">
+        {{ count }} matches
+      </div>
+
+      <button class="
+        w-12 h-12 ml-auto
+        hover:bg-slate-800
+        text-slate-300
+        shrink-0
+        flex items-center justify-center
+      " @click="close()">
+        <XMarkIcon class="w-4 h-4" />
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/vue/24/solid'
+import { ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { find } from '../state/state'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { list } from 'postcss'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+const count = computed(() => {
+  return find.state.matches
+    .map(x => x.length)
+    .reduce((a, b) => a + b, 0)
+})
 
 const findInput = ref(null as HTMLElement | null)
 
 let needsFocus = false
+
+function close() {
+  find.state.show = false
+}
 
 function queueFocus() {
   if (findInput.value) {
@@ -63,6 +87,13 @@ onUnmounted(() => {
 watch(() => find.state.show, (value, old) => {
   if (value && !old) {
     queueFocus()
+  }
+})
+
+watch(() => find.state.focus, value => {
+  if (value) {
+    queueFocus()
+    find.state.focus = false
   }
 })
 
