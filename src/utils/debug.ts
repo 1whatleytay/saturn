@@ -40,16 +40,21 @@ function postDebugInformation(result: ExecutionResult) {
   
   switch (result.mode.type) {
     case ExecutionModeType.Finished: {
-      const address = result.mode.value.toString(16).padStart(8, '0')
+      const address = result.mode.pc.toString(16).padStart(8, '0')
 
-      pushConsole(`Execution finished at pc 0x${address}`)
+      if (result.mode.code !== null) {
+        pushConsole(`Execution finished with code ${result.mode.code} at pc 0x${address}`)
+      } else {
+        pushConsole(`Execution finished at pc 0x${address}`)
+      }
+
       closeExecution()
 
       break
     }
     
     case ExecutionModeType.Invalid: {
-      pushConsole(`Exception thrown: ${result.mode.value}`)
+      pushConsole(`Exception thrown: ${result.mode.message}`)
 
       consoleData.tab = DebugTab.Console
 

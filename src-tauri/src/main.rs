@@ -25,9 +25,9 @@ use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
 use titan::elf::program::ProgramHeaderFlags;
 use crate::menu::{create_menu, handle_event};
-use crate::ResumeMode::Finished;
+use crate::ResumeMode::{Finished, Invalid};
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
-use crate::syscall::{SyscallDelegate, SyscallState};
+use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
 
 #[derive(Serialize)]
 struct DisassembleResult {
@@ -51,13 +51,13 @@ enum AssemblerResult {
 }
 
 #[derive(Serialize)]
-#[serde(tag="type", content="value")]
+#[serde(tag="type")]
 enum ResumeMode {
     Running,
-    Invalid(String),
+    Invalid { message: String },
     Paused,
     Breakpoint,
-    Finished(u32),
+    Finished { pc: u32, code: Option<u32> },
 }
 
 impl From<DebuggerMode> for ResumeMode {
@@ -65,7 +65,9 @@ impl From<DebuggerMode> for ResumeMode {
         match value {
             DebuggerMode::Running => ResumeMode::Running,
             DebuggerMode::Recovered => ResumeMode::Breakpoint,
-            DebuggerMode::Invalid(error) => ResumeMode::Invalid(format!("{}", error)),
+            DebuggerMode::Invalid(error) => ResumeMode::Invalid {
+                message: format!("{}", error)
+            },
             DebuggerMode::Paused => ResumeMode::Paused,
             DebuggerMode::Breakpoint => ResumeMode::Breakpoint
         }
@@ -135,13 +137,27 @@ impl AssemblerResult {
 }
 
 impl ResumeResult {
-    fn from_frame(frame: DebugFrame, finished_pcs: &Vec<u32>) -> ResumeResult {
-        let mode = {
-            // This is probably okay...
-            if finished_pcs.contains(&frame.registers.pc) {
-                Finished(frame.registers.pc)
-            } else {
-                frame.mode.into()
+    fn from_frame(frame: DebugFrame, finished_pcs: &Vec<u32>, result: Option<SyscallResult>) -> ResumeResult {
+        let mode = match result {
+            Some(SyscallResult::Terminated(code)) => Finished {
+                pc: frame.registers.pc, code: Some(code)
+            },
+            Some(SyscallResult::Exception(error)) => Invalid {
+                message: error.to_string()
+            },
+            Some(SyscallResult::Unimplemented(code)) => Invalid {
+                message: format!("Unimplemented syscall {}, file a bug or make a contribution at https://github.com/1whatleytay/saturn.", code)
+            },
+            Some(SyscallResult::Unknown(code)) => Invalid {
+                message: format!("Unrecognized syscall {}.", code)
+            },
+            _ => {
+                // This is probably okay...
+                if finished_pcs.contains(&frame.registers.pc) {
+                    Finished { pc: frame.registers.pc, code: None }
+                } else {
+                    frame.mode.into()
+                }
             }
         };
 
@@ -240,11 +256,11 @@ async fn resume(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) ->
 
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
 
-    let frame = tokio::spawn(async move {
+    let (frame, result) = tokio::spawn(async move {
         SyscallDelegate::new(state).run(&debugger).await
     }).await.unwrap();
 
-    Ok(ResumeResult::from_frame(frame, &finished_pcs))
+    Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
 }
 
 #[tauri::command]
@@ -253,9 +269,9 @@ async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()>
         debugger, state, finished_pcs
     ) = lock_and_clone(state).ok_or(())?;
 
-    let frame = SyscallDelegate::new(state).cycle(&debugger).await;
+    let (frame, result) = SyscallDelegate::new(state).cycle(&debugger).await;
 
-    Ok(ResumeResult::from_frame(frame, &finished_pcs))
+    Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
 }
 
 #[tauri::command]
@@ -274,7 +290,7 @@ fn pause(state: tauri::State<'_, DebuggerBody>) -> Option<ResumeResult> {
     let mut debugger = pointer.debugger.lock().unwrap();
     debugger.pause();
 
-    Some(ResumeResult::from_frame(debugger.frame(), &vec![]))
+    Some(ResumeResult::from_frame(debugger.frame(), &vec![], None))
 }
 
 #[tauri::command]

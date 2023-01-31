@@ -82,12 +82,13 @@ export enum ExecutionModeType {
 
 export interface ExecutionModeInvalid {
   type: ExecutionModeType.Invalid,
-  value: string
+  message: string
 }
 
 export interface ExecutionModeFinished {
   type: ExecutionModeType.Finished,
-  value: number
+  pc: number
+  code: number | null
 }
 
 type ExecutionModeOther = ExecutionModeType.Running

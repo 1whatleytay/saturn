@@ -51,10 +51,9 @@
       shrink-0
       flex items-center justify-center
       font-black
-      text-green-300
     " :class="{
       'text-gray-300 cursor-default bg-neutral-800': !allowResume,
-      'hover:bg-slate-800': allowResume
+      'text-green-300 hover:bg-slate-800': allowResume
     }" @click="resume()" :disabled="!allowResume">
       <PlayIcon class="w-4 h-4" />
     </button>

@@ -19,9 +19,9 @@ pub enum SyscallResult {
     Completed,
     Terminated(u32),
     Aborted,
-    Unimplemented,
+    Unimplemented(u32),
     Exception(Error),
-    Unknown,
+    Unknown(u32),
 }
 
 pub struct SyscallState {
@@ -54,7 +54,7 @@ impl SyscallDelegate {
         SyscallDelegate { state }
     }
 
-    async fn print_integer(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
             let value = a0(state);
 
@@ -67,15 +67,15 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn print_float(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(2)
     }
 
-    async fn print_double(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(3)
     }
 
-    async fn print_string(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
             let mut address = a0(state);
 
@@ -112,67 +112,67 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn read_integer(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_integer(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(5)
     }
 
-    async fn read_float(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(6)
     }
 
-    async fn read_double(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(7)
     }
 
-    async fn read_string(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_string(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(8)
     }
 
-    async fn alloc_heap(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn alloc_heap(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(9)
     }
 
-    async fn terminate(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn terminate(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
         Terminated(0)
     }
 
-    async fn print_character(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn print_character(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(11)
     }
 
-    async fn read_character(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_character(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(12)
     }
 
-    async fn open_file(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn open_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(13)
     }
 
-    async fn read_file(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn read_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(14)
     }
 
-    async fn write_file(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn write_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(15)
     }
 
-    async fn close_file(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn close_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(16)
     }
 
-    async fn terminate_valued(&mut self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn terminate_valued(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
         Terminated(a0(debugger))
     }
 
-    async fn system_time(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn system_time(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(30)
     }
 
-    async fn midi_out(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn midi_out(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(31)
     }
 
-    async fn sleep(&mut self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
         let interval = 300;
 
         // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
@@ -196,11 +196,11 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn midi_out_sync(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn midi_out_sync(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(33)
     }
 
-    async fn print_hexadecimal(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_hexadecimal(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
             let value = a0(state);
 
@@ -213,7 +213,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn print_binary(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_binary(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
             let value = a0(state);
 
@@ -226,7 +226,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn print_unsigned(&mut self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_unsigned(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
             let value = a0(state);
 
@@ -239,27 +239,27 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn set_seed(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn set_seed(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(40)
     }
 
-    async fn random_int(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn random_int(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(41)
     }
 
-    async fn random_int_ranged(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn random_int_ranged(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(42)
     }
 
-    async fn random_float(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn random_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(43)
     }
 
-    async fn random_double(&mut self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented
+    async fn random_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+        Unimplemented(44)
     }
 
-    pub async fn dispatch(&mut self, state: &Mutex<DebuggerType>, code: u32) -> SyscallResult {
+    pub async fn dispatch(&self, state: &Mutex<DebuggerType>, code: u32) -> SyscallResult {
         match code {
             1 => self.print_integer(state).await,
             2 => self.print_float(state).await,
@@ -290,57 +290,59 @@ impl SyscallDelegate {
             42 => self.random_int_ranged(state).await,
             43 => self.random_float(state).await,
             44 => self.random_double(state).await,
-            _ => Unknown
+            _ => Unknown(code)
         }
     }
 
     async fn handle_frame(
-        &mut self, debugger: &Mutex<DebuggerType>, frame: DebugFrame
-    ) -> Option<DebugFrame> {
+        &self, debugger: &Mutex<DebuggerType>, frame: DebugFrame
+    ) -> (Option<DebugFrame>, Option<SyscallResult>) {
         match frame.mode {
              Invalid(CpuSyscall) => {
                  // $v0
                  let code = debugger.lock().unwrap().state().registers.line[2];
-                 let _ = self.dispatch(debugger, code).await;
+                 let result = self.dispatch(debugger, code).await;
 
-                 debugger.lock().unwrap().invalid_handled();
-
-                 None
+                 (match result {
+                     Completed => None,
+                     _ => Some(frame)
+                 }, Some(result))
             }
-            _ => Some(frame)
+            _ => (Some(frame), None)
         }
     }
 
-    pub async fn run(&mut self, debugger: &Mutex<DebuggerType>) -> DebugFrame {
+    pub async fn run(&self, debugger: &Mutex<DebuggerType>) -> (DebugFrame, Option<SyscallResult>) {
         loop {
             let frame = Debugger::run(debugger);
-            let frame = self.handle_frame(debugger, frame).await;
-
+            let (frame, result) = self.handle_frame(debugger, frame).await;
+            
             if let Some(frame) = frame {
-                return frame
+                return (frame, result)
             }
 
             // Need to re-check.
             let frame = debugger.lock().unwrap().frame();
 
             if frame.mode != Recovered {
-                return frame
+                return (frame, None)
             }
         }
     }
 
-    pub async fn cycle(&mut self, debugger: &Mutex<DebuggerType>) -> DebugFrame {
+    pub async fn cycle(&self, debugger: &Mutex<DebuggerType>) -> (DebugFrame, Option<SyscallResult>) {
         let frame = {
             let mut pointer = debugger.lock().unwrap();
 
             pointer.cycle(true)
         };
 
-        if let Some(frame) = frame {
+        let (frame, result) = if let Some(frame) = frame {
             self.handle_frame(debugger, frame).await
         } else {
-            None
-        }
-            .unwrap_or_else(|| debugger.lock().unwrap().frame())
+            (None, None)
+        };
+        
+        (frame.unwrap_or_else(|| debugger.lock().unwrap().frame()), result)
     }
 }
