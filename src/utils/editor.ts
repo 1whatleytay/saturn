@@ -1,4 +1,5 @@
 import { consumeBackwards, consumeForwards } from './query/alt-consume'
+import { grabWhitespace } from './languages/language'
 
 export interface SelectionIndex {
   line: number,
@@ -10,6 +11,11 @@ export interface SelectionRange {
   startIndex: number
   endLine: number
   endIndex: number
+}
+
+export interface LineRange {
+  start: number
+  end: number
 }
 
 type LineData = string[]
@@ -208,6 +214,41 @@ export class Editor {
         this.data.splice(range.startLine + 1, range.endLine - range.startLine)
       })
     }
+  }
+
+  prefix(start: number, end: number, character: string, whitespace: boolean = false) {
+    const count = end - start + 1
+
+    this.mutate(start, count, count, () => {
+      for (let a = start; a <= end; a++) {
+        if (whitespace) {
+          const text = this.data[a]
+          const { leading } = grabWhitespace(text)
+
+          // Ignore empty strings when whitespace matters
+          if (leading.length !== text.length) {
+            this.data[a] = leading + character + text.substring(leading.length)
+          }
+        } else {
+          this.data[a] = character + this.data[a]
+        }
+      }
+    })
+  }
+
+  crop(start: number, ranges: (LineRange | null)[]) {
+    this.mutate(start, ranges.length, ranges.length, () => {
+      ranges.forEach((range, index) => {
+        if (!range) {
+          return
+        }
+
+        const line = start + index
+        const text = this.data[line]
+
+        this.data[line] = text.substring(0, range.start) + text.substring(range.end)
+      })
+    })
   }
 
   put(index: SelectionIndex, character: string): SelectionIndex {

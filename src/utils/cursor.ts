@@ -1,4 +1,4 @@
-import { Editor, SelectionIndex } from './editor'
+import { Editor, LineRange, SelectionIndex } from './editor'
 import { reactive } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { regular } from './query/text-size'
@@ -6,6 +6,7 @@ import { consumeBackwards, consumeForwards } from './query/alt-consume'
 import { hasActionKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from '../state/tabs-state'
 import { Settings } from './settings'
+import { grabWhitespace } from './languages/language'
 
 export interface CursorPosition {
   offsetX: number
@@ -306,6 +307,109 @@ export function useCursor(
     }
   }
 
+  // Spaghetti hits hard...
+  function commentTrimSize(text: string): LineRange | 'ignore' | null {
+    const { leading } = grabWhitespace(text)
+
+    if (leading.length === text.length) {
+      return 'ignore'
+    }
+
+    const rest = text.substring(leading.length)
+
+    if (rest.startsWith("# ")) {
+      return { start: leading.length, end: leading.length + 2 }
+    } else if (rest.startsWith("#")) {
+      return { start: leading.length, end: leading.length + 1 }
+    }
+
+    return null
+  }
+
+  function comment() {
+    const value = cursor()
+    const range = selectionRange(value)
+
+    let start = range?.startLine ?? value.line
+    let end = range?.endLine ?? value.line
+
+    let all = true
+    const crops = []
+
+    // This is beyond complicated
+    let cursorIndex = value.index
+    let highlightIndex = value.highlight?.index
+
+    const reposition = (index: number, range: LineRange): number => {
+      if (index < range.start) {
+        return index
+      } else if (index < range.end) {
+        return range.start
+      } else {
+        return index - (range.end - range.start)
+      }
+    }
+
+    for (let a = start; a <= end; a++) {
+      const size = commentTrimSize(editor().lineAt(a))
+
+      // Empty lines should not affect whether or not we comment.
+      if (size === 'ignore') {
+        crops.push(null)
+
+        continue
+      }
+
+      crops.push(size)
+
+      if (!size) {
+        all = false
+      } else {
+        // could be done via query
+        if (value.line === a) {
+          cursorIndex = reposition(value.index, size)
+        }
+
+        if (value.highlight && value.highlight?.line === a) {
+          highlightIndex = reposition(value.highlight.index, size)
+        }
+      }
+    }
+
+    if (all) {
+      editor().crop(start, crops)
+
+      putCursor({ line: value.line, index: cursorIndex })
+
+      if (value.highlight && highlightIndex) {
+        // Just make it computed, am i right?
+        position.highlight = { offsetX: 0, offsetY: 0 }
+
+        putCursor({
+          line: value.highlight.line, index: highlightIndex
+        }, value.highlight, position.highlight)
+      }
+    } else {
+      editor().prefix(start, end, '# ', true)
+
+      // This should... maybe be correct cursor positioning
+      const { leading: cursorLeading } = grabWhitespace(editor().lineAt(value.line))
+      if (value.index >= cursorLeading.length) {
+        putCursor({ line: value.line, index: value.index + 2 })
+      }
+
+      if (value.highlight && position.highlight) {
+        const { leading: highlightLeading } = grabWhitespace(editor().lineAt(value.highlight.line))
+
+        if (value.highlight.index >= highlightLeading.length) {
+          putCursor({
+            line: value.highlight.line, index: value.highlight.index + 2
+          }, value.highlight, position.highlight)
+        }
+      }
+    }
+  }
+
   function pasteText(text: string) {
     dropSelection()
 
@@ -337,6 +441,10 @@ export function useCursor(
           value.highlight = cursorPosition({ line: end, index: text.length })
         }
 
+        break
+
+      case '/':
+        comment()
         break
 
       case 'z': {
