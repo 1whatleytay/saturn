@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -178,19 +178,32 @@ impl SyscallDelegate {
         Terminated(a0(debugger))
     }
 
-    async fn system_time(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(30)
+    async fn system_time(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(time) => {
+                let millis = time.as_millis() as u64;
+
+                let mut debugger = state.lock().unwrap();
+                let debugger_state = debugger.state();
+
+                debugger_state.registers.line[A0_REG] = (millis & 0xFFFFFFFF) as u32;
+                debugger_state.registers.line[A1_REG] = millis.wrapping_shl(32) as u32;
+
+                Completed
+            },
+            Err(_) => {
+                Failure("System clock failed to get current time.".into())
+            }
+        }
     }
 
     async fn midi_out(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
         Unimplemented(31)
     }
 
-    async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn sleep_for_duration(&self, time: i64) -> bool {
         let interval = 300;
 
-        // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
-        let time = a0(debugger) as i64;
         let start = Instant::now();
 
         let mut remaining = time;
@@ -199,7 +212,7 @@ impl SyscallDelegate {
             let wait = min(remaining, interval) as u64;
 
             if self.state.lock().unwrap().abort {
-                return Aborted
+                return false
             }
 
             tokio::time::sleep(Duration::from_millis(wait)).await;
@@ -207,7 +220,18 @@ impl SyscallDelegate {
             remaining = time - start.elapsed().as_millis() as i64;
         }
 
-        Completed
+        true
+    }
+
+    async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+        // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
+        let time = a0(debugger) as i64;
+
+        if self.sleep_for_duration(time).await {
+            Completed
+        } else {
+            Aborted
+        }
     }
 
     async fn midi_out_sync(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
