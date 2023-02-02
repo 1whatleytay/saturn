@@ -1,5 +1,7 @@
 use std::cmp::min;
 use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::Rng;
@@ -32,7 +34,9 @@ pub enum SyscallResult {
 pub struct SyscallState {
     pub abort: bool,
     print: Box<dyn FnMut(&str) -> () + Send>,
-    generators: HashMap<u32, ChaCha8Rng>
+    generators: HashMap<u32, ChaCha8Rng>,
+    next_file: u32,
+    file_map: HashMap<u32, File>
 }
 
 impl SyscallState {
@@ -40,7 +44,9 @@ impl SyscallState {
         return SyscallState {
             abort: false,
             print,
-            generators: HashMap::from([(0, ChaCha8Rng::from_entropy())])
+            generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
+            next_file: 3,
+            file_map: HashMap::new()
         }
     }
 }
@@ -56,6 +62,7 @@ fn reg(state: &Mutex<DebuggerType>, index: usize) -> u32 {
 const V0_REG: usize = 2;
 const A0_REG: usize = 4;
 const A1_REG: usize = 5;
+const A2_REG: usize = 6;
 
 fn a0(state: &Mutex<DebuggerType>) -> u32 {
     reg(state, A0_REG)
@@ -89,33 +96,37 @@ impl SyscallDelegate {
         Unimplemented(3)
     }
 
+    fn grab_string<Mem: Memory>(mut address: u32, memory: &Mem) -> Result<String, Error> {
+        let mut buffer = String::new();
+
+        loop {
+            let byte = memory.get(address)?;
+
+            if byte == 0 {
+                break
+            }
+
+            buffer.push(byte as char);
+
+            let Some(next_address) = address.checked_add(1) else {
+                return Err(CpuTrap)
+            };
+
+            address = next_address
+        }
+
+        Ok(buffer)
+    }
+
     async fn print_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         {
-            let mut address = a0(state);
-
-            let mut buffer = String::new();
-
             let mut lock = state.lock().unwrap();
-            let memory = lock.memory();
+            let address = lock.state().registers.line[A0_REG];
 
-            loop {
-                let byte = match memory.get(address) {
-                    Ok(value) => value,
-                    Err(error) => return Exception(error)
-                };
-
-                if byte == 0 {
-                    break
-                }
-
-                buffer.push(byte as char);
-
-                let Some(next_address) = address.checked_add(1) else {
-                    return Exception(CpuTrap)
-                };
-
-                address = next_address
-            }
+            let buffer = match Self::grab_string(address, lock.memory()) {
+                Ok(buffer) => buffer,
+                Err(error) => return Exception(error),
+            };
 
             (self.state.lock().unwrap().print)(&buffer);
         }
@@ -158,20 +169,129 @@ impl SyscallDelegate {
         Unimplemented(12)
     }
 
-    async fn open_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(13)
+    async fn open_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut debugger = state.lock().unwrap();
+        let address = debugger.state().registers.line[A0_REG];
+        let flags = debugger.state().registers.line[A1_REG];
+        // Mode/$a2 is ignored.
+
+        let filename = match Self::grab_string(address, debugger.memory()) {
+            Ok(buffer) => buffer,
+            Err(error) => return Exception(error),
+        };
+
+        let file = match flags {
+            0 => File::open(filename),
+            1 => File::create(filename),
+            9 => OpenOptions::new().append(true).open(filename),
+            _ => return Failure(format!("Invalid flags {} for opening file {}", flags, filename))
+        };
+
+        let Ok(file) = file else {
+            debugger.state().registers.line[V0_REG] = (-1i32) as u32;
+
+            return Completed
+        };
+
+        let mut syscall = self.state.lock().unwrap();
+
+        let descriptor = syscall.next_file;
+
+        syscall.next_file += 1;
+        syscall.file_map.insert(descriptor, file);
+
+        debugger.state().registers.line[V0_REG] = descriptor;
+
+        Completed
     }
 
-    async fn read_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(14)
+    async fn read_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut debugger = state.lock().unwrap();
+        let cpu = debugger.state();
+
+        let descriptor = cpu.registers.line[A0_REG];
+        let address = cpu.registers.line[A1_REG];
+        let size = cpu.registers.line[A2_REG];
+
+        let mut syscall = self.state.lock().unwrap();
+
+        let Some(file) = syscall.file_map.get_mut(&descriptor) else {
+            cpu.registers.line[V0_REG] = -1i32 as u32; // descriptor does not exist
+
+            return Completed
+        };
+
+        let mut buffer = vec![0u8; size as usize];
+        let Ok(bytes) = file.read(buffer.as_mut_slice()) else {
+            cpu.registers.line[V0_REG] = -2i32 as u32; // file is not opened for read
+
+            return Completed
+        };
+
+        for i in 0 .. bytes {
+            let Some(next) = address.checked_add(i as u32) else {
+                return Exception(CpuTrap)
+            };
+
+            let result = cpu.memory.set(next, buffer[i]);
+
+            if let Err(error) = result {
+                return Exception(error)
+            }
+        }
+
+        cpu.registers.line[V0_REG] = bytes as u32;
+
+        Completed
     }
 
-    async fn write_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(15)
+    async fn write_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut debugger = state.lock().unwrap();
+        let cpu = debugger.state();
+
+        let descriptor = cpu.registers.line[A0_REG];
+        let address = cpu.registers.line[A1_REG];
+        let size = cpu.registers.line[A2_REG];
+
+        let mut syscall = self.state.lock().unwrap();
+
+        let Some(file) = syscall.file_map.get_mut(&descriptor) else {
+            cpu.registers.line[V0_REG] = -1i32 as u32; // descriptor does not exist
+
+            return Completed
+        };
+
+        let mut buffer = vec![0u8; size as usize];
+
+        for i in 0 .. size {
+            let Some(next) = address.checked_add(i as u32) else {
+                return Exception(CpuTrap)
+            };
+
+            match cpu.memory.get(next) {
+                Ok(byte) => buffer[i as usize] = byte,
+                Err(error) => return Exception(error),
+            }
+        }
+
+        let Ok(bytes) = file.write(buffer.as_slice()) else {
+            cpu.registers.line[V0_REG] = -2i32 as u32; // file was not opened for writing
+
+            return Completed
+        };
+
+        cpu.registers.line[V0_REG] = bytes as u32;
+
+        Completed
     }
 
-    async fn close_file(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(16)
+    async fn close_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let descriptor = a0(state);
+
+        let mut syscall = self.state.lock().unwrap();
+        syscall.file_map.remove(&descriptor);
+
+        Completed
     }
 
     async fn terminate_valued(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
