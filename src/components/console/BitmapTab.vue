@@ -96,6 +96,10 @@
               class="underline hover:text-gray-300"
             >https://github.com/1whatleytay/saturn</a>.
           </div>
+
+          <textarea class="w-full h-64 text-red-500">
+            {{ state.error }}
+          </textarea>
         </div>
       </div>
     </div>
@@ -126,7 +130,8 @@ const state = reactive({
   connected: false,
   interval: null as number | null,
   useProtocol: true,
-  frameTime: null as number | null
+  frameTime: null as number | null,
+  error: null as string | null
 })
 
 async function handleKey(event: KeyboardEvent) {
@@ -286,8 +291,10 @@ async function reloadDisplay() {
     try {
       await renderFrameProtocol(context)
     } catch (e) {
-      state.useProtocol = false
       console.error(e)
+      state.error = JSON.stringify(e)
+
+      state.useProtocol = false
       await renderFrameFallback(context, execution)
     }
   } else {
@@ -298,6 +305,6 @@ async function reloadDisplay() {
 
 <style scoped>
 .bitmap-display {
-  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 </style>
