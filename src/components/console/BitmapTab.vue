@@ -61,6 +61,17 @@
             $gp
           </button>
         </div>
+
+        <div class="py-1">
+          <label for="frame-time" class="inline-block font-bold pr-4 w-32">Frame Time</label>
+          <input
+            type="text"
+            class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+            spellcheck="false"
+            disabled
+            :value="state.frameTime?.toString() ?? 'null'"
+          />
+        </div>
       </div>
 
       <div class="text-gray-500 pt-4 flex items-center">
@@ -69,10 +80,10 @@
         To connect the keyboard, click on the display.
       </div>
 
-      <div class="text-gray-500 pt-4 flex items-center mt-auto">
+      <div v-if="!state.useProtocol" class="text-gray-500 pt-4 flex items-center mt-auto">
         <ExclamationCircleIcon class="w-6 h-6 mr-2" />
 
-        <div v-if="!state.useProtocol">
+        <div>
           <div>
             Using fallback protocol. Performance may be affected.
           </div>
@@ -114,7 +125,8 @@ const correctedWidth = ref(settings.bitmap.width)
 const state = reactive({
   connected: false,
   interval: null as number | null,
-  useProtocol: true
+  useProtocol: true,
+  frameTime: null as number | null
 })
 
 async function handleKey(event: KeyboardEvent) {
@@ -186,10 +198,10 @@ onUnmounted(() => {
   }
 })
 
-async function renderFrameFallback(context: CanvasRenderingContext2D, state: ExecutionState) {
-  console.time()
-  const memory = await state.memoryAt(0x10008000, 64 * 64 * 4)
-  console.timeEnd()
+async function renderFrameFallback(context: CanvasRenderingContext2D, execution: ExecutionState) {
+  const start = Date.now()
+  const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
+  state.frameTime = Date.now() - start
 
   const width = settings.bitmap.width
   const height = settings.bitmap.height
@@ -233,6 +245,7 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
 
   const size = width * height * 4
 
+  const start = Date.now()
   const result = await fetch(protocol, {
     headers: {
       width: width.toString(),
@@ -240,6 +253,7 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
       address: settings.bitmap.address.toString(),
     }
   })
+  state.frameTime = Date.now() - start
 
   const memory = new Uint8Array(await result.arrayBuffer())
 
@@ -271,9 +285,9 @@ async function reloadDisplay() {
   if (state.useProtocol) {
     try {
       await renderFrameProtocol(context)
+    } catch (e) {
       state.useProtocol = false
-    } catch {
-      // Make up for the lost frame.
+      console.error(e)
       await renderFrameFallback(context, execution)
     }
   } else {
