@@ -33,7 +33,7 @@
 import Tab from './Tab.vue'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 
-import { loadElf, closeTab, createTab, editor } from '../state/tabs-state'
+import { closeTab, createTab, editor } from '../state/state'
 import TabBarItems from './TabBarItems.vue'
 
 function create() {

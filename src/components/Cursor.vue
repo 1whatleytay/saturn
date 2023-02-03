@@ -142,11 +142,11 @@
 </template>
 
 <script setup lang="ts">
-import { applyMergeSuggestion, highlights, position, suggestions, find } from '../state/state'
+import { applyMergeSuggestion, highlights, position, suggestions, find, tab, tabBody } from '../state/state'
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
-import { selectionRange, tab, tabBody } from '../state/tabs-state'
+import { selectionRange } from '../utils/tabs'
 import { FindMatch } from '../utils/find'
 
 const suggestionsScroll = ref(0)

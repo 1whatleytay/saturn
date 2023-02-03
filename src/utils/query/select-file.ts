@@ -8,15 +8,33 @@ export interface SelectedFile<T> {
   data: T
 }
 
+let promptLock = false
+
+async function lock<T>(callback: () => Promise<T>): Promise<T | null> {
+  if (promptLock) {
+    return null
+  }
+
+  promptLock = true
+
+  const result = await callback()
+
+  promptLock = false
+
+  return result
+}
+
 export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
-  const result = await open({
-    title: 'Select ELF',
-    filters: [{
-      name: 'ELF',
-      extensions: ['elf']
-    }],
-    multiple: false,
-    directory: false
+  const result = await lock(async () => {
+    return await open({
+      title: 'Select ELF',
+      filters: [{
+        name: 'ELF',
+        extensions: ['elf']
+      }],
+      multiple: false,
+      directory: false
+    })
   })
 
   if (!result || typeof result !== 'string') {
@@ -50,10 +68,12 @@ export async function readInputFile(path: string): Promise<SelectedFile<string |
 
 // Would be magic if this could also open ELF files.
 export async function openInputFile(): Promise<SelectedFile<string | Uint8Array> | null> {
-  const result = await open({
-    title: 'Select File',
-    multiple: false,
-    directory: false
+  const result = await lock(async () => {
+    return await open({
+      title: 'Select File',
+      multiple: false,
+      directory: false
+    })
   })
 
   if (!result || typeof result !== 'string') {
@@ -64,14 +84,16 @@ export async function openInputFile(): Promise<SelectedFile<string | Uint8Array>
 }
 
 export async function selectSaveAssembly(): Promise<SelectedFile<undefined> | null> {
-  const result = await save({
-    title: 'Save File',
-    filters: [
-      {
-        name: 'Assembly',
-        extensions: ['asm', 's']
-      }
-    ]
+  const result = await lock(async () => {
+    return await save({
+      title: 'Save File',
+      filters: [
+        {
+          name: 'Assembly',
+          extensions: ['asm', 's']
+        }
+      ]
+    })
   })
 
   if (!result) {

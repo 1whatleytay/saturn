@@ -252,10 +252,10 @@ export class ExecutionState {
 
     return result as (number | null)[] | null
   }
-
+  
   public constructor(
-    private text: string,
-    private profile: ExecutionProfile
+    public text: string,
+    public profile: ExecutionProfile
   ) {
     switch (profile.kind) {
       case 'elf':

@@ -6,19 +6,28 @@ import { regular } from '../utils/query/text-size'
 import { useStorage } from '../utils/storage'
 import { useFind } from '../utils/find'
 import { useSuggestions } from '../utils/suggestions'
-import { tab, tabBody } from './tabs-state'
+import { useTabs } from '../utils/tabs'
 
-const settings = useSettings()
+export const settings = useSettings()
 
 function widthQuery(text: string) {
   return regular.calculate(text).width
 }
 
+export const {
+  editor,
+  tab,
+  tabBody,
+  createTab,
+  closeTab,
+  loadElf
+} = useTabs()
+
 export const find = useFind(() => tabBody.value, widthQuery)
 
 export const highlights = useHighlights(widthQuery)
 
-export const { storage } = useStorage(highlights, find)
+export const { storage } = useStorage(highlights, find, tab)
 
 export const suggestions = useSuggestions(() => storage.language)
 

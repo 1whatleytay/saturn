@@ -75,10 +75,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { tab } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
 import { build, pause, resume, step, stop } from '../utils/debug'
 import { ExecutionModeType } from '../utils/mips'
+import { tab } from '../state/state'
 
 import { ArrowDownIcon, ChevronRightIcon, PauseIcon, PlayIcon, StopIcon } from '@heroicons/vue/24/solid'
 

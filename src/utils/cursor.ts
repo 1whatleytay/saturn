@@ -4,7 +4,7 @@ import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { regular } from './query/text-size'
 import { consumeBackwards, consumeForwards } from './query/alt-consume'
 import { hasActionKey } from './query/shortcut-key'
-import { selectionRange, CursorState } from '../state/tabs-state'
+import { selectionRange, CursorState } from './tabs'
 import { Settings } from './settings'
 import { grabWhitespace } from './languages/language'
 

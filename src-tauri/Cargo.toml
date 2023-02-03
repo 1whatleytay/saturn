@@ -1,6 +1,6 @@
 [package]
 name = "saturn"
-version = "0.0.1"
+version = "0.1.1"
 description = "A modern MIPS IDE."
 authors = ["desgroup"]
 license = ""
@@ -14,8 +14,9 @@ tauri-build = {version = "1.2", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = {version = "1.2", features = ["api-all"] }
-tokio = {version = "1.23.0", features = ["time"] }
+wry = { version = "0.23.4", features = ["linux-headers"] }
+tauri = { version = "1.2.4", features = ["api-all", "time"] }
+tokio = { version = "1.23.0", features = ["time"] }
 
 rand = "0.8.5"
 rand_chacha = "0.3.1"

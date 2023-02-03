@@ -1,6 +1,6 @@
 import { reactive, watch } from 'vue'
 import { Editor } from './editor'
-import { collectLines, tab } from '../state/tabs-state'
+import { collectLines, EditorTab } from './tabs'
 import { Language, Token } from './languages/language'
 import { MipsHighlighter } from './languages/mips/language'
 import { assembleText } from './mips'
@@ -18,7 +18,7 @@ export interface StorageResult {
   storage: StorageState
 }
 
-export function useStorage(highlights: HighlightsInterface, find: FindInterface): StorageResult {
+export function useStorage(highlights: HighlightsInterface, find: FindInterface, tab: () => EditorTab | null): StorageResult {
   const storage = reactive({
     editor: createEditor(),
     language: createLanguage(),

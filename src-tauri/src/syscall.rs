@@ -307,7 +307,7 @@ impl SyscallDelegate {
                 let debugger_state = debugger.state();
 
                 debugger_state.registers.line[A0_REG] = (millis & 0xFFFFFFFF) as u32;
-                debugger_state.registers.line[A1_REG] = millis.wrapping_shl(32) as u32;
+                debugger_state.registers.line[A1_REG] = millis.wrapping_shr(32) as u32;
 
                 Completed
             },

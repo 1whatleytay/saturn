@@ -82,7 +82,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { tab, tabBody } from '../state/tabs-state'
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
 import { useVirtualize } from '../utils/virtualization'
@@ -95,7 +94,10 @@ import {
   dragTo,
   pasteText,
   storage,
-  handleKey, find
+  handleKey,
+  find,
+  tab,
+  tabBody
 } from '../state/state'
 
 import Cursor from './Cursor.vue'

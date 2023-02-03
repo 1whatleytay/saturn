@@ -1,11 +1,11 @@
 import { listen } from '@tauri-apps/api/event'
 
-import { editor, createTab, closeTab, loadElf, tab, collectLines } from '../state/tabs-state'
+import { collectLines, EditorTab } from './tabs'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
 import { consoleData, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
-import { find, suggestions } from '../state/state'
+import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
 
 export enum PromptType {
   NeverPrompt,
@@ -36,22 +36,16 @@ export async function openTab(file: SelectedFile<string | Uint8Array>) {
   }
 }
 
-export async function saveCurrentTab(type: PromptType = PromptType.PromptWhenNeeded) {
-  const current = tab()
-
-  if (!current) {
-    return
-  }
-
+export async function saveTab(current: EditorTab, type: PromptType = PromptType.PromptWhenNeeded): Promise<boolean> {
   if (type === PromptType.NeverPrompt && !current.path) {
-    return
+    return true
   }
 
   if (type === PromptType.ForcePrompt || !current.path) {
     const result = await selectSaveAssembly()
 
     if (!result) {
-      return
+      return false
     }
 
     const { name, path } = result
@@ -65,6 +59,16 @@ export async function saveCurrentTab(type: PromptType = PromptType.PromptWhenNee
   await writeFile(current.path, data)
 
   current.marked = false // Remove "needs saving" marker
+
+  return true
+}
+
+export async function saveCurrentTab(prompt: PromptType = PromptType.PromptWhenNeeded) {
+  const current = tab()
+
+  if (current) {
+    await saveTab(current, prompt)
+  }
 }
 
 export async function setupEvents() {

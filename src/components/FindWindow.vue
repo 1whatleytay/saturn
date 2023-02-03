@@ -41,9 +41,8 @@
 
 <script setup lang="ts">
 import { ArrowRightIcon, XMarkIcon } from '@heroicons/vue/24/solid'
-import { find, jump } from '../state/state'
+import { find, jump, tab } from '../state/state'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { tab } from '../state/tabs-state'
 
 function jumpToNext() {
   const current = tab()?.cursor

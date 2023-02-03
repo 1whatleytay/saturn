@@ -1,4 +1,4 @@
-import { collectLines, tab } from '../state/tabs-state'
+import { collectLines } from './tabs'
 import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import {
   AssemblerResult,
@@ -7,6 +7,9 @@ import {
   ExecutionResult,
   ExecutionState
 } from './mips'
+import {
+  tab
+} from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
