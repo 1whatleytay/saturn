@@ -1,5 +1,7 @@
 use std::str::FromStr;
-use tauri::{AboutMetadata, CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Wry};
+use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Wry};
+#[cfg(target_os = "macos")]
+use tauri::AboutMetadata;
 
 enum MenuOptions {
     NewTab,

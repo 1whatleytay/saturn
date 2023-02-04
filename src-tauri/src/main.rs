@@ -25,6 +25,7 @@ use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
 use titan::elf::program::ProgramHeaderFlags;
+use wry::http::Method;
 use crate::menu::{create_menu, handle_event};
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
 use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
@@ -444,6 +445,16 @@ fn main() {
             assemble_binary
         ])
         .register_uri_scheme_protocol("display", |app, request| {
+            // Disable CORS, nothing super private here.
+            let builder = ResponseBuilder::new()
+                .header("Access-Control-Allow-Headers", "*")
+                .header("Access-Control-Allow-Origin", "*");
+
+            // Check for preflight, very primitive check.
+            if request.method() == Method::OPTIONS {
+                return builder.body(vec![])
+            }
+
             let grab_params = || -> Option<(u32, u32, u32)> {
                 let headers = request.headers();
 
@@ -454,14 +465,10 @@ fn main() {
                 Some((width.parse().ok()?, height.parse().ok()?, address.parse().ok()?))
             };
 
-            // Disable CORS, nothing super private here.
-            let builder = ResponseBuilder::new()
-                .header("Access-Control-Allow-Origin", "*");
-
             let Some((width, height, address)) = grab_params() else {
                 return builder
                     .status(400)
-                    .body(vec![]);
+                    .body(vec![])
             };
 
             let state: tauri::State<'_, DebuggerBody> = app.state();
@@ -469,7 +476,7 @@ fn main() {
             let Some(result) = read_display(address, width, height, state) else {
                 return builder
                     .status(400)
-                    .body(vec![]);
+                    .body(vec![])
             };
 
             builder.body(result)
