@@ -61,17 +61,6 @@
             $gp
           </button>
         </div>
-
-        <div class="py-1">
-          <label for="frame-time" class="inline-block font-bold pr-4 w-32">Frame Time</label>
-          <input
-            type="text"
-            class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
-            spellcheck="false"
-            disabled
-            :value="state.frameTime?.toString() ?? 'null'"
-          />
-        </div>
       </div>
 
       <div class="text-gray-500 pt-4 flex items-center">
@@ -96,10 +85,6 @@
               class="underline hover:text-gray-300"
             >https://github.com/1whatleytay/saturn</a>.
           </div>
-
-          <textarea class="w-full h-64 text-red-500">
-            {{ state.error }}
-          </textarea>
         </div>
       </div>
     </div>
@@ -129,9 +114,7 @@ const correctedWidth = ref(settings.bitmap.width)
 const state = reactive({
   connected: false,
   interval: null as number | null,
-  useProtocol: true,
-  frameTime: null as number | null,
-  error: null as string | null
+  useProtocol: true
 })
 
 async function handleKey(event: KeyboardEvent) {
@@ -204,9 +187,7 @@ onUnmounted(() => {
 })
 
 async function renderFrameFallback(context: CanvasRenderingContext2D, execution: ExecutionState) {
-  const start = Date.now()
   const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
-  state.frameTime = Date.now() - start
 
   const width = settings.bitmap.width
   const height = settings.bitmap.height
@@ -250,7 +231,6 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
 
   const size = width * height * 4
 
-  const start = Date.now()
   const result = await fetch(protocol, {
     headers: {
       width: width.toString(),
@@ -258,7 +238,6 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
       address: settings.bitmap.address.toString(),
     }
   })
-  state.frameTime = Date.now() - start
 
   const memory = new Uint8Array(await result.arrayBuffer())
 
@@ -292,7 +271,6 @@ async function reloadDisplay() {
       await renderFrameProtocol(context)
     } catch (e) {
       console.error(e)
-      state.error = JSON.stringify(e)
 
       state.useProtocol = false
       await renderFrameFallback(context, execution)
