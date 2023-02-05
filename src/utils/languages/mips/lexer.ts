@@ -217,7 +217,11 @@ export function lex(line: string): Token[] {
 
   while (index < line.length) {
     const { type, known, next } = readItem(line, index, initial)
-    initial = false
+
+    // Labels are like, the only token that can be placed before an instruction.
+    if (type !== TokenType.Label) {
+      initial = false
+    }
 
     if (index === next) {
       const some = takeSome(line, next)
