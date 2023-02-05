@@ -89,20 +89,20 @@ impl MenuOptions {
         }
     }
 
-    fn accelerator(&self) -> Option<String> {
+    fn accelerator(&self) -> Option<&str> {
         Some(match self {
-            MenuOptions::NewTab => meta_key("N"),
-            MenuOptions::OpenFile => meta_key("O"),
-            MenuOptions::CloseTab => meta_key("W"),
-            MenuOptions::Save => meta_key("S"),
-            MenuOptions::SaveAs => meta_key("Shift+S"),
-            MenuOptions::Find => meta_key("F"),
-            MenuOptions::Build => meta_key("B"),
-            MenuOptions::Run => meta_key("K"),
-            MenuOptions::Step => meta_key("L"),
-            MenuOptions::Pause => meta_key("J"),
-            MenuOptions::Stop => meta_key("P"),
-            MenuOptions::ToggleConsole => meta_key("T"),
+            MenuOptions::NewTab => "CmdOrCtrl+N",
+            MenuOptions::OpenFile => "CmdOrCtrl+O",
+            MenuOptions::CloseTab => "CmdOrCtrl+W",
+            MenuOptions::Save => "CmdOrCtrl+S",
+            MenuOptions::SaveAs => "CmdOrCtrl+Shift+S",
+            MenuOptions::Find => "CmdOrCtrl+F",
+            MenuOptions::Build => "CmdOrCtrl+B",
+            MenuOptions::Run => "CmdOrCtrl+K",
+            MenuOptions::Step => "CmdOrCtrl+L",
+            MenuOptions::Pause => "CmdOrCtrl+J",
+            MenuOptions::Stop => "CmdOrCtrl+P",
+            MenuOptions::ToggleConsole => "CmdOrCtrl+T",
             _ => return None
         })
     }
@@ -116,22 +116,6 @@ impl MenuOptions {
             item
         }
     }
-}
-
-fn meta_key(trailing: &str) -> String {
-    let leading;
-
-    #[cfg(target_os = "macos")]
-    {
-        leading = "Cmd";
-    };
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        leading = "Ctrl";
-    }
-
-    format!("{}+{}", leading, trailing)
 }
 
 pub fn create_menu() -> Menu {
