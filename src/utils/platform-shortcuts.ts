@@ -16,6 +16,10 @@ interface Shortcut {
 export async function setupShortcuts() {
   const shortcuts: Shortcut[] = await invoke('platform_shortcuts')
 
+  if (!shortcuts.length) {
+    return
+  }
+
   const keys = new Map<string, Shortcut[]>()
 
   shortcuts.forEach(shortcut => {
