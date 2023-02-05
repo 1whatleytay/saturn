@@ -26,7 +26,7 @@ use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
 use titan::elf::program::ProgramHeaderFlags;
 use wry::http::Method;
-use crate::menu::{create_menu, handle_event};
+use crate::menu::{create_menu, get_platform_emulated_shortcuts, handle_event, MenuOptionsData};
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
 use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
 
@@ -394,6 +394,11 @@ fn assemble_binary(text: &str) -> (Option<Vec<u8>>, AssemblerResult) {
     (Some(out), result)
 }
 
+#[tauri::command]
+fn platform_shortcuts() -> Vec<MenuOptionsData> {
+    get_platform_emulated_shortcuts()
+}
+
 // NOT a tauri command.
 fn read_display(address: u32, width: u32, height: u32, state: tauri::State<'_, DebuggerBody>) -> Option<Vec<u8>> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
@@ -429,6 +434,7 @@ fn main() {
         .menu(menu)
         .on_menu_event(handle_event)
         .invoke_handler(tauri::generate_handler![
+            platform_shortcuts,
             disassemble,
             configure_elf,
             configure_asm,

@@ -1,7 +1,41 @@
 use std::str::FromStr;
+use serde::Serialize;
 use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Wry};
 #[cfg(target_os = "macos")]
 use tauri::AboutMetadata;
+
+#[derive(Serialize)]
+pub struct Accelerator {
+    command: bool,
+    shift: bool,
+    key: String
+}
+
+impl Accelerator {
+    fn combo(&self) -> String {
+        let command_leading = if self.command {
+            "CmdOrCtrl+"
+        } else {
+            ""
+        };
+
+        let shift_leading = if self.shift {
+            "Shift+"
+        } else {
+            ""
+        };
+
+        format!("{}{}{}", command_leading, shift_leading, self.key)
+    }
+
+    fn command(key: &str) -> Accelerator {
+        Accelerator {
+            command: true,
+            shift: false,
+            key: key.into()
+        }
+    }
+}
 
 enum MenuOptions {
     NewTab,
@@ -89,20 +123,20 @@ impl MenuOptions {
         }
     }
 
-    fn accelerator(&self) -> Option<&str> {
+    fn accelerator(&self) -> Option<Accelerator> {
         Some(match self {
-            MenuOptions::NewTab => "CmdOrCtrl+N",
-            MenuOptions::OpenFile => "CmdOrCtrl+O",
-            MenuOptions::CloseTab => "CmdOrCtrl+W",
-            MenuOptions::Save => "CmdOrCtrl+S",
-            MenuOptions::SaveAs => "CmdOrCtrl+Shift+S",
-            MenuOptions::Find => "CmdOrCtrl+F",
-            MenuOptions::Build => "CmdOrCtrl+B",
-            MenuOptions::Run => "CmdOrCtrl+K",
-            MenuOptions::Step => "CmdOrCtrl+L",
-            MenuOptions::Pause => "CmdOrCtrl+J",
-            MenuOptions::Stop => "CmdOrCtrl+P",
-            MenuOptions::ToggleConsole => "CmdOrCtrl+T",
+            MenuOptions::NewTab => Accelerator::command("N"),
+            MenuOptions::OpenFile => Accelerator::command("O"),
+            MenuOptions::CloseTab => Accelerator::command("W"),
+            MenuOptions::Save => Accelerator::command("S"),
+            MenuOptions::SaveAs => Accelerator { command: true, shift: true, key: "S".into() },
+            MenuOptions::Find => Accelerator::command("F"),
+            MenuOptions::Build => Accelerator::command("B"),
+            MenuOptions::Run => Accelerator::command("K"),
+            MenuOptions::Step => Accelerator::command("L"),
+            MenuOptions::Pause => Accelerator::command("J"),
+            MenuOptions::Stop => Accelerator::command("P"),
+            MenuOptions::ToggleConsole => Accelerator::command("T"),
             _ => return None
         })
     }
@@ -111,11 +145,50 @@ impl MenuOptions {
         let item = CustomMenuItem::new(self.to_string(), self.label());
 
         if let Some(accelerator) = self.accelerator() {
-            item.accelerator(accelerator)
+            item.accelerator(accelerator.combo())
         } else {
             item
         }
     }
+}
+
+#[derive(Serialize)]
+pub struct MenuOptionsData {
+    event: String,
+    accelerator: Option<Accelerator>
+}
+
+impl From<MenuOptions> for MenuOptionsData {
+    fn from(value: MenuOptions) -> Self {
+        MenuOptionsData {
+            event: value.to_string(),
+            accelerator: value.accelerator()
+        }
+    }
+}
+
+pub fn get_platform_emulated_shortcuts() -> Vec<MenuOptionsData> {
+    #[cfg(target_os = "windows")]
+    return vec![
+        MenuOptions::NewTab.into(),
+        MenuOptions::OpenFile.into(),
+        MenuOptions::CloseTab.into(),
+        MenuOptions::Save.into(),
+        MenuOptions::SaveAs.into(),
+        MenuOptions::Find.into(),
+        MenuOptions::Disassemble.into(),
+        MenuOptions::Assemble.into(),
+        MenuOptions::Export.into(),
+        MenuOptions::Build.into(),
+        MenuOptions::Run.into(),
+        MenuOptions::Step.into(),
+        MenuOptions::Pause.into(),
+        MenuOptions::Stop.into(),
+        MenuOptions::ToggleConsole.into(),
+    ];
+
+    #[cfg(not(target_os = "windows"))]
+    return vec![];
 }
 
 pub fn create_menu() -> Menu {
