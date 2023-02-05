@@ -38,17 +38,17 @@
       <div class="text-neutral-300 ml-2">
         <div class="py-1">
           <label for="bitmap-width" class="inline-block font-bold pr-4 w-32">Display Width</label>
-          <NumberField id="bitmap-width" v-model="settings.bitmap.width" />
+          <NumberField id="bitmap-width" v-model="settings.bitmap.width" :checker="sizeCheck" />
         </div>
 
         <div class="py-1">
           <label for="bitmap-height" class="inline-block font-bold pr-4 w-32">Display Height</label>
-          <NumberField id="bitmap-height" v-model="settings.bitmap.height" />
+          <NumberField id="bitmap-height" v-model="settings.bitmap.height" :checker="sizeCheck" />
         </div>
 
         <div class="py-1">
           <label for="bitmap-address" class="inline-block font-bold pr-4 w-32">Address</label>
-          <NumberField id="bitmap-address" v-model="settings.bitmap.address" :hex="true" />
+          <NumberField id="bitmap-address" v-model="settings.bitmap.address" :hex="true" :checker="memoryCheck" />
 
           <button
             class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 active:bg-slate-700"
@@ -116,6 +116,26 @@ const state = reactive({
   interval: null as number | null,
   useProtocol: true
 })
+
+function memoryCheck(value: number): string | null {
+  if ((value & 0b11) !== 0) {
+    return 'This field must be divisible by 4'
+  }
+
+  if (value < 0 || value > 0xffffffff) {
+    return 'This field must be in the 32-bit address range'
+  }
+
+  return null
+}
+
+function sizeCheck(value: number): string | null {
+  if (value <= 0 || value > 512) {
+    return 'This field must be in the 1-512 range'
+  }
+
+  return null
+}
 
 async function handleKey(event: KeyboardEvent) {
   if (!consoleData.execution) {
@@ -236,7 +256,9 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
       width: width.toString(),
       height: height.toString(),
       address: settings.bitmap.address.toString(),
-    }
+    },
+    mode: 'cors',
+    cache: 'no-cache'
   })
 
   const memory = new Uint8Array(await result.arrayBuffer())

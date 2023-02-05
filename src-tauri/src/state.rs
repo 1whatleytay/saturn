@@ -34,6 +34,11 @@ pub fn swap(
     let memory = debugger.memory();
     memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
 
+    // Mark heap as "Writable"
+    for selector in 0x1000 .. 0x8000 {
+        memory.mount_writable(selector, 0xCC);
+    }
+
     let wrapped = Arc::new(Mutex::new(debugger));
     let delegate = Arc::new(Mutex::new(SyscallState::new(print)));
 
@@ -55,6 +60,7 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
         memory.mount(region);
     }
 
+    // Keeping this around temporarily.
     let heap_end = 0x7FFFFFFCu32;
 
     let heap = Region {
