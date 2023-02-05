@@ -155,37 +155,41 @@ impl MenuOptions {
 #[derive(Serialize)]
 pub struct MenuOptionsData {
     event: String,
-    accelerator: Option<Accelerator>
+    accelerator: Accelerator
 }
 
-impl From<MenuOptions> for MenuOptionsData {
-    fn from(value: MenuOptions) -> Self {
-        MenuOptionsData {
+impl TryFrom<MenuOptions> for MenuOptionsData {
+    type Error = ();
+
+    fn try_from(value: MenuOptions) -> Result<Self, Self::Error> {
+        Ok(MenuOptionsData {
             event: value.to_string(),
-            accelerator: value.accelerator()
-        }
+            accelerator: value.accelerator().ok_or(())?
+        })
     }
 }
 
 pub fn get_platform_emulated_shortcuts() -> Vec<MenuOptionsData> {
     #[cfg(target_os = "windows")]
     return vec![
-        MenuOptions::NewTab.into(),
-        MenuOptions::OpenFile.into(),
-        MenuOptions::CloseTab.into(),
-        MenuOptions::Save.into(),
-        MenuOptions::SaveAs.into(),
-        MenuOptions::Find.into(),
-        MenuOptions::Disassemble.into(),
-        MenuOptions::Assemble.into(),
-        MenuOptions::Export.into(),
-        MenuOptions::Build.into(),
-        MenuOptions::Run.into(),
-        MenuOptions::Step.into(),
-        MenuOptions::Pause.into(),
-        MenuOptions::Stop.into(),
-        MenuOptions::ToggleConsole.into(),
-    ];
+        MenuOptions::NewTab.try_into(),
+        MenuOptions::OpenFile.try_into(),
+        MenuOptions::CloseTab.try_into(),
+        MenuOptions::Save.try_into(),
+        MenuOptions::SaveAs.try_into(),
+        MenuOptions::Find.try_into(),
+        MenuOptions::Disassemble.try_into(),
+        MenuOptions::Assemble.try_into(),
+        MenuOptions::Export.try_into(),
+        MenuOptions::Build.try_into(),
+        MenuOptions::Run.try_into(),
+        MenuOptions::Step.try_into(),
+        MenuOptions::Pause.try_into(),
+        MenuOptions::Stop.try_into(),
+        MenuOptions::ToggleConsole.try_into(),
+    ].into_iter()
+        .filter_map(|x| x.ok())
+        .collect();
 
     #[cfg(not(target_os = "windows"))]
     return vec![];
