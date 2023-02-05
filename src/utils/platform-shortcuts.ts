@@ -34,15 +34,16 @@ export async function setupShortcuts() {
   })
 
   window.addEventListener('keydown', async event => {
-    const shortcut = keys.get(event.key)?.find(x => {
-      return x.accelerator.command == hasActionKey(event)
-        && x.accelerator.shift == event.shiftKey
+    const shortcut = keys.get(event.key.toUpperCase())?.find(shortcut => {
+      return shortcut.accelerator.command == hasActionKey(event)
+        && shortcut.accelerator.shift == event.shiftKey
     })
 
     if (!shortcut) {
       return
     }
 
+    event.preventDefault()
     await emit(shortcut.event)
   })
 }
