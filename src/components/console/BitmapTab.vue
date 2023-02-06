@@ -101,7 +101,7 @@ import { consoleData } from '../../state/console-data'
 import { settings } from '../../state/state'
 import NumberField from './NumberField.vue'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
-import { ExecutionState } from '../../utils/mips'
+import { ExecutionState, lastDisplay } from '../../utils/mips'
 
 const wrapper = ref(null as HTMLElement | null)
 const canvas = ref(null as HTMLCanvasElement | null)
@@ -245,27 +245,13 @@ async function renderFrameFallback(context: CanvasRenderingContext2D, execution:
 
 const protocol = convertFileSrc('', 'display')
 
-async function renderFrameProtocol(context: CanvasRenderingContext2D) {
-  const width = settings.bitmap.width
-  const height = settings.bitmap.height
-
-  const size = width * height * 4
-
-  const result = await fetch(protocol, {
-    headers: {
-      width: width.toString(),
-      height: height.toString(),
-      address: settings.bitmap.address.toString(),
-    },
-    mode: 'cors',
-    cache: 'no-cache'
-  })
-
-  const memory = new Uint8Array(await result.arrayBuffer())
-
+async function renderOrdered(
+  context: CanvasRenderingContext2D,
+  width: number, height: number, memory: Uint8Array
+) {
   const data = context.createImageData(width, height)
 
-  for (let a = 0; a < size; a++) {
+  for (let a = 0; a < memory.length; a++) {
     data.data[a] = memory[a]
   }
 
@@ -280,12 +266,46 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
   context.drawImage(image, 0, 0, resizeWidth, resizeHeight)
 }
 
+async function renderFrameProtocol(context: CanvasRenderingContext2D) {
+  const width = settings.bitmap.width
+  const height = settings.bitmap.height
+
+  const result = await fetch(protocol, {
+    headers: {
+      width: width.toString(),
+      height: height.toString(),
+      address: settings.bitmap.address.toString(),
+    },
+    mode: 'cors',
+    cache: 'no-cache'
+  })
+
+  const memory = new Uint8Array(await result.arrayBuffer())
+
+  await renderOrdered(context, width, height, memory)
+}
+
+async function renderLastDisplay(context: CanvasRenderingContext2D) {
+  const last = await lastDisplay()
+
+  // No data, don't render.
+  if (!last.data) {
+    return
+  }
+
+  await renderOrdered(context, last.width, last.height, Uint8Array.from(last.data))
+}
+
 async function reloadDisplay() {
   const context = canvas.value?.getContext('2d')
   const execution = consoleData.execution
 
-  if (!context || !execution) {
+  if (!context) {
     return
+  }
+
+  if (!execution) {
+    return await renderLastDisplay(context)
   }
 
   if (state.useProtocol) {

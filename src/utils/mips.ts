@@ -39,50 +39,15 @@ export type AssemblerResultError = AssemblerError & { status: 'Error' }
 
 export type AssemblerResult = AssemblerResultSuccess | AssemblerResultError;
 
-export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
-  const bytes = Array.from(new Uint8Array(elf))
-
-  const value = await tauri.invoke('disassemble', { named, bytes })
-
-  return value as DisassembleResult
-}
-
-export async function assembleText(text: string): Promise<AssemblerResult> {
-  const result = await tauri.invoke('assemble', { text })
-
-  return result as AssemblerResult
-}
-
 export type BinaryResult = {
   binary: Uint8Array | null,
   result: AssemblerResult
-}
-
-export async function assembleWithBinary(text: string): Promise<BinaryResult> {
-  const result = await tauri.invoke(
-    'assemble_binary', { text }
-  ) as [number[] | null, AssemblerResult]
-
-  const [binary, assemblerResult] = result
-
-  return {
-    binary: binary ? Uint8Array.from(binary) : null,
-    result: assemblerResult
-  }
 }
 
 interface BitmapConfig {
   width: number
   height: number
   address: number
-}
-
-export async function configureDisplay(config: BitmapConfig) {
-  await invoke('configure_display', {
-    width: config.width,
-    height: config.height,
-    address: config.address
-  })
 }
 
 export enum ExecutionModeType {
@@ -125,6 +90,13 @@ export interface ExecutionResult {
   registers: Registers
 }
 
+export interface LastDisplay {
+  address: number,
+  width: number,
+  height: number,
+  data: number[] | null
+}
+
 class Breakpoints {
   public lineToPc: Map<number, number>
   public pcToLine: Map<number, number>
@@ -147,6 +119,47 @@ class Breakpoints {
       this.pcToLine.set(pcNumber, line)
     }
   }
+}
+
+export async function disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
+  const bytes = Array.from(new Uint8Array(elf))
+
+  const value = await tauri.invoke('disassemble', { named, bytes })
+
+  return value as DisassembleResult
+}
+
+export async function assembleText(text: string): Promise<AssemblerResult> {
+  const result = await tauri.invoke('assemble', { text })
+
+  return result as AssemblerResult
+}
+
+export async function assembleWithBinary(text: string): Promise<BinaryResult> {
+  const result = await tauri.invoke(
+    'assemble_binary', { text }
+  ) as [number[] | null, AssemblerResult]
+
+  const [binary, assemblerResult] = result
+
+  return {
+    binary: binary ? Uint8Array.from(binary) : null,
+    result: assemblerResult
+  }
+}
+
+export async function configureDisplay(config: BitmapConfig) {
+  await invoke('configure_display', {
+    width: config.width,
+    height: config.height,
+    address: config.address
+  })
+}
+
+export async function lastDisplay(): Promise<LastDisplay> {
+  const result = await invoke('last_display')
+
+  return result as LastDisplay
 }
 
 export class ExecutionState {
