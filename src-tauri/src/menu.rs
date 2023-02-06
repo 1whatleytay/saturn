@@ -195,6 +195,11 @@ pub fn get_platform_emulated_shortcuts() -> Vec<MenuOptionsData> {
     return vec![];
 }
 
+#[tauri::command]
+pub fn platform_shortcuts() -> Vec<MenuOptionsData> {
+    get_platform_emulated_shortcuts()
+}
+
 pub fn create_menu() -> Menu {
     let mut menu = Menu::new();
 
