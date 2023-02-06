@@ -6,6 +6,7 @@ use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
 use serde::Serialize;
 use titan::cpu::state::Registers;
 use titan::debug::debugger::{DebugFrame, DebuggerMode};
+use crate::display::{FlushDisplayBody, read_display};
 
 #[derive(Serialize)]
 #[serde(tag="type")]
@@ -97,15 +98,23 @@ fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> 
     Some((pointer.debugger.clone(), pointer.delegate.clone(), pointer.finished_pcs.clone()))
 }
 
+fn flush_display(memory: &mut MemoryType, state: tauri::State<'_, FlushDisplayBody>) {
+    let mut display = state.lock().unwrap();
+
+    display.data = read_display(display.address, display.width, display.height, memory);
+}
+
 #[tauri::command]
 pub async fn resume(
     breakpoints: Vec<u32>,
-    state: tauri::State<'_, DebuggerBody>
+    state: tauri::State<'_, DebuggerBody>,
+    display: tauri::State<'_, FlushDisplayBody>
 ) -> Result<ResumeResult, ()> {
     let (
         debugger, state, finished_pcs
     ) = lock_and_clone(state).ok_or(())?;
 
+    let debugger_clone = debugger.clone();
     let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
     debugger.lock().unwrap().set_breakpoints(breakpoints_set);
@@ -114,37 +123,56 @@ pub async fn resume(
         SyscallDelegate::new(state).run(&debugger).await
     }).await.unwrap();
 
+    flush_display(debugger_clone.lock().unwrap().memory(), display);
+
     Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
 }
 
 #[tauri::command]
-pub async fn step(state: tauri::State<'_, DebuggerBody>) -> Result<ResumeResult, ()> {
+pub async fn step(
+    state: tauri::State<'_, DebuggerBody>,
+    display: tauri::State<'_, FlushDisplayBody>
+) -> Result<ResumeResult, ()> {
     let (
         debugger, state, finished_pcs
     ) = lock_and_clone(state).ok_or(())?;
 
+    let debugger_clone = debugger.clone();
+
     let (frame, result) = SyscallDelegate::new(state).cycle(&debugger).await;
+
+    flush_display(debugger_clone.lock().unwrap().memory(), display);
 
     Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
 }
 
 #[tauri::command]
-pub fn pause(state: tauri::State<'_, DebuggerBody>) -> Option<ResumeResult> {
+pub fn pause(
+    state: tauri::State<'_, DebuggerBody>,
+    display: tauri::State<'_, FlushDisplayBody>
+) -> Option<ResumeResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
     let mut debugger = pointer.debugger.lock().unwrap();
     debugger.pause();
 
+    flush_display(debugger.memory(), display);
+
     Some(ResumeResult::from_frame(debugger.frame(), &vec![], None))
 }
 
 #[tauri::command]
-pub fn stop(state: tauri::State<'_, DebuggerBody>) {
+pub fn stop(
+    state: tauri::State<'_, DebuggerBody>,
+    display: tauri::State<'_, FlushDisplayBody>
+) {
     let debugger = &mut *state.lock().unwrap();
 
     if let Some(pointer) = debugger {
         pointer.debugger.lock().unwrap().pause();
         pointer.delegate.lock().unwrap().abort = true;
+
+        flush_display(pointer.debugger.lock().unwrap().memory(), display);
     }
 
     *debugger = None;

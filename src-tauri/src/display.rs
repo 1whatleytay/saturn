@@ -5,7 +5,7 @@ use tauri::http::Response;
 use tauri::http::{Request, ResponseBuilder};
 use tauri::http::method::Method;
 use titan::cpu::Memory;
-use crate::state::DebuggerBody;
+use crate::state::{DebuggerBody, MemoryType};
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]
@@ -30,12 +30,9 @@ impl Default for FlushDisplayState {
 pub type FlushDisplayBody = Mutex<FlushDisplayState>;
 
 // NOT a tauri command.
-fn read_display(address: u32, width: u32, height: u32, state: tauri::State<'_, DebuggerBody>) -> Option<Vec<u8>> {
-    let Some(pointer) = &*state.lock().unwrap() else { return None };
-
-    let mut debugger = pointer.debugger.lock().unwrap();
-    let memory = debugger.memory();
-
+pub fn read_display(
+    address: u32, width: u32, height: u32, memory: &mut MemoryType
+) -> Option<Vec<u8>> {
     let pixels = width.checked_mul(height)?;
 
     let mut result = vec![0u8; (pixels * 4) as usize];
@@ -78,17 +75,20 @@ pub fn display_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Respo
     };
 
     let Some((width, height, address)) = grab_params() else {
-        return builder
-            .status(400)
-            .body(vec![])
+        return builder.status(400).body(vec![])
     };
 
     let state: tauri::State<'_, DebuggerBody> = app.state();
 
-    let Some(result) = read_display(address, width, height, state) else {
-        return builder
-            .status(400)
-            .body(vec![])
+    let Some(pointer) = &*state.lock().unwrap() else {
+        return builder.status(400).body(vec![])
+    };
+
+    let mut debugger = pointer.debugger.lock().unwrap();
+    let memory = debugger.memory();
+
+    let Some(result) = read_display(address, width, height, memory) else {
+        return builder.status(400).body(vec![])
     };
 
     builder.body(result)
