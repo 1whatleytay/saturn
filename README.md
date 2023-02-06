@@ -35,3 +35,4 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [ ] Floating Point Co-processor
 - [ ] MIDI and Other Syscalls
 - [ ] Variable Name Suggestions
+- [x] Improve Bitmap Display
