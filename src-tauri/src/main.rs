@@ -25,7 +25,7 @@ use titan::elf::Elf;
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::elf::setup::{create_simple_state};
 use titan::elf::program::ProgramHeaderFlags;
-use crate::display::display_protocol;
+use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, get_platform_emulated_shortcuts, handle_event, MenuOptionsData};
 use crate::state::{DebuggerBody, MemoryType, setup_state, state_from_binary, swap};
 use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
@@ -170,6 +170,14 @@ impl ResumeResult {
     }
 }
 
+type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>, Vec<u32>);
+
+fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
+
+    Some((pointer.debugger.clone(), pointer.delegate.clone(), pointer.finished_pcs.clone()))
+}
+
 #[tauri::command]
 fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
     let elf = match Elf::read(&mut Cursor::new(bytes)) {
@@ -238,14 +246,6 @@ fn configure_asm(
     swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, print);
 
     result
-}
-
-type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>, Vec<u32>);
-
-fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> {
-    let Some(pointer) = &*state.lock().unwrap() else { return None };
-
-    Some((pointer.debugger.clone(), pointer.delegate.clone(), pointer.finished_pcs.clone()))
 }
 
 #[tauri::command]
@@ -399,29 +399,44 @@ fn platform_shortcuts() -> Vec<MenuOptionsData> {
     get_platform_emulated_shortcuts()
 }
 
+#[tauri::command]
+fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
+    let mut body = state.lock().unwrap();
+
+    *body = FlushDisplayState { address, width, height, data: None }
+}
+
+#[tauri::command]
+fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
+    state.lock().unwrap().clone()
+}
+
 fn main() {
     let menu = create_menu();
 
     tauri::Builder::default()
         .manage(Mutex::new(None) as DebuggerBody)
+        .manage(Mutex::new(FlushDisplayState::default()) as FlushDisplayBody)
         .menu(menu)
         .on_menu_event(handle_event)
         .invoke_handler(tauri::generate_handler![
-            platform_shortcuts,
-            disassemble,
-            configure_elf,
-            configure_asm,
-            resume,
-            step,
-            pause,
-            stop,
-            read_bytes,
-            write_bytes,
-            set_register,
+            platform_shortcuts, // util
             assemble,
-            post_key,
-            swap_breakpoints,
-            assemble_binary
+            disassemble,
+            assemble_binary,
+            configure_elf, // execution
+            configure_asm, // execution
+            resume, // execution
+            step, // execution
+            pause, // execution
+            stop, // execution
+            read_bytes, // debug
+            write_bytes, // debug
+            set_register, // debug
+            swap_breakpoints, // debug
+            post_key, // bitmap
+            configure_display, // bitmap
+            last_display, // bitmap
         ])
         .register_uri_scheme_protocol("display", display_protocol)
         .run(tauri::generate_context!())

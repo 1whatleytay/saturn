@@ -1,4 +1,4 @@
-import { tauri } from '@tauri-apps/api'
+import { invoke, tauri } from '@tauri-apps/api'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
@@ -69,6 +69,20 @@ export async function assembleWithBinary(text: string): Promise<BinaryResult> {
     binary: binary ? Uint8Array.from(binary) : null,
     result: assemblerResult
   }
+}
+
+interface BitmapConfig {
+  width: number
+  height: number
+  address: number
+}
+
+export async function configureDisplay(config: BitmapConfig) {
+  await invoke('configure_display', {
+    width: config.width,
+    height: config.height,
+    address: config.address
+  })
 }
 
 export enum ExecutionModeType {

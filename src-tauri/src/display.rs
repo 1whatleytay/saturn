@@ -1,10 +1,33 @@
 use std::error::Error;
+use std::sync::Mutex;
 use tauri::{AppHandle, Manager, Wry};
 use tauri::http::Response;
 use tauri::http::{Request, ResponseBuilder};
 use tauri::http::method::Method;
 use titan::cpu::Memory;
 use crate::state::DebuggerBody;
+use serde::Serialize;
+
+#[derive(Clone, Serialize)]
+pub struct FlushDisplayState {
+    pub address: u32,
+    pub width: u32,
+    pub height: u32,
+    pub data: Option<Vec<u8>>, // flush should impact this
+}
+
+impl Default for FlushDisplayState {
+    fn default() -> FlushDisplayState {
+        FlushDisplayState {
+            address: 0x10008000,
+            width: 64,
+            height: 64,
+            data: None
+        }
+    }
+}
+
+pub type FlushDisplayBody = Mutex<FlushDisplayState>;
 
 // NOT a tauri command.
 fn read_display(address: u32, width: u32, height: u32, state: tauri::State<'_, DebuggerBody>) -> Option<Vec<u8>> {
