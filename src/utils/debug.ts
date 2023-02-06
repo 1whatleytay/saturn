@@ -1,15 +1,7 @@
 import { collectLines } from './tabs'
 import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
-import {
-  AssemblerResult,
-  assembleText,
-  ExecutionModeType,
-  ExecutionResult,
-  ExecutionState
-} from './mips'
-import {
-  tab
-} from '../state/state'
+import { AssemblerResult, assembleText, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
+import { tab } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
@@ -80,10 +72,10 @@ function closeExecution() {
 }
 
 export function postBuildMessage(result: AssemblerResult): boolean {
-  consoleData.tab = DebugTab.Console
-
   switch (result.status) {
     case 'Error':
+      consoleData.tab = DebugTab.Console
+
       const marker = result.marker ? ` (line ${result.marker.line + 1})` : ''
       const trailing = result.body
         ? `\n${result.body.split('\n').map(x => `> ${x}`).join('\n')}`
@@ -94,6 +86,10 @@ export function postBuildMessage(result: AssemblerResult): boolean {
       return false
 
     case 'Success':
+      if (!consoleData.showConsole) {
+        consoleData.tab = DebugTab.Console
+      }
+
       openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`)
 
       return true
