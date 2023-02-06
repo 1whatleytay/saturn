@@ -20,19 +20,6 @@
     <div class="p-4 hidden md:block flex flex-col content-center justify-center items-center align-center">
       <div class="text-lg font-light mb-4 flex items-center">
         Bitmap Display
-
-        <button
-          class="px-2 py-1 border border-neutral-700 rounded text-xs font-medium flex items-center ml-2"
-          @click="state.connected = !state.connected"
-          :class="{
-            'hover:bg-neutral-700': !state.connected,
-            'bg-slate-700 hover:bg-slate-600': state.connected
-          }"
-        >
-          <ArrowPathRoundedSquareIcon class="w-4 h-4 mr-1" />
-
-          Connect
-        </button>
       </div>
 
       <div class="text-neutral-300 ml-2">
@@ -94,7 +81,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
-import { ArrowLeftIcon, ArrowPathRoundedSquareIcon } from '@heroicons/vue/24/solid'
+import { ArrowLeftIcon } from '@heroicons/vue/24/solid'
 import { ExclamationCircleIcon } from '@heroicons/vue/24/outline'
 import { consoleData } from '../../state/console-data'
 
@@ -112,7 +99,6 @@ let lastHeight = settings.bitmap.height
 const correctedWidth = ref(settings.bitmap.width)
 
 const state = reactive({
-  connected: false,
   interval: null as number | null,
   useProtocol: true
 })
@@ -167,6 +153,9 @@ function recheckWidth() {
 }
 
 onMounted(() => {
+  reloadDisplay()
+  checkConnected()
+
   observer = new ResizeObserver(entries => {
     entries.forEach(entry => {
       if (entry.target.clientHeight != lastHeight) {
@@ -184,27 +173,31 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect()
+
+  if (state.interval) {
+    window.clearInterval(state.interval)
+  }
 })
 
 watch(() => settings.bitmap.width, recheckWidth)
 watch(() => settings.bitmap.height, recheckWidth)
 
-watch(() => state.connected, connect => {
-  if (connect) {
+function checkConnected() {
+  if (consoleData.execution) {
     state.interval = window.setInterval(() => {
       reloadDisplay()
     }, 60)
-  } else if (state.interval) {
-    window.clearInterval(state.interval)
-    state.interval = null
-  }
-})
+  } else {
+    reloadDisplay()
 
-onUnmounted(() => {
-  if (state.interval) {
-    window.clearInterval(state.interval)
+    if (state.interval) {
+      window.clearInterval(state.interval)
+      state.interval = null
+    }
   }
-})
+}
+
+watch(() => consoleData.execution, checkConnected)
 
 async function renderFrameFallback(context: CanvasRenderingContext2D, execution: ExecutionState) {
   const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
