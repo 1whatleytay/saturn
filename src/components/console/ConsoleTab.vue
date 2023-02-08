@@ -20,6 +20,8 @@
       </div>
 
       <div :style="{ height: `${bottomPadding}px` }" />
+
+      <Cursor start="" count="" />
     </div>
 
     <div v-else class="text-neutral-500">
@@ -33,6 +35,7 @@ import { consoleData } from '../../state/console-data'
 
 import { useVirtualize } from '../../utils/virtualization'
 import { onMounted, ref, watch } from 'vue'
+import Cursor from '../Cursor.vue'
 
 const lineHeight = 16
 
@@ -52,7 +55,6 @@ function updateBounds() {
   }
 
   update(scroll.value.scrollTop, scroll.value.clientHeight)
-  console.log(renderCount.value)
 }
 
 watch(() => consoleData.console, updateBounds)

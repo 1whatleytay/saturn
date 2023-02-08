@@ -31,7 +31,10 @@ export const consoleData = reactive({
   mode: null,
   registers: null,
   tab: DebugTab.Registers,
-  console: []
+  console: new Array(500).fill(0).map((_, i) => ({
+    text: `Hello World, this is a test ${i}`,
+    highlight: 'text-red-100'
+  }))
 } as ConsoleData)
 
 export function openConsole(text: string) {

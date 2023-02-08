@@ -42,27 +42,6 @@
     </div>
   </div>
 
-  <!-- Find Results -->
-  <div v-if="find.state.show">
-    <div
-      v-for="matches in findIndices"
-      class="absolute"
-      :style="{
-        top: `${matches.height}px`,
-      }"
-    >
-      <div
-        v-for="match in matches.matches"
-        class="bg-yellow-500 h-6 bg-opacity-30 absolute"
-        :class="{ 'bg-opacity-50': match === find.state.lastMatch }"
-        :style="{
-          left: `${match.offset}px`,
-          width: `${match.size}px`
-        }"
-      />
-    </div>
-  </div>
-
   <!-- Cursor Indicator -->
   <div
     class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
@@ -142,41 +121,17 @@
 </template>
 
 <script setup lang="ts">
-import { applyMergeSuggestion, highlights, position, suggestions, find, tab, tabBody } from '../state/state'
+import { applyMergeSuggestion, highlights, position, suggestions, tab, tabBody } from '../state/state'
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'
 import { selectionRange } from '../utils/tabs'
-import { FindMatch } from '../utils/find'
 
 const suggestionsScroll = ref(0)
 const suggestionsPane = ref(null as HTMLElement | null)
 const suggestionsParent = ref(null as HTMLElement | null)
 
 const lineHeight = 24 // h-6
-
-const findIndices = computed(() => {
-  const pairs = [] as { height: number, matches: FindMatch[] }[]
-
-  for (let a = 0; a < props.count; a++) {
-    const line = a + props.start
-    if (line < 0 || line >= find.state.matches.length) {
-      continue
-    }
-
-    const matches = find.state.matches[line]
-    if (!matches.length) {
-      continue
-    }
-
-    pairs.push({
-      height: lineHeight * line,
-      matches
-    })
-  }
-
-  return pairs
-})
 
 function merge(index: number) {
   suggestions.state.index = index
