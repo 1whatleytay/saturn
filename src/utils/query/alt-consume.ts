@@ -1,4 +1,4 @@
-const hardString = ':;<>,./?\'\"[]{}-=_+()\`~'
+const hardString = ':;<>,./?\'\"[]{}-=+()\`~'
 
 const hardCharacters = new Set(hardString.split(''))
 

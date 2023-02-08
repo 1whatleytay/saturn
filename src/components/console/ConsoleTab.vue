@@ -1,9 +1,16 @@
 <template>
   <div
-    class="text-xs font-mono overflow-auto flex flex-col flex-wrap grow whitespace-pre content-start p-2 select-text"
+    class="text-xs font-mono overflow-hidden flex flex-col grow content-start select-text"
   >
     <div v-if="consoleData.console.length">
-      {{ consoleData.console }}
+      <div
+        v-for="item in consoleData.console"
+        :key="item.id"
+        class="px-2 h-4"
+        :class="item.highlight"
+      >
+        {{ item.text }}
+      </div>
     </div>
 
     <div v-else class="text-neutral-500">

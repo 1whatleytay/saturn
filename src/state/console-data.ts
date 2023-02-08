@@ -1,11 +1,19 @@
 import { reactive } from 'vue'
 import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
 
+import { v4 as uuid } from 'uuid'
+
 export enum DebugTab {
   Registers,
   Memory,
   Console,
   Bitmap
+}
+
+interface ConsoleBlock {
+  id: string
+  text: string
+  highlight: string // tailwind color :)
 }
 
 interface ConsoleData {
@@ -14,7 +22,7 @@ interface ConsoleData {
   mode: ExecutionModeType | null,
   registers: Registers | null
   tab: DebugTab
-  console: string
+  console: ConsoleBlock[]
 }
 
 export const consoleData = reactive({
@@ -23,15 +31,26 @@ export const consoleData = reactive({
   mode: null,
   registers: null,
   tab: DebugTab.Registers,
-  console: ''
+  console: []
 } as ConsoleData)
 
-export function openConsole(text: string, terminator: string = '\n') {
-  consoleData.console = ''
+export function openConsole(text: string) {
+  consoleData.console = []
 
-  pushConsole(text, terminator)
+  pushConsole(text)
 }
 
-export function pushConsole(text: string, terminator: string = '\n') {
-  consoleData.console += `${text}${terminator}`
+export function pushConsole(text: string) {
+  consoleData.console.push({
+    id: uuid(),
+    text,
+    highlight: 'text-teal-100'
+  })
+  // text.split('\n').forEach(line => {
+  //   consoleData.console.push({
+  //     id: uuid(),
+  //     text: line,
+  //     highlight: 'text-teal-100'
+  //   })
+  // })
 }
