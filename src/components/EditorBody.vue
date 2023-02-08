@@ -76,6 +76,7 @@
       <div class="h-32" />
 
       <Cursor :position="position" :start="renderStart" :count="renderCount" />
+      <SelectionOverlay v-if="computedRanges" :range="computedRanges" />
       <Suggestions />
       <FindOverlay :start="renderStart" :count="renderCount" />
       <ErrorOverlay />
@@ -90,6 +91,7 @@ import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
 import { useVirtualize } from '../utils/virtualization'
 import {
+  range,
   getSelection,
   dropSelection,
   lineStart,
@@ -108,6 +110,7 @@ import Cursor from './Cursor.vue'
 import FindOverlay from './FindOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
 import Suggestions from './Suggestions.vue'
+import SelectionOverlay from './SelectionOverlay.vue'
 
 const lineOffset = ref(0)
 
@@ -121,6 +124,10 @@ const {
   bottomPadding,
   update
 } = useVirtualize(lineHeight, () => tabBody.value.length)
+
+const computedRanges = computed(() => {
+  return range(renderStart.value, renderCount.value)
+})
 
 const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)

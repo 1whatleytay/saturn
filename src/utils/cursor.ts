@@ -13,7 +13,18 @@ export interface CursorPosition {
   offsetY: number
 }
 
+export interface RangeLine {
+  leading: string
+  body: string
+}
+
+export interface RangeSelection {
+  ranges: RangeLine[]
+  top: number
+}
+
 export interface CursorInterface {
+  range(start: number, count: number): RangeSelection | null
   jump(index: SelectionIndex): void
   getSelection(): string | null
   dropSelection(): void
@@ -31,10 +42,11 @@ export type CursorResult = CursorInterface & {
 export function useCursor(
   editor: () => Editor,
   cursor: () => CursorState,
-  calculator: SizeCalculator,
   settings: Settings,
   suggestions: SuggestionsInterface,
-  showSuggestionsAt: (cursor: SelectionIndex) => void
+  calculator: SizeCalculator,
+  showSuggestionsAt: (cursor: SelectionIndex) => void,
+  lineHeight: number = 24 // precompute this
 ): CursorResult {
   function toPosition(index: SelectionIndex): CursorPosition {
     const text = editor().lineAt(index.line)
@@ -51,6 +63,79 @@ export function useCursor(
   const position = computed(() => {
     return toPosition(cursor())
   })
+
+  function range(start: number, count: number): RangeSelection | null {
+    const range = selectionRange(cursor())
+
+    if (!range) {
+      return null
+    }
+
+    function inBounds(line: number): boolean {
+      return start <= line && line < start + count
+    }
+
+    let top = null as number | null
+    const suggestTop = (line: number) => {
+      if (top === null) {
+        top = line * lineHeight
+      }
+    }
+
+    if (range.startLine == range.endLine) {
+      if (!inBounds(range.startLine)) {
+        return null // ?
+      }
+
+      const line = editor().lineAt(range.startLine)
+
+      const ranges = [{
+        leading: line.substring(0, range.startIndex),
+        body: line.substring(range.startIndex, range.endIndex)
+      }]
+
+      return { ranges, top: range.startLine * lineHeight }
+    }
+
+    const result = [] as RangeLine[]
+
+    if (inBounds(range.startLine)) {
+      suggestTop(range.startLine)
+      const first = editor().lineAt(range.startLine)
+
+      result.push({
+        leading: first.substring(0, range.startIndex),
+        body: first.substring(range.startIndex)
+      })
+    }
+
+    // Just going to hope this intersection thingy works.
+    const intersectionStart = Math.max(range.startLine + 1, start)
+    const intersectionEnd = Math.min(range.endLine, start + count)
+
+    if (intersectionStart < intersectionEnd) {
+      suggestTop(intersectionStart)
+    }
+
+    for (let a = intersectionStart; a < intersectionEnd; a++) {
+      result.push({
+        leading: '',
+        body: editor().lineAt(a)
+      })
+    }
+
+    if (inBounds(range.endLine)) {
+      suggestTop(range.endLine)
+      const last = editor().lineAt(range.endLine)
+
+      result.push({
+        leading: '',
+        body: last.substring(0, range.endIndex)
+      })
+    }
+
+    return { top: top ?? range.startLine * lineHeight, ranges: result }
+  }
 
   let pressedBackspace = false
 
@@ -570,9 +655,7 @@ export function useCursor(
       return
     }
 
-    const { height } = calculator.calculate('')
-
-    const lineIndex = Math.floor(y / height)
+    const lineIndex = Math.floor(y / lineHeight)
     const line = Math.min(Math.max(lineIndex, 0), count - 1)
     const text = editor().lineAt(line)
 
@@ -609,12 +692,11 @@ export function useCursor(
   }
 
   function lineStart(line: number): number {
-    const { height } = calculator.calculate('')
-
-    return line * height
+    return line * lineHeight
   }
 
   return {
+    range,
     position,
     jump,
     lineStart,

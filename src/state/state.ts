@@ -36,6 +36,7 @@ function showSuggestionsAt(cursor: SelectionIndex) {
 }
 
 export const {
+  range,
   position,
   jump,
   lineStart,
@@ -49,8 +50,9 @@ export const {
 } = useCursor(
   () => storage.editor,
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
-  regular,
   settings,
   suggestions,
-  showSuggestionsAt
+  regular,
+  showSuggestionsAt,
+  24
 )
