@@ -4,7 +4,8 @@
       <div
         v-for="(text, index) in props.range.ranges"
         :key="index"
-        class="h-6 flex items-center"
+        class="flex items-center"
+        :style="{ height: `${props.lineHeight}px` }"
       >
         <span class="opacity-0">
           {{ text.leading }}
@@ -23,7 +24,8 @@
 <script setup lang="ts">
 import { RangeSelection } from '../utils/cursor'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   range: RangeSelection
-}>()
+  lineHeight?: number
+}>(), { lineHeight: 24 })
 </script>

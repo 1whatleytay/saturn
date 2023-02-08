@@ -5,7 +5,7 @@ import { SizeCalculator } from './query/text-size'
 import { consumeBackwards, consumeForwards } from './query/alt-consume'
 import { hasActionKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
-import { Settings } from './settings'
+import { EditorSettings } from './settings'
 import { grabWhitespace } from './languages/language'
 
 export interface CursorPosition {
@@ -42,21 +42,21 @@ export type CursorResult = CursorInterface & {
 export function useCursor(
   editor: () => Editor,
   cursor: () => CursorState,
-  settings: Settings,
-  suggestions: SuggestionsInterface,
+  settings: EditorSettings,
   calculator: SizeCalculator,
-  showSuggestionsAt: (cursor: SelectionIndex) => void,
-  lineHeight: number = 24 // precompute this
+  lineHeight: number = 24, // precompute this
+  suggestions?: SuggestionsInterface,
+  showSuggestionsAt?: (cursor: SelectionIndex) => void
 ): CursorResult {
   function toPosition(index: SelectionIndex): CursorPosition {
     const text = editor().lineAt(index.line)
 
     const leading = text.substring(0, index.index)
-    const size = calculator.calculate(leading)
+    const { width } = calculator.calculate(leading)
 
     return {
-      offsetX: size.width,
-      offsetY: size.height * index.line
+      offsetX: width,
+      offsetY: lineHeight * index.line
     }
   }
 
@@ -154,7 +154,7 @@ export function useCursor(
 
     editor().commit()
 
-    suggestions.dismissSuggestions()
+    suggestions?.dismissSuggestions()
   }
 
   function makeSelection() {
@@ -238,6 +238,12 @@ export function useCursor(
     }
   }
 
+  function promptSuggestions() {
+    if ((suggestions?.hasSuggestions() ?? false) && showSuggestionsAt) {
+      showSuggestionsAt(cursor())
+    }
+  }
+
   function putCursor(
     index: SelectionIndex,
     to: SelectionIndex = cursor()
@@ -282,9 +288,7 @@ export function useCursor(
 
     putCursor({ line, index: move })
 
-    if (suggestions.hasSuggestions()) {
-      showSuggestionsAt(cursor())
-    }
+    promptSuggestions()
   }
 
   function moveRight(alt: boolean = false, shift: boolean = false) {
@@ -318,13 +322,11 @@ export function useCursor(
 
     putCursor({ line, index: move })
 
-    if (suggestions.hasSuggestions()) {
-      showSuggestionsAt(cursor())
-    }
+    promptSuggestions()
   }
 
   function moveDown(shift: boolean = false) {
-    if (suggestions.hasSuggestions()) {
+    if (suggestions && suggestions.hasSuggestions()) {
       return suggestions.moveIndex(+1)
     }
 
@@ -334,7 +336,7 @@ export function useCursor(
   }
 
   function moveUp(shift: boolean = false) {
-    if (suggestions.hasSuggestions()) {
+    if (suggestions && suggestions.hasSuggestions()) {
       return suggestions.moveIndex(-1)
     }
 
@@ -564,7 +566,7 @@ export function useCursor(
         break
 
       case 'Escape':
-        if (suggestions.hasSuggestions()) {
+        if (suggestions && suggestions.hasSuggestions()) {
           suggestions.dismissSuggestions()
         }
 
@@ -600,9 +602,7 @@ export function useCursor(
           putCursor(nextPosition)
         }
 
-        if (suggestions.hasSuggestions()) {
-          showSuggestionsAt(cursor())
-        }
+        promptSuggestions()
 
         break
 
@@ -613,8 +613,8 @@ export function useCursor(
             index: editor().lineAt(value.line).length
           })
 
-          suggestions.dismissSuggestions()
-        } else if (suggestions.flushSuggestions()) {
+          suggestions?.dismissSuggestions()
+        } else if (suggestions && suggestions.flushSuggestions()) {
           const suggestion = suggestions.mergeSuggestion()
 
           if (suggestion) {
@@ -640,14 +640,15 @@ export function useCursor(
           dropSelection()
           putCursor(editor().put(value, event.key))
 
-          showSuggestionsAt(cursor())
+          if (showSuggestionsAt) {
+            showSuggestionsAt(cursor())
+          }
         }
 
         break
     }
   }
 
-  const defaultCursorPush = 0
   function putCursorAtCoordinates(x: number, y: number) {
     const count = editor().lineCount()
 
@@ -659,7 +660,7 @@ export function useCursor(
     const line = Math.min(Math.max(lineIndex, 0), count - 1)
     const text = editor().lineAt(line)
 
-    const index = calculator.position(text, x, defaultCursorPush)
+    const index = calculator.position(text, x)
 
     putCursor({ line, index })
   }
@@ -667,7 +668,7 @@ export function useCursor(
   function dropCursor(x: number, y: number) {
     cursor().highlight = null
     editor().commit()
-    suggestions.dismissSuggestions()
+    suggestions?.dismissSuggestions()
 
     putCursorAtCoordinates(x, y)
   }

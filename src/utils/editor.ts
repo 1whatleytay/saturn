@@ -127,7 +127,7 @@ export class Editor {
     }
   }
 
-  private mergedCursor(): SelectionIndex {
+  public mergedCursor(): SelectionIndex {
     // Not moved, kinda freaky!
     const lastCursor = this.current?.cursor
 
@@ -141,7 +141,7 @@ export class Editor {
     }
   }
 
-  private dirty(line: number, count: number, insert?: number) {
+  public dirty(line: number, count: number, insert?: number) {
     const backup = this.data.slice(line, line + count)
 
     // replace with self
@@ -426,8 +426,8 @@ export class Editor {
     public cursor: SelectionIndex,
     public onDirty: DirtyHandler = () => { },
     public writable: boolean = true,
-    private backlog: number = 50,
-    private debounce: number = 800,
-    private commitInterval: number = 30
+    public backlog: number = 50,
+    public debounce: number = 800,
+    public commitInterval: number = 30
   ) { }
 }

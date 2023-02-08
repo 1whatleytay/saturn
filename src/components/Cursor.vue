@@ -1,10 +1,12 @@
 <template>
   <!-- Cursor Indicator -->
   <div
-    class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
+    class="w-0.5 bg-orange-400 hidden peer-focus:block absolute"
     :style="{
       left: `${props.position.offsetX}px`,
-      top: `${props.position.offsetY}px`
+      top: `${props.position.offsetY}px`,
+      height: `${props.lineHeight}px`,
+      marginLeft: `-${props.cursorShift}px`
     }"
   />
 </template>
@@ -18,5 +20,6 @@ const props = withDefaults(defineProps<{
   count: number
   position: CursorPosition
   lineHeight?: number
-}>(), { lineHeight: 24 })
+  cursorShift?: number
+}>(), { lineHeight: 24, cursorShift: 1.3 })
 </script>

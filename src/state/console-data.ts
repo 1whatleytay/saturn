@@ -1,8 +1,6 @@
 import { reactive } from 'vue'
 import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
 
-import { v4 as uuid } from 'uuid'
-
 export enum DebugTab {
   Registers,
   Memory,
@@ -10,10 +8,8 @@ export enum DebugTab {
   Bitmap
 }
 
-interface ConsoleBlock {
-  id: string
-  text: string
-  highlight: string // tailwind color :)
+interface ConsoleLineMeta {
+  highlight: string
 }
 
 interface ConsoleData {
@@ -22,7 +18,8 @@ interface ConsoleData {
   mode: ExecutionModeType | null,
   registers: Registers | null
   tab: DebugTab
-  console: ConsoleBlock[]
+  console: string[]
+  consoleMeta: Map<number, ConsoleLineMeta> // index in console[] -> Meta
 }
 
 export const consoleData = reactive({
@@ -31,10 +28,10 @@ export const consoleData = reactive({
   mode: null,
   registers: null,
   tab: DebugTab.Registers,
-  console: new Array(500).fill(0).map((_, i) => ({
-    text: `Hello World, this is a test ${i}`,
-    highlight: 'text-red-100'
-  }))
+  console: new Array(500)
+    .fill(0)
+    .map((_, i) => `Hello World, this is a test ${i}`),
+  consoleMeta: new Map()
 } as ConsoleData)
 
 export function openConsole(text: string) {
@@ -45,10 +42,9 @@ export function openConsole(text: string) {
 
 export function pushConsole(text: string) {
   text.split('\n').forEach(line => {
-    consoleData.console.push({
-      id: uuid(),
-      text: line,
-      highlight: 'text-teal-100'
-    })
+    const index = consoleData.console.length
+
+    consoleData.console.push(line)
+    consoleData.consoleMeta.set(index, { highlight: 'text-teal-100' })
   })
 }

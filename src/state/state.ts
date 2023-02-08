@@ -50,9 +50,9 @@ export const {
 } = useCursor(
   () => storage.editor,
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
-  settings,
-  suggestions,
+  settings.editor,
   regular,
-  showSuggestionsAt,
-  24
+  24,
+  suggestions,
+  showSuggestionsAt
 )

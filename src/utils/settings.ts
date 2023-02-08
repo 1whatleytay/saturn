@@ -7,14 +7,20 @@ export interface BitmapSettings {
   address: number
 }
 
+export interface EditorSettings {
+  tabSize: number
+}
+
 export interface Settings {
-  tabSize: number,
+  editor: EditorSettings
   bitmap: BitmapSettings
 }
 
 function defaultSettings(): Settings {
   return {
-    tabSize: 4,
+    editor: {
+      tabSize: 4
+    },
     bitmap: {
       width: 64,
       height: 64,

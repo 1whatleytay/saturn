@@ -167,10 +167,6 @@ function handleScroll() {
   lineOffset.value = scroll.value.offsetTop - scroll.value.scrollTop
 }
 
-const focusHandler = () => {
-  input?.value?.focus()
-}
-
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (code.value) {
     return {
@@ -201,7 +197,7 @@ async function toggleBreakpoint(index: number) {
 const mouseDown = ref(false)
 
 function handleDown(event: MouseEvent) {
-  focusHandler()
+  input.value?.focus()
 
   const { x, y } = editorCoordinates(event)
 

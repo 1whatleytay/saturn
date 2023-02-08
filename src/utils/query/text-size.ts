@@ -10,7 +10,7 @@ export class SizeCalculator {
     }
   }
 
-  position(text: string, position: number, push: number = 2): number {
+  position(text: string, position: number): number {
     // Let's do some BST
     let startOffset = 0
     let leadingSize = 0 // here for centering the character at the end
@@ -42,12 +42,12 @@ export class SizeCalculator {
       }
     } while (start + 1 < end)
 
-    const offset = Math.round((position + push - startOffset) / leadingSize)
+    const offset = Math.round((position + this.push - startOffset) / leadingSize)
 
     return start + Math.min(offset, 1)
   }
 
-  constructor(classes: string) {
+  constructor(classes: string, public push: number = 2) {
     this.element = document.createElement('div')
 
     this.element.className = classes
@@ -56,5 +56,5 @@ export class SizeCalculator {
   }
 }
 
-export const regular = new SizeCalculator('h-6 text-sm font-mono absolute top-0 -z-10 whitespace-pre')
-export const tiny = new SizeCalculator('h-4 text-xs font-mono absolute top-0 -z-10 whitespace-pre')
+export const regular = new SizeCalculator('h-6 text-sm font-mono absolute top-0 -z-10 whitespace-pre', 0)
+export const tiny = new SizeCalculator('h-4 text-xs font-mono absolute top-0 -z-10 whitespace-pre', 0)
