@@ -49,6 +49,7 @@ export const {
 } = useCursor(
   () => storage.editor,
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
+  regular,
   settings,
   suggestions,
   showSuggestionsAt

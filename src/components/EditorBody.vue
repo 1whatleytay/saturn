@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
@@ -272,7 +272,9 @@ function makeVisible(offset: number) {
   }
 }
 
-watch(() => position.offsetY, (value) => {
+watch(() => position.value.offsetY, async (value) => {
+  await nextTick()
+
   makeVisible(value)
 })
 
@@ -284,10 +286,10 @@ watch(() => stoppedIndex.value, (index) => {
   }
 })
 
-watch(() => find.state.show, () => {
+watch(() => find.state.show, async () => {
   // Wait until resize occurs...
-  Promise.resolve().then(() => {
-    handleScroll()
-  })
+  await nextTick()
+
+  handleScroll()
 })
 </script>

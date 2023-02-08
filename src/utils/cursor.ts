@@ -1,7 +1,7 @@
 import { Editor, LineRange, SelectionIndex } from './editor'
-import { reactive } from 'vue'
+import { computed, ComputedRef } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
-import { regular } from './query/text-size'
+import { SizeCalculator } from './query/text-size'
 import { consumeBackwards, consumeForwards } from './query/alt-consume'
 import { hasActionKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
@@ -12,8 +12,6 @@ export interface CursorPosition {
   offsetX: number
   offsetY: number
 }
-
-export type CursorPositionState = CursorPosition & { highlight: CursorPosition | null }
 
 export interface CursorInterface {
   jump(index: SelectionIndex): void
@@ -27,22 +25,32 @@ export interface CursorInterface {
   applyMergeSuggestion(suggestion: MergeSuggestion): void
 }
 export type CursorResult = CursorInterface & {
-  position: CursorPositionState
+  position: ComputedRef<CursorPosition>
 }
 
 export function useCursor(
   editor: () => Editor,
   cursor: () => CursorState,
+  calculator: SizeCalculator,
   settings: Settings,
   suggestions: SuggestionsInterface,
   showSuggestionsAt: (cursor: SelectionIndex) => void
 ): CursorResult {
-  const position = reactive({
-    offsetX: 0,
-    offsetY: 0,
+  function toPosition(index: SelectionIndex): CursorPosition {
+    const text = editor().lineAt(index.line)
 
-    highlight: null
-  } as CursorPositionState)
+    const leading = text.substring(0, index.index)
+    const size = calculator.calculate(leading)
+
+    return {
+      offsetX: size.width,
+      offsetY: size.height * index.line
+    }
+  }
+
+  const position = computed(() => {
+    return toPosition(cursor())
+  })
 
   let pressedBackspace = false
 
@@ -112,7 +120,7 @@ export function useCursor(
     return true
   }
 
-  function cursorPosition(index: SelectionIndex): SelectionIndex & CursorPosition {
+  function alignCursor(index: SelectionIndex): SelectionIndex {
     let underflow = false
     let overflow = false
 
@@ -139,28 +147,20 @@ export function useCursor(
       actualIndex = Math.max(index.index, 0)
     }
 
-    const leading = text.substring(0, actualIndex)
-    const size = regular.calculate(leading)
-
     return {
       line: actualLine,
       index: actualIndex,
-      offsetX: size.width,
-      offsetY: size.height * actualLine
     }
   }
 
   function putCursor(
     index: SelectionIndex,
-    from: SelectionIndex = cursor(),
-    pos: CursorPosition = position
+    to: SelectionIndex = cursor()
   ) {
-    const position = cursorPosition(index)
+    const position = alignCursor(index)
 
-    from.line = position.line
-    from.index = position.index
-    pos.offsetX = position.offsetX
-    pos.offsetY = position.offsetY
+    to.line = position.line
+    to.index = position.index
   }
 
   function moveLeft(alt: boolean = false, shift: boolean = false) {
@@ -268,12 +268,10 @@ export function useCursor(
       }
 
       if (value.highlight && line == value.highlight.line) {
-        position.highlight = { offsetX: 0, offsetY: 0 }
-
         putCursor({
           line: value.highlight.line,
           index: value.highlight.index + alignment
-        }, value.highlight, position.highlight)
+        }, value.highlight)
       }
     }
 
@@ -353,7 +351,7 @@ export function useCursor(
     for (let a = start; a <= end; a++) {
       const size = commentTrimSize(editor().lineAt(a))
 
-      // Empty lines should not affect whether or not we comment.
+      // Empty lines should not affect whether we comment.
       if (size === 'ignore') {
         crops.push(null)
 
@@ -382,12 +380,9 @@ export function useCursor(
       putCursor({ line: value.line, index: cursorIndex })
 
       if (value.highlight && highlightIndex) {
-        // Just make it computed, am i right?
-        position.highlight = { offsetX: 0, offsetY: 0 }
-
         putCursor({
           line: value.highlight.line, index: highlightIndex
-        }, value.highlight, position.highlight)
+        }, value.highlight)
       }
     } else {
       editor().prefix(start, end, '# ', true)
@@ -398,13 +393,13 @@ export function useCursor(
         putCursor({ line: value.line, index: value.index + 2 })
       }
 
-      if (value.highlight && position.highlight) {
+      if (value.highlight) {
         const { leading: highlightLeading } = grabWhitespace(editor().lineAt(value.highlight.line))
 
         if (value.highlight.index >= highlightLeading.length) {
           putCursor({
             line: value.highlight.line, index: value.highlight.index + 2
-          }, value.highlight, position.highlight)
+          }, value.highlight)
         }
       }
     }
@@ -438,7 +433,7 @@ export function useCursor(
           const text = editor().lineAt(end)
 
           putCursor({ line: 0, index: 0 })
-          value.highlight = cursorPosition({ line: end, index: text.length })
+          value.highlight = alignCursor({ line: end, index: text.length })
         }
 
         break
@@ -575,13 +570,13 @@ export function useCursor(
       return
     }
 
-    const { height } = regular.calculate('')
+    const { height } = calculator.calculate('')
 
     const lineIndex = Math.floor(y / height)
     const line = Math.min(Math.max(lineIndex, 0), count - 1)
     const text = editor().lineAt(line)
 
-    const index = regular.position(text, x, defaultCursorPush)
+    const index = calculator.position(text, x, defaultCursorPush)
 
     putCursor({ line, index })
   }
@@ -611,11 +606,10 @@ export function useCursor(
     putCursor(index)
 
     cursor().highlight = null
-    position.highlight = null
   }
 
   function lineStart(line: number): number {
-    const { height } = regular.calculate('')
+    const { height } = calculator.calculate('')
 
     return line * height
   }
