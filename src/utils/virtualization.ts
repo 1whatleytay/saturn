@@ -1,14 +1,12 @@
 import { computed, ComputedRef, reactive } from 'vue'
 
-export type UpdateVirtualization = (top: number, height: number) => void
-
 export interface Virtualization {
   renderStart: ComputedRef<number>
   renderCount: ComputedRef<number>
   topPadding: ComputedRef<number>
   bottomPadding: ComputedRef<number>,
   getIndex: (index: number) => number
-  update: UpdateVirtualization
+  update: (top: number, height: number) => void
 }
 
 const defaultLinePadding = 16

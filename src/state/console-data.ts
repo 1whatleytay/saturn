@@ -41,16 +41,11 @@ export function openConsole(text: string) {
 }
 
 export function pushConsole(text: string) {
-  consoleData.console.push({
-    id: uuid(),
-    text,
-    highlight: 'text-teal-100'
+  text.split('\n').forEach(line => {
+    consoleData.console.push({
+      id: uuid(),
+      text: line,
+      highlight: 'text-teal-100'
+    })
   })
-  // text.split('\n').forEach(line => {
-  //   consoleData.console.push({
-  //     id: uuid(),
-  //     text: line,
-  //     highlight: 'text-teal-100'
-  //   })
-  // })
 }
