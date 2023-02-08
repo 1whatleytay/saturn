@@ -76,6 +76,7 @@
       <div class="h-32" />
 
       <Cursor :start="renderStart" :count="renderCount" />
+      <Suggestions />
       <FindOverlay :start="renderStart" :count="renderCount" />
       <ErrorOverlay />
     </div>
@@ -106,6 +107,7 @@ import {
 import Cursor from './Cursor.vue'
 import FindOverlay from './FindOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
+import Suggestions from './Suggestions.vue'
 
 const lineOffset = ref(0)
 
