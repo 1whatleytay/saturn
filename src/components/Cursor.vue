@@ -24,22 +24,24 @@
   <div
     class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
     :style="{
-      left: `${position.offsetX}px`,
-      top: `${position.offsetY}px`
+      left: `${props.position.offsetX}px`,
+      top: `${props.position.offsetY}px`
     }"
   />
 </template>
 
 <script setup lang="ts">
-import { position, tab, tabBody } from '../state/state'
+import { tab, tabBody } from '../state/state'
 import { computed } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { selectionRange } from '../utils/tabs'
+import { CursorPosition } from '../utils/cursor'
 
 const props = defineProps<{
   // virtualization props
   start: number,
   count: number,
+  position: CursorPosition
 }>()
 
 interface LineRange {

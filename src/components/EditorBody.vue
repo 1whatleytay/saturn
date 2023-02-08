@@ -75,7 +75,7 @@
       <div :style="{ height: `${bottomPadding}px` }" />
       <div class="h-32" />
 
-      <Cursor :start="renderStart" :count="renderCount" />
+      <Cursor :position="position" :start="renderStart" :count="renderCount" />
       <Suggestions />
       <FindOverlay :start="renderStart" :count="renderCount" />
       <ErrorOverlay />
