@@ -152,6 +152,10 @@ export class Editor {
   }
 
   public mutate(line: number, count: number, insert: number, body: () => void) {
+    if (!this.writable) {
+      return
+    }
+
     this.dirty(line, count, insert)
 
     body()
@@ -421,6 +425,7 @@ export class Editor {
     public data: LineData,
     public cursor: SelectionIndex,
     public onDirty: DirtyHandler = () => { },
+    public writable: boolean = true,
     private backlog: number = 50,
     private debounce: number = 800,
     private commitInterval: number = 30

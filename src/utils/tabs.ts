@@ -39,13 +39,14 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
 }
 
 export interface EditorTab {
-  uuid: string,
-  title: string,
-  lines: string[],
-  cursor: CursorState,
-  breakpoints: number[],
-  path: string | null,
-  marked: boolean, // needs saving
+  uuid: string
+  title: string
+  lines: string[]
+  cursor: CursorState
+  breakpoints: number[]
+  path: string | null
+  writable: boolean
+  marked: boolean // needs saving
   profile: ExecutionProfile | null
 }
 
@@ -126,7 +127,8 @@ export function useTabs(): TabsResult {
     named: string,
     content: string[],
     path: string | null = null,
-    profile: ExecutionProfile | null = defaultAssemblyProfile()
+    profile: ExecutionProfile | null = defaultAssemblyProfile(),
+    writable: boolean = true
   ) {
     const id = uuid()
 
@@ -141,6 +143,7 @@ export function useTabs(): TabsResult {
         highlight: null
       },
       path,
+      writable,
       marked: false,
       profile
     })
@@ -156,7 +159,7 @@ export function useTabs(): TabsResult {
       kind: 'elf', elf, breakpoints: value.breakpoints
     } as ElfExecutionProfile
 
-    createTab(named, lines, null, profile)
+    createTab(named, lines, null, profile, false)
   }
 
   if (!editor.tabs.length) {

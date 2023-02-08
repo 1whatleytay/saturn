@@ -73,7 +73,8 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
     return new Editor(
       tab()?.lines ?? ['Nothing yet.'],
       tab()?.cursor ?? { line: 0, index: 0 },
-      handleDirty
+      handleDirty,
+      tab()?.writable ?? false
     )
   }
 

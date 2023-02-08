@@ -57,7 +57,8 @@
         class="h-6 flex items-center pr-16"
         :class="{
           'bg-breakpoint-neutral': hasBreakpoint(getIndex(i)) && getIndex(i) !== stoppedIndex,
-          'bg-breakpoint-stopped': getIndex(i) === stoppedIndex
+          'bg-breakpoint-stopped': getIndex(i) === stoppedIndex,
+          'bg-yellow-500 bg-opacity-5': !(tab()?.writable ?? true)
         }"
       >
         <div>

@@ -8,10 +8,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'saturn-background': '#2C3350',
-        'saturn-highlight': '#FFC35D',
         'breakpoint-neutral': '#2b1515',
-        'breakpoint-stopped': '#2b2a15'
+        'breakpoint-stopped': '#2b2a15',
+        'readonly-neutral': '#2b2b15'
       },
 
       keyframes: {
