@@ -20,28 +20,6 @@
     </div>
   </div>
 
-  <!-- Error Highlights -->
-  <div
-    v-if="highlights.state.highlight"
-    class="absolute h-6 border-b-2 border-red-500 bg-red-500 bg-opacity-25 group"
-    :style="{
-      top: `${lineHeight * highlights.state.highlight.line}px`,
-      left: `${highlights.state.highlight.offset}px`,
-      width: `${highlights.state.highlight.size}px`
-    }"
-  >
-    <div v-if="highlights.state.highlight.message" class="
-      mt-6 py-2 px-4 w-auto
-      bg-neutral-900 rounded
-      shadow-xl
-      absolute z-30
-      text-red-400 font-medium font-sans
-      hidden group-hover:block"
-    >
-      {{ highlights.state.highlight.message }}
-    </div>
-  </div>
-
   <!-- Cursor Indicator -->
   <div
     class="w-0.5 h-6 bg-orange-400 hidden peer-focus:block absolute mx-[-0.08rem]"
@@ -121,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { applyMergeSuggestion, highlights, position, suggestions, tab, tabBody } from '../state/state'
+import { applyMergeSuggestion, position, suggestions, tab, tabBody } from '../state/state'
 import { computed, ref, watch } from 'vue'
 import { regular } from '../utils/query/text-size'
 import { SuggestionType } from '../utils/languages/suggestions'

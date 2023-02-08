@@ -77,6 +77,7 @@
 
       <Cursor :start="renderStart" :count="renderCount" />
       <FindOverlay :start="renderStart" :count="renderCount" />
+      <ErrorOverlay />
     </div>
   </div>
 </template>
@@ -104,6 +105,7 @@ import {
 
 import Cursor from './Cursor.vue'
 import FindOverlay from './FindOverlay.vue'
+import ErrorOverlay from './ErrorOverlay.vue'
 
 const lineOffset = ref(0)
 
