@@ -33,16 +33,16 @@
 <script setup lang="ts">
 import { tab, tabBody } from '../state/state'
 import { computed } from 'vue'
-import { regular } from '../utils/query/text-size'
 import { selectionRange } from '../utils/tabs'
 import { CursorPosition } from '../utils/cursor'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   // virtualization props
-  start: number,
-  count: number,
+  start: number
+  count: number
   position: CursorPosition
-}>()
+  lineHeight?: number
+}>(), { lineHeight: 24 })
 
 interface LineRange {
   leading: string,
@@ -73,11 +73,10 @@ const range = computed((): RangeSelection | null => {
 
   const all = tabBody.value
 
-  const { height } = regular.calculate('')
   let top = null as number | null
   const suggestTop = (line: number) => {
     if (top === null) {
-      top = line * height
+      top = line * props.lineHeight
     }
   }
 
@@ -93,7 +92,7 @@ const range = computed((): RangeSelection | null => {
       body: line.substring(range.startIndex, range.endIndex)
     }]
 
-    return { ranges, top: range.startLine * height }
+    return { ranges, top: range.startLine * props.lineHeight }
   }
 
   const result = [] as LineRange[]
@@ -131,6 +130,6 @@ const range = computed((): RangeSelection | null => {
     })
   }
 
-  return { top: top ?? range.startLine * height, ranges: result }
+  return { top: top ?? range.startLine * props.lineHeight, ranges: result }
 })
 </script>
