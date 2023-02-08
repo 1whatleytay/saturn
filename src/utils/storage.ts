@@ -54,6 +54,36 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
     }
   }
 
+  function shiftBreakpoints(line: number, deleted: number, replaced: number) {
+    const current = tab()
+
+    if (!current) {
+      return
+    }
+
+    const breakpoints = current.breakpoints
+
+    let moved = false
+
+    for (let a = 0; a < breakpoints.length; a++) {
+      const bp = breakpoints[a]
+
+      if (bp < line + Math.min(deleted, replaced)) {
+
+      } else if (deleted > replaced && bp < line + deleted) {
+        breakpoints.splice(a, 1)
+        a -= 1
+      } else {
+        breakpoints[a] += replaced - deleted
+        moved = true
+      }
+    }
+
+    if (moved) {
+      current.breakpoints = [...new Set(current.breakpoints)]
+    }
+  }
+
   function handleDirty(line: number, deleted: number, lines: string[]) {
     highlight(line, deleted, lines)
 
@@ -65,6 +95,7 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
 
     find.dirty(line, deleted, lines)
     highlights.shiftHighlight(line, deleted, lines.length)
+    shiftBreakpoints(line, deleted, lines.length)
 
     dispatchCheckSyntax()
   }
