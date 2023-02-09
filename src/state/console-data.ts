@@ -23,6 +23,7 @@ interface ConsoleData {
 }
 
 const editHighlight = { highlight: 'text-green-400 bg-green-900 bg-opacity-10' }
+const submitHighlight = { highlight: 'text-green-500 font-bold' }
 
 export const consoleData = reactive({
   showConsole: false,
@@ -64,4 +65,26 @@ export function pushConsole(text: string) {
 
   consoleData.console.push(editLine ?? '')
   consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
+}
+
+// returns if the submission went through
+export function submitConsole(): boolean {
+  const count = consoleData.console.length
+
+  if (count <= 0) {
+    return false
+  }
+
+  const last = consoleData.console[count - 1]
+
+  consoleData.consoleMeta.set(count - 1, submitHighlight)
+
+  consoleData.console.push('')
+  consoleData.consoleMeta.set(count, editHighlight)
+
+  if (consoleData.execution) {
+    consoleData.execution.postInput(last).then(() => { })
+  }
+
+  return true
 }

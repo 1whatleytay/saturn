@@ -16,7 +16,8 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 wry = { version = "0.23.4", features = ["linux-headers"] }
 tauri = { version = "1.2.4", features = ["api-all", "time"] }
-tokio = { version = "1.23.0", features = ["time"] }
+tokio = { version = "1.23.0", features = ["time", "macros"] }
+tokio-util = "0.7.4"
 
 rand = "0.8.5"
 rand_chacha = "0.3.1"

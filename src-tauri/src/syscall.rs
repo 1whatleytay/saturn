@@ -1,4 +1,3 @@
-use std::cmp::min;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
@@ -14,7 +13,10 @@ use titan::cpu::memory::section::SectionMemory;
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
-use tokio::time::Instant;
+use tokio::select;
+use tokio::sync::Mutex as AsyncMutex;
+use tokio_util::sync::CancellationToken;
+use crate::channels::ByteChannel;
 use crate::keyboard::KeyboardHandler;
 use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Terminated, Unimplemented, Unknown};
 
@@ -32,7 +34,8 @@ pub enum SyscallResult {
 }
 
 pub struct SyscallState {
-    pub abort: bool,
+    cancel_token: CancellationToken,
+    pub input_buffer: Arc<ByteChannel>,
     print: Box<dyn FnMut(&str) -> () + Send>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
@@ -42,12 +45,17 @@ pub struct SyscallState {
 impl SyscallState {
     pub fn new(print: Box<dyn FnMut(&str) -> () + Send>) -> SyscallState {
         return SyscallState {
-            abort: false,
+            cancel_token: CancellationToken::new(),
+            input_buffer: Arc::new(ByteChannel::new()),
             print,
             generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
             next_file: 3,
             file_map: HashMap::new()
         }
+    }
+
+    pub fn cancel(&self) {
+        self.cancel_token.cancel()
     }
 }
 
@@ -138,7 +146,15 @@ impl SyscallDelegate {
     }
 
     async fn read_integer(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(5)
+        let (token, buffer) = {
+            let syscall = self.state.lock().unwrap();
+
+            (syscall.cancel_token.clone(), syscall.input_buffer.clone())
+        };
+
+        let _ = buffer.read(1, &token).await;
+
+        Completed
     }
 
     async fn read_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
@@ -321,31 +337,24 @@ impl SyscallDelegate {
         Unimplemented(31)
     }
 
-    async fn sleep_for_duration(&self, time: i64) -> bool {
-        let interval = 300;
+    async fn sleep_for_duration(&self, time: u64) -> bool {
+        let token = {
+            let state = self.state.lock().unwrap();
 
-        let start = Instant::now();
+            state.cancel_token.clone()
+        };
 
-        let mut remaining = time;
+        let duration = Duration::from_millis(time);
 
-        while remaining > 0 {
-            let wait = min(remaining, interval) as u64;
-
-            if self.state.lock().unwrap().abort {
-                return false
-            }
-
-            tokio::time::sleep(Duration::from_millis(wait)).await;
-
-            remaining = time - start.elapsed().as_millis() as i64;
+        select! {
+            _ = token.cancelled() => { false }
+            _ = tokio::time::sleep(duration) => { true }
         }
-
-        true
     }
 
     async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
         // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
-        let time = a0(debugger) as i64;
+        let time = a0(debugger) as u64;
 
         if self.sleep_for_duration(time).await {
             Completed

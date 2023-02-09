@@ -1,0 +1,143 @@
+use std::cmp::min;
+use std::sync::Mutex;
+use tokio::select;
+use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::error::TrySendError::Full;
+use tokio_util::sync::CancellationToken;
+
+struct ByteChannelReceiver {
+    receiver: mpsc::Receiver<Vec<u8>>,
+    peek: Option<(usize, Vec<u8>)>
+}
+
+impl ByteChannelReceiver {
+    fn new(receiver: mpsc::Receiver<Vec<u8>>) -> ByteChannelReceiver {
+        ByteChannelReceiver {
+            receiver,
+            peek: None
+        }
+    }
+}
+
+struct ByteChannelSender {
+    sender: mpsc::Sender<Vec<u8>>,
+    cache: Vec<Vec<u8>>
+}
+
+impl ByteChannelSender {
+    fn new(sender: mpsc::Sender<Vec<u8>>) -> ByteChannelSender {
+        ByteChannelSender {
+            sender,
+            cache: vec![]
+        }
+    }
+}
+
+pub struct ByteChannel {
+    sender: Mutex<ByteChannelSender>,
+    receiver: AsyncMutex<ByteChannelReceiver>
+}
+
+impl ByteChannel {
+    pub fn new() -> ByteChannel {
+        // Not using unbounded channels out of lack of trust
+        let (sender, receiver) = mpsc::channel(12);
+
+        ByteChannel {
+            sender: Mutex::new(ByteChannelSender::new(sender)),
+            receiver: AsyncMutex::new(ByteChannelReceiver::new(receiver))
+        }
+    }
+
+    pub async fn send(&self, data: Vec<u8>) {
+        let mut state = self.sender.lock().unwrap();
+
+        if let Err(Full(data)) = state.sender.try_send(data) {
+            state.cache.push(data)
+        }
+    }
+
+    pub fn pop_cache(&self) -> Option<Vec<u8>> {
+        let mut sender_state = self.sender.lock().unwrap();
+
+        if !sender_state.cache.is_empty() {
+            Some(sender_state.cache.remove(0))
+        } else {
+            None
+        }
+    }
+
+    async fn take(
+        &self, state: &mut AsyncMutexGuard<'_, ByteChannelReceiver>, token: &CancellationToken
+    ) -> Option<(usize, Vec<u8>)> {
+        if let Some(value) = state.peek.take() {
+            Some(value)
+        } else {
+            let result = select! {
+                _ = token.cancelled() => None,
+                value = state.receiver.recv() => value
+            };
+
+            result
+                .or_else(|| self.pop_cache())
+                .map(|x| (0, x))
+        }
+    }
+
+    pub async fn read(&self, count: usize, token: &CancellationToken) -> Option<Vec<u8>> {
+        let mut output = vec![];
+
+        while count > output.len() {
+            let needs = count - output.len();
+
+            let mut state = self.receiver.lock().await;
+
+            let (index, value) = self.take(&mut state, token).await?;
+            let bytes = min(needs, value.len() - index);
+
+            let end = index + bytes;
+            output.extend_from_slice(&value[index .. end]);
+
+            if end < value.len() {
+                state.peek = Some((end, value))
+            }
+        }
+
+        Some(output)
+    }
+
+    pub async fn read_until<F: FnMut(u8) -> bool>(
+        &self, mut f: F, token: &CancellationToken
+    ) -> Option<Vec<u8>> {
+        let mut output = vec![];
+        let mut full = false;
+
+        while !full {
+            let mut state = self.receiver.lock().await;
+
+            let (index, value) = self.take(&mut state, token).await?;
+
+            let mut end = index;
+
+            while end < value.len() {
+                if !f(value[end]) {
+                    full = true;
+
+                    break
+                }
+
+                end += 1
+            }
+
+            output.extend_from_slice(&value[index .. end]);
+
+            if end < value.len() {
+                state.peek = Some((end, value))
+            }
+        }
+
+        Some(output)
+    }
+}
+

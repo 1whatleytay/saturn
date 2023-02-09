@@ -11,6 +11,7 @@ mod display;
 mod execution;
 mod build;
 mod debug;
+mod channels;
 
 use std::sync::Mutex;
 
@@ -44,6 +45,20 @@ fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
     state.lock().unwrap().clone()
 }
 
+#[tauri::command]
+async fn post_input(text: String, state: tauri::State<'_, DebuggerBody>) -> Result<(), ()> {
+    let channel = {
+        let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
+        let syscall = pointer.delegate.lock().unwrap();
+
+        syscall.input_buffer.clone()
+    };
+
+    channel.send(text.into_bytes()).await;
+
+    Ok(())
+}
+
 fn main() {
     let menu = create_menu();
 
@@ -68,6 +83,7 @@ fn main() {
             set_register, // debug
             swap_breakpoints, // debug
             post_key, // bitmap
+            post_input, // bitmap
             configure_display, // bitmap
             last_display, // bitmap
         ])

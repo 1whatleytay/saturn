@@ -30,7 +30,7 @@
         :value="''"
         tabindex="0"
         class="opacity-0 pointer-events-none fixed top-0 left-0 peer"
-        @keydown="handleKey"
+        @keydown="handleKeyIntercept"
         @copy.prevent="handleCopy"
         @cut.prevent="handleCut"
         @paste.prevent="handlePaste"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { consoleData } from '../../state/console-data'
+import { consoleData, submitConsole } from '../../state/console-data'
 
 import { useVirtualize } from '../../utils/virtualization'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -69,6 +69,8 @@ import { settings } from '../../state/state'
 import { tiny } from '../../utils/query/text-size'
 import Cursor from '../Cursor.vue'
 import SelectionOverlay from '../SelectionOverlay.vue'
+import { hasActionKey } from '../../utils/query/shortcut-key'
+import { Key } from 'readline'
 
 const lineHeight = 16
 
@@ -129,6 +131,42 @@ const {
   tiny,
   16
 )
+
+const focusKeys = new Set([
+  'Enter',
+  'Delete',
+  'Backspace',
+  'Tab'
+])
+
+async function handleKeyIntercept(event: KeyboardEvent) {
+  function needsFocus(event: KeyboardEvent) {
+    return (event.key.length === 1 || focusKeys.has(event.key))
+      && !hasActionKey(event)
+  }
+
+  const count = consoleData.console.length
+
+  if (count > 0 && needsFocus(event)) {
+    const last = consoleData.console[count - 1]
+    if (event.key === 'Enter') {
+      if (await submitConsole()) {
+        cursor.line = consoleData.console.length - 1
+        cursor.index = 0 // why not
+        cursor.highlight = null
+      }
+
+      return
+    } else if (cursor.line !== count - 1) {
+      console.log({key: hasActionKey(event), cmd: event.metaKey})
+      cursor.line = count - 1
+      cursor.index = last.length
+      cursor.highlight = null
+    }
+  }
+
+  handleKey(event)
+}
 
 const computedRanges = computed(() => {
   return range(renderStart.value, renderCount.value)
@@ -228,10 +266,16 @@ function makeVisible(offset: number) {
   }
 }
 
-watch(() => position.value.offsetY, async (value) => {
+watch(() => position.value.offsetY, async value => {
   await nextTick()
 
   makeVisible(value)
+})
+
+watch(() => consoleData.console.length, async value => {
+  await nextTick()
+
+  makeVisible(value * lineHeight)
 })
 
 function updateBounds() {

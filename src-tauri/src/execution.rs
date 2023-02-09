@@ -170,7 +170,7 @@ pub fn stop(
 
     if let Some(pointer) = debugger {
         pointer.debugger.lock().unwrap().pause();
-        pointer.delegate.lock().unwrap().abort = true;
+        pointer.delegate.lock().unwrap().cancel();
 
         flush_display(pointer.debugger.lock().unwrap().memory(), display);
     }

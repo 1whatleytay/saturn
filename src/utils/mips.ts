@@ -273,6 +273,14 @@ export class ExecutionState {
     
     await tauri.invoke('post_key', { key })
   }
+  
+  public async postInput(text: string) {
+    if (text.length <= 0) {
+      return
+    }
+    
+    await tauri.invoke('post_input', { text })
+  }
 
   public async memoryAt(address: number, count: number): Promise<(number | null)[] | null> {
     const result = await tauri.invoke('read_bytes', { address, count })
