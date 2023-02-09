@@ -35,10 +35,9 @@ const props = withDefaults(defineProps<{
 const findIndices = computed(() => {
   const pairs = [] as { height: number, matches: FindMatch[] }[]
 
-  console.log({ count: props.count, start: props.start })
   for (let a = 0; a < props.count; a++) {
     const line = a + props.start
-    console.log({ line })
+
     if (line < 0 || line >= find.state.matches.length) {
       continue
     }
@@ -48,14 +47,11 @@ const findIndices = computed(() => {
       continue
     }
 
-    console.log('adding one')
     pairs.push({
       height: props.lineHeight * line,
       matches
     })
   }
-
-  console.log(pairs)
 
   return pairs
 })

@@ -90,7 +90,13 @@ const cursor = reactive({
 } as CursorState)
 
 function makeEditor(): Editor {
-  return new Editor(consoleData.console, cursor, () => {}, false)
+  const writable = (start: number, deleted: number, insert: number) => {
+    return start === consoleData.console.length - 1
+      && deleted === 1
+      && insert === 1
+  }
+
+  return new Editor(consoleData.console, cursor, () => {}, writable)
 }
 
 const state = reactive({
@@ -98,6 +104,12 @@ const state = reactive({
 })
 
 watch(() => consoleData.console, () => {
+  // reset cursor
+  cursor.line = 0
+  cursor.index = 0
+  cursor.highlight = null
+
+  updateBounds()
   state.editor = makeEditor()
 })
 

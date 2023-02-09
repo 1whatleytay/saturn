@@ -22,29 +22,46 @@ interface ConsoleData {
   consoleMeta: Map<number, ConsoleLineMeta> // index in console[] -> Meta
 }
 
+const editHighlight = { highlight: 'text-green-400 bg-green-900 bg-opacity-10' }
+
 export const consoleData = reactive({
   showConsole: false,
   execution: null,
   mode: null,
   registers: null,
   tab: DebugTab.Registers,
-  console: new Array(500)
-    .fill(0)
-    .map((_, i) => `Hello World, this is a test ${i}`),
-  consoleMeta: new Map()
+  console: [''],
+  consoleMeta: new Map([[0, editHighlight]])
 } as ConsoleData)
 
 export function openConsole(text: string) {
-  consoleData.console = []
+  consoleData.console = ['']
+  consoleData.consoleMeta = new Map([[0, editHighlight]])
 
   pushConsole(text)
 }
 
 export function pushConsole(text: string) {
-  text.split('\n').forEach(line => {
-    const index = consoleData.console.length
+  const count = consoleData.console.length
+  const meta = consoleData.consoleMeta.get(count)
+  const editLine = count ? consoleData.console[count - 1] : null
 
-    consoleData.console.push(line)
-    consoleData.consoleMeta.set(index, { highlight: 'text-teal-100' })
+  text.split('\n').forEach((line, index) => {
+    let point: number
+
+    if (index === 0) {
+      consoleData.console[count - 1] = line
+      point = count - 1
+    } else {
+      consoleData.console.push()
+      point = consoleData.console.length
+    }
+
+    consoleData.consoleMeta.set(point, { highlight: 'text-teal-100' })
   })
+
+  const lastIndex = consoleData.console.length
+
+  consoleData.console.push(editLine ?? '')
+  consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
 }

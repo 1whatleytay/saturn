@@ -51,6 +51,12 @@ export function useCursor(
   function toPosition(index: SelectionIndex): CursorPosition {
     const text = editor().lineAt(index.line)
 
+    // No way to watch state here in cursor, so fall back for any forgetful times.
+    if (text === undefined) {
+      console.error(`Cursor failed to reset: ${index.line} < ${editor().lineCount()}`)
+      return { offsetX: 0, offsetY: 0 }
+    }
+
     const leading = text.substring(0, index.index)
     const { width } = calculator.calculate(leading)
 

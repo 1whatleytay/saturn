@@ -152,7 +152,7 @@ export class Editor {
   }
 
   public mutate(line: number, count: number, insert: number, body: () => void) {
-    if (!this.writable) {
+    if (this.writable && !this.writable(line, count, insert)) {
       return
     }
 
@@ -425,7 +425,7 @@ export class Editor {
     public data: LineData,
     public cursor: SelectionIndex,
     public onDirty: DirtyHandler = () => { },
-    public writable: boolean = true,
+    public writable?: (start: number, deleted: number, insert: number) => boolean, // end - not inclusive
     public backlog: number = 50,
     public debounce: number = 800,
     public commitInterval: number = 30

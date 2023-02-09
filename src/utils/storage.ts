@@ -101,11 +101,13 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
   }
 
   function createEditor(): Editor {
+    const current = tab()
+
     return new Editor(
-      tab()?.lines ?? ['Nothing yet.'],
-      tab()?.cursor ?? { line: 0, index: 0 },
+      current?.lines ?? ['Nothing yet.'],
+      current?.cursor ?? { line: 0, index: 0 },
       handleDirty,
-      tab()?.writable ?? false
+      (current?.writable ?? false) ? undefined : () => false // weird
     )
   }
 
