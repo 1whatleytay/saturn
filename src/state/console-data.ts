@@ -23,7 +23,7 @@ interface ConsoleData {
   consoleMeta: Map<number, ConsoleLineMeta> // index in console[] -> Meta
 }
 
-const editHighlight = { highlight: 'text-green-400 bg-green-900 bg-opacity-10' }
+const editHighlight = { highlight: 'text-green-400' }
 const submitHighlight = { highlight: 'text-green-500 font-bold' }
 const secondaryHighlight = { highlight: 'text-gray-400' }
 

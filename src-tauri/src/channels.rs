@@ -50,7 +50,7 @@ impl ByteChannel {
         }
     }
 
-    pub async fn send(&self, data: Vec<u8>) {
+    pub fn send(&self, data: Vec<u8>) {
         let mut state = self.sender.lock().unwrap();
 
         if let Err(Full(data)) = state.sender.try_send(data) {

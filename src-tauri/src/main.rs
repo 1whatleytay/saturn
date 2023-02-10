@@ -46,17 +46,15 @@ fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
 }
 
 #[tauri::command]
-async fn post_input(text: String, state: tauri::State<'_, DebuggerBody>) -> Result<(), ()> {
+fn post_input(text: String, state: tauri::State<'_, DebuggerBody>) {
     let channel = {
-        let Some(pointer) = &*state.lock().unwrap() else { return Err(()) };
+        let Some(pointer) = &*state.lock().unwrap() else { return };
         let syscall = pointer.delegate.lock().unwrap();
 
         syscall.input_buffer.clone()
     };
 
-    channel.send(text.into_bytes()).await;
-
-    Ok(())
+    channel.send(text.into_bytes())
 }
 
 fn main() {
