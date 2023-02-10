@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
+import { grabWhitespace } from '../utils/languages/language'
 
 export enum DebugTab {
   Registers,
@@ -24,6 +25,7 @@ interface ConsoleData {
 
 const editHighlight = { highlight: 'text-green-400 bg-green-900 bg-opacity-10' }
 const submitHighlight = { highlight: 'text-green-500 font-bold' }
+const secondaryHighlight = { highlight: 'text-gray-400' }
 
 export const consoleData = reactive({
   showConsole: false,
@@ -31,8 +33,11 @@ export const consoleData = reactive({
   mode: null,
   registers: null,
   tab: DebugTab.Registers,
-  console: [''],
-  consoleMeta: new Map([[0, editHighlight]])
+  console: ['Nothing yet.', '', ''],
+  consoleMeta: new Map([
+    [0, secondaryHighlight],
+    [2, editHighlight]
+  ])
 } as ConsoleData)
 
 export function openConsole(text: string) {
@@ -68,7 +73,7 @@ export function pushConsole(text: string) {
 }
 
 // returns if the submission went through
-export function submitConsole(): boolean {
+export function submitConsole(force: boolean = false): boolean {
   const count = consoleData.console.length
 
   if (count <= 0) {
@@ -76,6 +81,10 @@ export function submitConsole(): boolean {
   }
 
   const last = consoleData.console[count - 1]
+
+  if (!force && last.length <= 0) {
+    return false
+  }
 
   consoleData.consoleMeta.set(count - 1, submitHighlight)
 

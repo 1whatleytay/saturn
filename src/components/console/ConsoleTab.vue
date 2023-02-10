@@ -1,11 +1,10 @@
 <template>
   <div
-    class="text-xs font-mono flex flex-col overflow-hidden grow content-start px-2"
+    class="text-xs font-light font-mono flex flex-col overflow-hidden grow content-start px-2"
   >
     <div
       ref="scroll"
       class="mt-2 overflow-auto w-full h-full whitespace-pre relative"
-      v-if="consoleData.console.length"
       @scroll="updateBounds"
       @mousedown.prevent="handleDown"
     >
@@ -49,10 +48,6 @@
         :range="computedRanges"
         :line-height="lineHeight"
       />
-    </div>
-
-    <div v-else class="text-neutral-500">
-      Nothing yet.
     </div>
   </div>
 </template>
@@ -150,7 +145,7 @@ async function handleKeyIntercept(event: KeyboardEvent) {
   if (count > 0 && needsFocus(event)) {
     const last = consoleData.console[count - 1]
     if (event.key === 'Enter') {
-      if (await submitConsole()) {
+      if (submitConsole(event.shiftKey)) {
         cursor.line = consoleData.console.length - 1
         cursor.index = 0 // why not
         cursor.highlight = null
@@ -272,7 +267,11 @@ watch(() => position.value.offsetY, async value => {
   makeVisible(value)
 })
 
-watch(() => consoleData.console.length, async value => {
+watch(() => consoleData.console.length, async (value, old) => {
+  if (old - 1 === cursor.line) {
+    cursor.line = value - 1
+  }
+
   await nextTick()
 
   makeVisible(value * lineHeight)
