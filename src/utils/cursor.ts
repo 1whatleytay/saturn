@@ -549,6 +549,7 @@ export function useCursor(
   }
 
   function handleKey(event: KeyboardEvent) {
+    console.log('do i have key')
     const value = cursor()
 
     const last = pressedBackspace

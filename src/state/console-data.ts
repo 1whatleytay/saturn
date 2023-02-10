@@ -32,7 +32,7 @@ export const consoleData = reactive({
   execution: null,
   mode: null,
   registers: null,
-  tab: DebugTab.Registers,
+  tab: DebugTab.Console,
   console: ['Nothing yet.', '', ''],
   consoleMeta: new Map([
     [0, secondaryHighlight],
@@ -86,13 +86,15 @@ export function submitConsole(force: boolean = false): boolean {
     return false
   }
 
+  const consoleDatas = 0
+
   consoleData.consoleMeta.set(count - 1, submitHighlight)
 
   consoleData.console.push('')
   consoleData.consoleMeta.set(count, editHighlight)
 
   if (consoleData.execution) {
-    consoleData.execution.postInput(last).then(() => { })
+    consoleData.execution.postInput(`${last}\n`).then(() => { })
   }
 
   return true

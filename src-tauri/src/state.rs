@@ -22,7 +22,7 @@ pub fn swap(
     mut pointer: MutexGuard<Option<DebuggerState>>,
     mut debugger: Debugger<MemoryType>,
     finished_pcs: Vec<u32>,
-    print: Box<dyn FnMut(&str) -> () + Send>
+    print: Box<dyn FnMut(&str, bool) -> () + Send>
 ) {
     if let Some(state) = pointer.as_ref() {
         state.debugger.lock().unwrap().pause()

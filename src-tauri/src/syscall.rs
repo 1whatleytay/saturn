@@ -14,9 +14,9 @@ use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
 use tokio::select;
-use tokio::sync::Mutex as AsyncMutex;
 use tokio_util::sync::CancellationToken;
 use crate::channels::ByteChannel;
+use crate::channels::ByteChannelConsumption::{ConsumeAndContinue, ConsumeAndStop, IgnoreAndStop};
 use crate::keyboard::KeyboardHandler;
 use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Terminated, Unimplemented, Unknown};
 
@@ -36,17 +36,19 @@ pub enum SyscallResult {
 pub struct SyscallState {
     cancel_token: CancellationToken,
     pub input_buffer: Arc<ByteChannel>,
-    print: Box<dyn FnMut(&str) -> () + Send>,
+    heap_start: u32,
+    print: Box<dyn FnMut(&str, bool) -> () + Send>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
     file_map: HashMap<u32, File>
 }
 
 impl SyscallState {
-    pub fn new(print: Box<dyn FnMut(&str) -> () + Send>) -> SyscallState {
+    pub fn new(print: Box<dyn FnMut(&str, bool) -> () + Send>) -> SyscallState {
         return SyscallState {
             cancel_token: CancellationToken::new(),
             input_buffer: Arc::new(ByteChannel::new()),
+            heap_start: 0x20000000,
             print,
             generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
             next_file: 3,
@@ -83,12 +85,17 @@ impl SyscallDelegate {
         SyscallDelegate { state }
     }
 
-    async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn send_print(&self, text: &str) {
         {
-            let value = a0(state);
-
-            (self.state.lock().unwrap().print)(&format!("{}", value as i32));
+            (self.state.lock().unwrap().print)(text, false);
         }
+
+        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+    }
+
+    async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let value = a0(state);
+        self.send_print(&format!("{}", value as i32)).await;
 
         // Artificial Sleep to Prevent Spam
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
@@ -127,32 +134,78 @@ impl SyscallDelegate {
     }
 
     async fn print_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        {
+        let buffer = {
             let mut lock = state.lock().unwrap();
             let address = lock.state().registers.line[A0_REG];
 
-            let buffer = match Self::grab_string(address, lock.memory()) {
+            match Self::grab_string(address, lock.memory()) {
                 Ok(buffer) => buffer,
                 Err(error) => return Exception(error),
-            };
+            }
+        };
 
-            (self.state.lock().unwrap().print)(&buffer);
-        }
-
-        // Artificial Sleep to Prevent Spam
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+        self.send_print(&buffer).await;
 
         Completed
     }
 
-    async fn read_integer(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        let (token, buffer) = {
-            let syscall = self.state.lock().unwrap();
+    fn lock_input(&self) -> (CancellationToken, Arc<ByteChannel>) {
+        let syscall = self.state.lock().unwrap();
 
-            (syscall.cancel_token.clone(), syscall.input_buffer.clone())
-        };
+        (syscall.cancel_token.clone(), syscall.input_buffer.clone())
+    }
 
-        let _ = buffer.read(1, &token).await;
+    async fn read_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let (token, buffer) = self.lock_input();
+
+        let mut positive = Option::<bool>::None;
+        let mut value: i64 = 0;
+
+        fn sign(c: char) -> Option<bool> {
+            match c {
+                '+' => Some(true),
+                '-' => Some(false),
+                _ => None
+            }
+        }
+
+        let result = buffer.read_until(|b| {
+            // No regards to utf8.
+            let c = b as char;
+
+            if positive.is_none() {
+                if c.is_whitespace() {
+                    return ConsumeAndContinue // just consume leading whitespace
+                }
+
+                let position = sign(c);
+
+                positive = position.or(Some(true));
+
+                if position.is_some() {
+                    return ConsumeAndContinue
+                }
+            }
+
+            if let Some(digit) = c.to_digit(10) {
+                value *= 10;
+                value += digit as i64;
+
+                ConsumeAndContinue
+            } else {
+                IgnoreAndStop
+            }
+        }, &token).await;
+
+        if result.is_none() {
+            return Aborted
+        }
+
+        let sign_value = if positive.unwrap_or(true) { 1i64 } else { -1i64 };
+
+        let final_value = sign_value * value;
+
+        state.lock().unwrap().state().registers.line[V0_REG] = final_value as u32;
 
         Completed
     }
@@ -165,24 +218,105 @@ impl SyscallDelegate {
         Unimplemented(7)
     }
 
-    async fn read_string(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(8)
+    async fn read_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let (address, count) = {
+            let mut lock = state.lock().unwrap();
+            let registers = &mut lock.state().registers;
+
+            (registers.line[A0_REG], registers.line[A1_REG])
+        };
+
+        let count = count as usize;
+
+        if count < 1 {
+            return Completed
+        }
+
+        let data = {
+            let (token, input_buffer) = self.lock_input();
+
+            let mut data: Vec<u8> = vec![];
+
+            input_buffer.read_until(|b| {
+                let c = b as char;
+
+                if data.len() >= count - 1 { // buffer is full or done
+                    return IgnoreAndStop
+                }
+
+                if c == '\n' {
+                    return ConsumeAndStop
+                }
+
+                data.push(b);
+
+                ConsumeAndContinue
+            }, &token).await;
+
+            data.push('\0' as u8);
+
+            assert!(data.len() <= count);
+
+            data
+        };
+
+        let mut debugger = state.lock().unwrap();
+        let memory = debugger.memory();
+
+        for (i, b) in data.into_iter().enumerate() {
+            let result = memory.set(address.wrapping_add(i as u32), b);
+
+            if let Err(error) = result {
+                return Exception(error)
+            }
+        }
+
+        Completed
     }
 
-    async fn alloc_heap(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(9)
+    async fn alloc_heap(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let mut debugger = state.lock().unwrap();
+        let registers = &mut debugger.state().registers;
+        let count = registers.line[A0_REG];
+
+        // Primitive Heap Alloc, assuming 0x20000000 is safe heap.
+        let mut syscall = self.state.lock().unwrap();
+        let pointer = syscall.heap_start;
+        syscall.heap_start += count;
+
+        registers.line[V0_REG] = pointer;
+
+        Completed
     }
 
     async fn terminate(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
         Terminated(0)
     }
 
-    async fn print_character(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(11)
+    async fn print_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let character = state.lock().unwrap().state().registers.line[V0_REG] as u8 as char;
+
+        self.send_print(&character.to_string()).await;
+
+        Completed
     }
 
-    async fn read_character(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(12)
+    async fn read_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let (token, buffer) = self.lock_input();
+
+        let result = buffer.read(1, &token).await;
+
+        let Some(result) = result else {
+            return Aborted
+        };
+
+        if result.len() != 1 {
+            return Aborted
+        }
+
+        state.lock().unwrap().state().registers.line[V0_REG] = result[0] as u32;
+
+        Completed
     }
 
     async fn open_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
@@ -368,11 +502,8 @@ impl SyscallDelegate {
     }
 
     async fn print_hexadecimal(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        {
-            let value = a0(state);
-
-            (self.state.lock().unwrap().print)(&format!("{:x}", value as i32));
-        }
+        let value = a0(state);
+        self.send_print(&format!("{:x}", value as i32)).await;
 
         // Artificial Sleep to Prevent Spam
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
@@ -381,11 +512,8 @@ impl SyscallDelegate {
     }
 
     async fn print_binary(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        {
-            let value = a0(state);
-
-            (self.state.lock().unwrap().print)(&format!("{:b}", value as i32));
-        }
+        let value = a0(state);
+        self.send_print(&format!("{:b}", value as i32)).await;
 
         // Artificial Sleep to Prevent Spam
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
@@ -394,11 +522,8 @@ impl SyscallDelegate {
     }
 
     async fn print_unsigned(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        {
-            let value = a0(state);
-
-            (self.state.lock().unwrap().print)(&format!("{}", value));
-        }
+        let value = a0(state);
+        self.send_print(&format!("{}", value)).await;
 
         // Artificial Sleep to Prevent Spam
         tokio::time::sleep(PRINT_BUFFER_TIME).await;

@@ -71,11 +71,16 @@ export async function saveCurrentTab(prompt: PromptType = PromptType.PromptWhenN
   }
 }
 
+interface PrintPayload {
+  text: string,
+  error: boolean
+}
+
 export async function setupEvents() {
   await listen('print', event => {
-    let text = event.payload as string
+    let payload = event.payload as PrintPayload
 
-    pushConsole(text)
+    pushConsole(payload.text)
   })
 
   await listen('new-tab', () => {

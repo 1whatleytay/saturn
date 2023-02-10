@@ -75,6 +75,7 @@ export function postBuildMessage(result: AssemblerResult): boolean {
   switch (result.status) {
     case 'Error':
       consoleData.tab = DebugTab.Console
+      consoleData.showConsole = true
 
       const marker = result.marker ? ` (line ${result.marker.line + 1})` : ''
       const trailing = result.body
@@ -88,6 +89,7 @@ export function postBuildMessage(result: AssemblerResult): boolean {
     case 'Success':
       if (!consoleData.showConsole) {
         consoleData.tab = DebugTab.Console
+        consoleData.showConsole = true
       }
 
       openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`)
@@ -102,6 +104,7 @@ export async function build() {
   const result = await assembleText(collectLines(tab()?.lines ?? []))
 
   consoleData.showConsole = true
+  consoleData.tab = DebugTab.Console
   postBuildMessage(result)
 }
 
@@ -129,8 +132,6 @@ export async function resume() {
   const result = await consoleData.execution.resume(usedBreakpoints, result => {
     postBuildMessage(result)
   })
-
-  consoleData.showConsole = true
 
   if (result) {
     postDebugInformation(result)

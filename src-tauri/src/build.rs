@@ -70,9 +70,15 @@ pub struct DisassembleResult {
     breakpoints: HashMap<u32, usize>
 }
 
-fn forward_print(app_handle: tauri::AppHandle<Wry>) -> Box<dyn FnMut(&str) -> () + Send> {
-    Box::new(move |text: &str| {
-        app_handle.emit_all("print", text).ok();
+#[derive(Clone, Serialize)]
+struct PrintPayload<'a> {
+    text: &'a str,
+    error: bool
+}
+
+fn forward_print(app_handle: tauri::AppHandle<Wry>) -> Box<dyn FnMut(&str, bool) -> () + Send> {
+    Box::new(move |text: &str, error: bool| {
+        app_handle.emit_all("print", PrintPayload { text, error }).ok();
     })
 }
 

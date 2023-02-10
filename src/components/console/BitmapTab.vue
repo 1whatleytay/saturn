@@ -6,12 +6,12 @@
       ref="wrapper"
       @click="focusSelf"
       @keydown="handleKey"
-      class="outline-none focus:ring-4 border border-neutral-700 rounded overflow-clip h-full shrink-0 mx-auto md:mx-0 max-w-full"
+      class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 mx-auto md:mx-0 max-w-full"
       :style="{ width: `${correctedWidth}px` }"
     >
       <canvas
         ref="canvas"
-        class="w-full h-full bitmap-display"
+        class="w-full h-full bitmap-display rounded"
         :width="settings.bitmap.width * 4"
         :height="settings.bitmap.height * 4"
       />

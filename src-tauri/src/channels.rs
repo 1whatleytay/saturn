@@ -39,6 +39,30 @@ pub struct ByteChannel {
     receiver: AsyncMutex<ByteChannelReceiver>
 }
 
+pub enum ByteChannelConsumption {
+    ConsumeAndContinue,
+    ConsumeAndStop,
+    IgnoreAndStop
+}
+
+impl ByteChannelConsumption {
+    fn do_consume(&self) -> bool {
+        match self {
+            ByteChannelConsumption::ConsumeAndContinue => true,
+            ByteChannelConsumption::ConsumeAndStop => true,
+            _ => false
+        }
+    }
+
+    fn do_stop(&self) -> bool {
+        match self {
+            ByteChannelConsumption::ConsumeAndStop => true,
+            ByteChannelConsumption::IgnoreAndStop => true,
+            _ => false
+        }
+    }
+}
+
 impl ByteChannel {
     pub fn new() -> ByteChannel {
         // Not using unbounded channels out of lack of trust
@@ -107,7 +131,7 @@ impl ByteChannel {
         Some(output)
     }
 
-    pub async fn read_until<F: FnMut(u8) -> bool>(
+    pub async fn read_until<F: FnMut(u8) -> ByteChannelConsumption>(
         &self, mut f: F, token: &CancellationToken
     ) -> Option<Vec<u8>> {
         let mut output = vec![];
@@ -121,13 +145,16 @@ impl ByteChannel {
             let mut end = index;
 
             while end < value.len() {
-                if !f(value[end]) {
-                    full = true;
+                let consume = f(value[end]);
 
-                    break
+                if consume.do_consume() {
+                    end += 1;
                 }
 
-                end += 1
+                if consume.do_stop() {
+                    full = true;
+                    break
+                }
             }
 
             output.extend_from_slice(&value[index .. end]);
