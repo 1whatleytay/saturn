@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 import { collectLines, EditorTab } from './tabs'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
-import { consoleData, pushConsole } from '../state/console-data'
+import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
 import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
 
@@ -80,7 +80,7 @@ export async function setupEvents() {
   await listen('print', event => {
     let payload = event.payload as PrintPayload
 
-    pushConsole(payload.text)
+    pushConsole(payload.text, payload.error ? ConsoleType.Stderr : ConsoleType.Stdout)
   })
 
   await listen('new-tab', () => {

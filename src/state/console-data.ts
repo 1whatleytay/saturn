@@ -1,6 +1,5 @@
 import { reactive } from 'vue'
 import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
-import { grabWhitespace } from '../utils/languages/language'
 
 export enum DebugTab {
   Registers,
@@ -9,8 +8,30 @@ export enum DebugTab {
   Bitmap
 }
 
+export enum ConsoleType {
+  Stdout,
+  Stderr,
+  Success,
+  Error,
+  Info,
+  Secondary,
+  Editing,
+  Submitted
+}
+
+function canConcat(value: ConsoleType): boolean {
+  switch (value) {
+    case ConsoleType.Stdout:
+    case ConsoleType.Stderr:
+      return true
+
+    default:
+      return false
+  }
+}
+
 interface ConsoleLineMeta {
-  highlight: string
+  type: ConsoleType
 }
 
 interface ConsoleData {
@@ -23,9 +44,9 @@ interface ConsoleData {
   consoleMeta: Map<number, ConsoleLineMeta> // index in console[] -> Meta
 }
 
-const editHighlight = { highlight: 'text-green-400' }
-const submitHighlight = { highlight: 'text-green-500 font-bold' }
-const secondaryHighlight = { highlight: 'text-gray-400' }
+const editHighlight = { type: ConsoleType.Editing }
+const submitHighlight = { type: ConsoleType.Submitted }
+const secondaryHighlight = { type: ConsoleType.Secondary }
 
 export const consoleData = reactive({
   showConsole: false,
@@ -40,36 +61,49 @@ export const consoleData = reactive({
   ])
 } as ConsoleData)
 
-export function openConsole(text: string) {
+export function openConsole() {
   consoleData.console = ['']
   consoleData.consoleMeta = new Map([[0, editHighlight]])
-
-  pushConsole(text)
 }
 
-export function pushConsole(text: string) {
+export function pushConsole(text: string, type: ConsoleType) {
   const count = consoleData.console.length
   const meta = consoleData.consoleMeta.get(count)
   const editLine = count ? consoleData.console[count - 1] : null
 
+  const concat = canConcat(type) && consoleData.consoleMeta.get(count - 2)?.type === type
+  const startIndex = concat ? 1 : 0
+
+  console.log(`concat: ${concat} level: ${text.split('\n').length} can: ${canConcat(type)} other: ${consoleData.consoleMeta.get(count - 2)?.type} type: ${type}`)
+
+  let overwrote = false
   text.split('\n').forEach((line, index) => {
     let point: number
 
-    if (index === 0) {
+    if (concat && index === 0) {
+      consoleData.console[count - 2] += line
+      point = count - 2 // ?
+    } else if (index === startIndex) {
+      overwrote = true
       consoleData.console[count - 1] = line
       point = count - 1
     } else {
-      consoleData.console.push()
       point = consoleData.console.length
+      consoleData.console.push(line)
     }
 
-    consoleData.consoleMeta.set(point, { highlight: 'text-teal-100' })
+    consoleData.consoleMeta.set(point, { type })
   })
 
-  const lastIndex = consoleData.console.length
+  if (overwrote) {
+    console.log('overwriting')
+    const lastIndex = consoleData.console.length
 
-  consoleData.console.push(editLine ?? '')
-  consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
+    consoleData.console.push(editLine ?? '')
+    consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
+  } else {
+    console.log('not overwriting')
+  }
 }
 
 // returns if the submission went through
@@ -85,8 +119,6 @@ export function submitConsole(force: boolean = false): boolean {
   if (!force && last.length <= 0) {
     return false
   }
-
-  const consoleDatas = 0
 
   consoleData.consoleMeta.set(count - 1, submitHighlight)
 

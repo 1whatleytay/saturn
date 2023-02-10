@@ -1,5 +1,5 @@
 import { collectLines } from './tabs'
-import { consoleData, DebugTab, openConsole, pushConsole } from '../state/console-data'
+import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import { AssemblerResult, assembleText, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
 import { tab } from '../state/state'
 
@@ -38,9 +38,9 @@ function postDebugInformation(result: ExecutionResult) {
       const address = result.mode.pc.toString(16).padStart(8, '0')
 
       if (result.mode.code !== null) {
-        pushConsole(`Execution finished with code ${result.mode.code} at pc 0x${address}`)
+        pushConsole(`Execution finished with code ${result.mode.code} at pc 0x${address}`, ConsoleType.Success)
       } else {
-        pushConsole(`Execution finished at pc 0x${address}`)
+        pushConsole(`Execution finished at pc 0x${address}`, ConsoleType.Success)
       }
 
       closeExecution()
@@ -49,7 +49,7 @@ function postDebugInformation(result: ExecutionResult) {
     }
     
     case ExecutionModeType.Invalid: {
-      pushConsole(`Exception thrown: ${result.mode.message}`)
+      pushConsole(`Exception thrown: ${result.mode.message}`, ConsoleType.Error)
 
       consoleData.tab = DebugTab.Console
 
@@ -82,7 +82,8 @@ export function postBuildMessage(result: AssemblerResult): boolean {
         ? `\n${result.body.split('\n').map(x => `> ${x}`).join('\n')}`
         : ''
 
-      openConsole(`Build failed: ${result.message}${marker}${trailing}`)
+      openConsole()
+      pushConsole(`Build failed: ${result.message}${marker}${trailing}`, ConsoleType.Error)
 
       return false
 
@@ -92,7 +93,8 @@ export function postBuildMessage(result: AssemblerResult): boolean {
         consoleData.showConsole = true
       }
 
-      openConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`)
+      openConsole()
+      pushConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`, ConsoleType.Success)
 
       return true
   }

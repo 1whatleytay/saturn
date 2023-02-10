@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { consoleData, submitConsole } from '../../state/console-data'
+import { consoleData, ConsoleType, submitConsole } from '../../state/console-data'
 
 import { useVirtualize } from '../../utils/virtualization'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -65,7 +65,6 @@ import { tiny } from '../../utils/query/text-size'
 import Cursor from '../Cursor.vue'
 import SelectionOverlay from '../SelectionOverlay.vue'
 import { hasActionKey } from '../../utils/query/shortcut-key'
-import { Key } from 'readline'
 
 const lineHeight = 16
 
@@ -288,11 +287,25 @@ function updateBounds() {
 watch(() => consoleData.console, updateBounds)
 onMounted(updateBounds)
 
+function stylingFor(type: ConsoleType): string {
+  switch (type) {
+    case ConsoleType.Stdout: return 'text-teal-200'
+    case ConsoleType.Stderr: return 'text-red-200'
+    case ConsoleType.Success: return 'text-green-300'
+    case ConsoleType.Error: return 'text-red-400'
+    case ConsoleType.Info: return 'text-neutral-300'
+    case ConsoleType.Secondary: return 'text-gray-500'
+    case ConsoleType.Editing: return 'text-green-400'
+    case ConsoleType.Submitted: return 'text-green-500 font-bold'
+    default: return 'text-orange-500'
+  }
+}
+
 function consoleClasses(index: number): string[] {
   const value = consoleData.consoleMeta.get(index)
 
   if (value) {
-    return [value.highlight]
+    return [stylingFor(value.type)]
   } else {
     return []
   }
