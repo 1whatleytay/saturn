@@ -78,7 +78,7 @@ fn a0(state: &Mutex<DebuggerType>) -> u32 {
     reg(state, A0_REG)
 }
 
-const PRINT_BUFFER_TIME: Duration = Duration::from_millis(50);
+const PRINT_BUFFER_TIME: Duration = Duration::from_millis(15);
 
 impl SyscallDelegate {
     pub fn new(state: Arc<Mutex<SyscallState>>) -> SyscallDelegate {
@@ -96,9 +96,6 @@ impl SyscallDelegate {
     async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value as i32)).await;
-
-        // Artificial Sleep to Prevent Spam
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
 
         Completed
     }
@@ -505,9 +502,6 @@ impl SyscallDelegate {
         let value = a0(state);
         self.send_print(&format!("{:x}", value as i32)).await;
 
-        // Artificial Sleep to Prevent Spam
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
-
         Completed
     }
 
@@ -515,18 +509,12 @@ impl SyscallDelegate {
         let value = a0(state);
         self.send_print(&format!("{:b}", value as i32)).await;
 
-        // Artificial Sleep to Prevent Spam
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
-
         Completed
     }
 
     async fn print_unsigned(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value)).await;
-
-        // Artificial Sleep to Prevent Spam
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
 
         Completed
     }
