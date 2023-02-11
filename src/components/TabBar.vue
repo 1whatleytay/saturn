@@ -1,5 +1,7 @@
 <template>
   <div @click.stop>
+    <SaveModal :dialog="saveModal" />
+
     <div class="h-10 flex items-center overflow-x-auto items-start bg-neutral-900 w-full fixed z-20 top-0">
       <Tab
         v-for="tab in editor.tabs"
@@ -33,8 +35,10 @@
 import Tab from './Tab.vue'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 
-import { closeTab, createTab, editor } from '../state/state'
+import { closeTab, createTab, saveModal, editor } from '../state/state'
+
 import TabBarItems from './TabBarItems.vue'
+import SaveModal from './SaveModal.vue'
 
 function create() {
   createTab('Untitled', [''])

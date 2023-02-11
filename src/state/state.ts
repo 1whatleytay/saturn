@@ -20,7 +20,8 @@ export const {
   tabBody,
   createTab,
   closeTab,
-  loadElf
+  loadElf,
+  saveModal
 } = useTabs()
 
 export const find = useFind(() => tabBody.value, widthQuery)
@@ -32,7 +33,11 @@ export const { storage } = useStorage(highlights, find, tab)
 export const suggestions = useSuggestions(() => storage.language)
 
 function showSuggestionsAt(cursor: SelectionIndex) {
-  suggestions.showSuggestions(storage.highlights[cursor.line], cursor.index)
+  const highlights = storage.highlights[cursor.line]
+
+  if (highlights) {
+    suggestions.showSuggestions(storage.highlights[cursor.line], cursor.index)
+  }
 }
 
 export const {

@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event'
+import { listen, TauriEvent } from '@tauri-apps/api/event'
 
 import { collectLines, EditorTab } from './tabs'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
@@ -6,6 +6,7 @@ import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, S
 import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
 import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
+import { appWindow } from '@tauri-apps/api/window'
 
 export enum PromptType {
   NeverPrompt,
@@ -167,15 +168,27 @@ export async function setupEvents() {
     consoleData.showConsole = !consoleData.showConsole
   })
 
-  await listen('tauri://file-drop', async event => {
-    for (const item of event.payload as string[]) {
-      const file = await readInputFile(item)
+  await appWindow.onFileDropEvent(async event => {
+    if (event.payload.type === 'drop') {
+      for (const item of event.payload.paths) {
+        const file = await readInputFile(item)
 
-      if (!file) {
-        continue
+        if (!file) {
+          continue
+        }
+
+        await openTab(file)
       }
+    }
+  })
 
-      await openTab(file)
+  await appWindow.onCloseRequested(async event => {
+    const ids = editor.tabs.map(x => x.uuid)
+
+    for (const id of ids) {
+      if (!closeTab(id)) {
+        event.preventDefault()
+      }
     }
   })
 }

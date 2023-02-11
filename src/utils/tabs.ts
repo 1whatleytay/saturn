@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid'
 import { AssemblyExecutionProfile, disassembleElf, ElfExecutionProfile, ExecutionProfile } from './mips'
 import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
+import { SaveModalResult, useSaveModal } from './save-modal'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -61,7 +62,7 @@ export interface Tabs {
 
 export interface TabsInterface {
   tab(): EditorTab | null
-  closeTab(uuid: string): void
+  closeTab(uuid: string): boolean
   createTab(
     named: string,
     content: string[],
@@ -72,8 +73,9 @@ export interface TabsInterface {
 }
 
 export type TabsResult = TabsInterface & {
-  editor: Tabs,
+  editor: Tabs
   tabBody: ComputedRef<string[]>
+  saveModal: SaveModalResult
 }
 
 export function useTabs(): TabsResult {
@@ -94,28 +96,48 @@ export function useTabs(): TabsResult {
 
   const tabBody = computed(() => tab()?.lines ?? ['Nothing yet.'])
 
-  async function closeTab(uuid: string) {
+  async function discardTab(uuid: string) {
     const index = editor.tabs.findIndex(tab => tab.uuid === uuid)
 
     if (index === undefined) {
       return
     }
 
-    // Cycle
-    await saveTab(editor.tabs[index], PromptType.NeverPrompt)
-
     editor.tabs = editor.tabs.filter(tab => tab.uuid !== uuid)
 
     if (editor.selected === uuid) {
-      if (editor.tabs.length < 0) {
+      if (editor.tabs.length <= 0) {
         editor.selected = null
 
         return
       }
 
-      const point = Math.min(Math.max(index - 1, 0), editor.tabs.length)
+      const point = Math.min(Math.max(index - 1, 0), editor.tabs.length - 1)
 
       editor.selected = editor.tabs[point].uuid
+    }
+  }
+
+  const saveModal = useSaveModal(
+    tab => saveTab(tab, PromptType.PromptWhenNeeded),
+    tab => discardTab(tab.uuid)
+  )
+
+  function closeTab(uuid: string): boolean {
+    const tab = editor.tabs.find(tab => tab.uuid === uuid)
+
+    if (tab === undefined) {
+      return true
+    }
+
+    if (tab.marked) {
+      saveModal.present(tab)
+
+      return false
+    } else {
+      discardTab(uuid).then(() => {})
+
+      return true
     }
   }
 
@@ -172,6 +194,7 @@ export function useTabs(): TabsResult {
     tab,
     closeTab,
     createTab,
-    loadElf
+    loadElf,
+    saveModal
   }
 }
