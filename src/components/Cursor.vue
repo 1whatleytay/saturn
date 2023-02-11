@@ -6,7 +6,7 @@
       left: `${props.position.offsetX}px`,
       top: `${props.position.offsetY}px`,
       height: `${props.lineHeight}px`,
-      marginLeft: `-${props.cursorShift}px`
+      marginLeft: `${props.cursorShift}px`
     }"
   />
 </template>
@@ -21,5 +21,5 @@ const props = withDefaults(defineProps<{
   position: CursorPosition
   lineHeight?: number
   cursorShift?: number
-}>(), { lineHeight: 24, cursorShift: 1.3 })
+}>(), { lineHeight: 24, cursorShift: -1.3 })
 </script>

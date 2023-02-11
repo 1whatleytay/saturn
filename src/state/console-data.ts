@@ -74,8 +74,6 @@ export function pushConsole(text: string, type: ConsoleType) {
   const concat = canConcat(type) && consoleData.consoleMeta.get(count - 2)?.type === type
   const startIndex = concat ? 1 : 0
 
-  console.log(`concat: ${concat} level: ${text.split('\n').length} can: ${canConcat(type)} other: ${consoleData.consoleMeta.get(count - 2)?.type} type: ${type}`)
-
   let overwrote = false
   text.split('\n').forEach((line, index) => {
     let point: number
@@ -96,13 +94,10 @@ export function pushConsole(text: string, type: ConsoleType) {
   })
 
   if (overwrote) {
-    console.log('overwriting')
     const lastIndex = consoleData.console.length
 
     consoleData.console.push(editLine ?? '')
     consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
-  } else {
-    console.log('not overwriting')
   }
 }
 

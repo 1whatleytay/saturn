@@ -13,13 +13,13 @@
       <div
         v-for="index in renderCount"
         :key="getIndex(index)"
-        class="h-4"
+        class="h-4 border-l-2 pl-2"
         :class="consoleClasses(getIndex(index))"
       >
         {{ consoleData.console[getIndex(index)] }}
       </div>
 
-      <div :style="{ height: `${bottomPadding}px` }" />
+      <div :style="{ height: `${bottomPadding + 16}px` }" />
 
       <input
         type="text"
@@ -39,7 +39,7 @@
         :start="renderStart"
         :count="renderCount"
         :position="position"
-        :cursor-shift="0"
+        :cursor-shift="lineShift"
         :line-height="lineHeight"
       />
 
@@ -47,6 +47,7 @@
         v-if="computedRanges"
         :range="computedRanges"
         :line-height="lineHeight"
+        class="ml-2.5"
       />
     </div>
   </div>
@@ -152,7 +153,6 @@ async function handleKeyIntercept(event: KeyboardEvent) {
 
       return
     } else if (cursor.line !== count - 1) {
-      console.log({key: hasActionKey(event), cmd: event.metaKey})
       cursor.line = count - 1
       cursor.index = last.length
       cursor.highlight = null
@@ -177,12 +177,14 @@ function handleDown(event: MouseEvent) {
   dropCursor(x, y)
 }
 
+const lineShift = 8
+
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
   if (scroll.value) {
     const rect = scroll.value.getBoundingClientRect()
 
     return {
-      x: event.pageX - rect.left + (scroll.value?.scrollLeft ?? 0),
+      x: event.pageX - rect.left + (scroll.value?.scrollLeft ?? 0) - lineShift,
       y: event.pageY - rect.top + (scroll.value?.scrollTop ?? 0)
     }
   }
@@ -289,14 +291,14 @@ onMounted(updateBounds)
 
 function stylingFor(type: ConsoleType): string {
   switch (type) {
-    case ConsoleType.Stdout: return 'text-teal-200'
-    case ConsoleType.Stderr: return 'text-red-200'
-    case ConsoleType.Success: return 'text-green-300'
-    case ConsoleType.Error: return 'text-red-400'
-    case ConsoleType.Info: return 'text-neutral-300'
-    case ConsoleType.Secondary: return 'text-gray-500'
-    case ConsoleType.Editing: return 'text-green-400'
-    case ConsoleType.Submitted: return 'text-green-500 font-bold'
+    case ConsoleType.Stdout: return 'text-teal-100 border-teal-700'
+    case ConsoleType.Stderr: return 'text-red-200 border-red-700'
+    case ConsoleType.Success: return 'text-green-400 border-green-700'
+    case ConsoleType.Error: return 'text-red-400 border-red-700'
+    case ConsoleType.Info: return 'text-neutral-300 border-teal-700'
+    case ConsoleType.Secondary: return 'text-gray-500 border-gray-700'
+    case ConsoleType.Editing: return 'text-lime-400 border-lime-700'
+    case ConsoleType.Submitted: return 'text-lime-500 font-black border-lime-700'
     default: return 'text-orange-500'
   }
 }
