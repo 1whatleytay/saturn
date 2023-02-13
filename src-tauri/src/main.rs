@@ -12,6 +12,7 @@ mod execution;
 mod build;
 mod debug;
 mod channels;
+mod midi;
 
 use std::sync::Mutex;
 
@@ -23,6 +24,7 @@ use crate::menu::platform_shortcuts;
 use crate::build::{assemble, disassemble, assemble_binary, configure_elf, configure_asm};
 use crate::execution::{resume, step, pause, stop};
 use crate::debug::{read_bytes, write_bytes, set_register, swap_breakpoints};
+use crate::midi::{midi_protocol, midi_install, MidiProviderContainer};
 
 #[tauri::command]
 fn post_key(key: char, state: tauri::State<'_, DebuggerBody>) {
@@ -63,6 +65,7 @@ fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(None) as DebuggerBody)
         .manage(Mutex::new(FlushDisplayState::default()) as FlushDisplayBody)
+        .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
         .on_menu_event(handle_event)
         .invoke_handler(tauri::generate_handler![
@@ -84,7 +87,9 @@ fn main() {
             post_input, // bitmap
             configure_display, // bitmap
             last_display, // bitmap
+            midi_install,
         ])
+        .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

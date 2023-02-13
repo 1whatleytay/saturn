@@ -38,7 +38,9 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "resources/midi-default.json"
+      ],
       "shortDescription": "A Modern MIPS Environment.",
       "targets": "all",
       "windows": {

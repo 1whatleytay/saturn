@@ -15,6 +15,7 @@
     "@tauri-apps/api": "^1.1.0",
     "date-fns": "^2.29.3",
     "fuse.js": "^6.6.2",
+    "midicube": "^0.6.2",
     "ua-parser-js": "^1.0.32",
     "uuid": "^9.0.0",
     "vue": "^3.2.37"
