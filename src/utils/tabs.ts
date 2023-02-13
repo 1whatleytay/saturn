@@ -5,6 +5,7 @@ import { AssemblyExecutionProfile, disassembleElf, ElfExecutionProfile, Executio
 import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
+import { closeWindow } from './window'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -108,6 +109,8 @@ export function useTabs(): TabsResult {
     if (editor.selected === uuid) {
       if (editor.tabs.length <= 0) {
         editor.selected = null
+
+        await closeWindow()
 
         return
       }

@@ -1,6 +1,8 @@
 import { reactive, watch } from 'vue'
 import { configureDisplay } from './mips'
 
+const settingsVersion = 1
+
 export interface BitmapSettings {
   width: number
   height: number
@@ -12,12 +14,14 @@ export interface EditorSettings {
 }
 
 export interface Settings {
+  version: number // 1
   editor: EditorSettings
   bitmap: BitmapSettings
 }
 
 function defaultSettings(): Settings {
   return {
+    version: 1,
     editor: {
       tabSize: 4
     },
@@ -34,10 +38,14 @@ function fromStorage(): Settings {
   const value = localStorage.getItem(storageKey)
 
   if (value) {
-    return JSON.parse(value) // Just cast and hope.
-  } else {
-    return defaultSettings()
+    const object = JSON.parse(value) as Settings // Just cast and hope.
+
+    if (object.version === settingsVersion) {
+      return object
+    }
   }
+
+  return defaultSettings()
 }
 
 function toStorage(settings: Settings) {
