@@ -6,7 +6,9 @@ import { convertFileSrc } from '@tauri-apps/api/tauri'
 (window as any).MIDI = MIDI
 
 export async function install() {
-  const result = await tauri.invoke('midi_install')
+  const result = await tauri.invoke('midi_install', {
+    instruments: ['trombone', 'synth_choir', 'pad_4_choir', 'koto']
+  })
 
   console.log(result)
 }

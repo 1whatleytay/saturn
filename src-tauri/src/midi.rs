@@ -3,16 +3,23 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use futures::{StreamExt, TryFutureExt};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use futures::{StreamExt};
 use futures::stream::FuturesUnordered;
 use percent_encoding::percent_decode_str;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, PathResolver, Wry};
 use tauri::api::http::{Client, ClientBuilder, HttpRequestBuilder};
 use tauri::api::path::app_local_data_dir;
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::http::method::Method;
 use wry::http::Uri;
+
+#[derive(Clone, Serialize)]
+struct ConsoleEvent {
+    uuid: Option<String>,
+    message: String
+}
 
 #[derive(Deserialize)]
 pub struct MidiDefaultProvider {
@@ -85,13 +92,25 @@ async fn download_file(
     Ok((file, bytes))
 }
 
-async fn download_files(
+async fn download_files<F>(
     url: &str,
-    files: &Vec<String>
-) -> Option<HashMap<String, Vec<u8>>> {
+    files: &Vec<String>,
+    handler: F
+) -> Option<HashMap<String, Vec<u8>>> where F: Fn(usize) -> () {
+    let count = AtomicUsize::new(0);
+
     let client = ClientBuilder::new().build().ok()?;
     let result = files.iter()
-        .map(|file| download_file(&client, url, file.clone()))
+        .map(|file| {
+            async {
+                let result = download_file(&client, url, file.clone()).await;
+
+                count.fetch_add(1, Ordering::Acquire);
+                handler(count.load(Ordering::Acquire));
+
+                result
+            }
+        })
         .collect::<FuturesUnordered<_>>()
         .collect::<Vec<_>>()
         .await
@@ -102,10 +121,12 @@ async fn download_files(
     Some(result)
 }
 
-async fn request_providers(providers: &Vec<String>, files: &Vec<String>) -> Option<HashMap<String, Vec<u8>>> {
+async fn request_providers<F: Fn(usize) -> ()>(
+    providers: &Vec<String>, files: &Vec<String>, handler: F
+) -> Option<HashMap<String, Vec<u8>>> {
     for url in providers {
         // Storing all file content in memory can be really bad (sound-fonts can be huge).
-        if let Some(files) = download_files(url, &files).await {
+        if let Some(files) = download_files(url, &files, |x| handler(x)).await {
             return Some(files)
         }
     }
@@ -113,12 +134,11 @@ async fn request_providers(providers: &Vec<String>, files: &Vec<String>) -> Opti
     None
 }
 
-#[tauri::command]
-pub async fn midi_install(
+pub async fn install_instruments(
     provider_url: Option<String>,
     instruments: Option<Vec<String>>,
     app: AppHandle<Wry>
-) -> Option<String> {
+) -> Option<()> {
     let mut provider = provider_url
         .map(|url| Arc::new(MidiDefaultProvider { providers: vec![url], hashes: None }));
 
@@ -141,32 +161,59 @@ pub async fn midi_install(
 
     println!("Requesting Providers");
 
-    let data = request_providers(&provider.providers, &files).await?;
+    let download_uuid = uuid::Uuid::new_v4().to_string();
 
-    println!("Making Directories...");
+    let handler = |count: usize| {
+        app.emit_all("post-console-event", ConsoleEvent {
+            uuid: Some(download_uuid.clone()),
+            message: format!("Downloading MIDI instruments: {}", if count == files.len() {
+                "DONE".into()
+            } else {
+                format!("{}/{}", count, files.len())
+            })
+        }).ok();
+    };
+
+    handler(0);
+
+    let data = request_providers(&provider.providers, &files, handler).await?;
 
     let mut directory = app_local_data_dir(&app.config())?;
     directory.push("midi/");
     fs::create_dir_all(&directory).ok()?;
 
-    println!("Writing Files...");
+    let write_uuid = uuid::Uuid::new_v4().to_string();
 
-    let result = futures::future::join_all(data.into_iter().map(|(file, binary)| {
+    app.emit_all("post-console-event", ConsoleEvent {
+        uuid: Some(write_uuid.clone()),
+        message: "Writing MIDI files...".into()
+    }).ok();
+
+    futures::future::join_all(data.into_iter().map(|(file, binary)| {
         let mut path = directory.clone();
-        println!("Directory: {}, file: {}", directory.to_str().unwrap_or("None"), &file);
         path.push(&file);
-        println!("Writing to {}...", path.to_str().unwrap_or("None"));
 
         tokio::fs::write(path, binary)
     })).await;
 
-    for p in result {
-        if let Err(error) = p {
-            println!("Error: {}", error);
-        }
-    }
+    app.emit_all("post-console-event", ConsoleEvent {
+        uuid: Some(write_uuid),
+        message: "Finished downloading required MIDI instruments.".into()
+    }).ok();
 
-    Some("Success".into())
+    Some(())
+}
+
+
+#[tauri::command]
+pub async fn midi_install(
+    provider_url: Option<String>,
+    instruments: Option<Vec<String>>,
+    app: AppHandle<Wry>
+) -> bool {
+    let console = install_instruments(provider_url, instruments, app).await;
+
+    console.is_some()
 }
 
 pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response, Box<dyn Error>> {

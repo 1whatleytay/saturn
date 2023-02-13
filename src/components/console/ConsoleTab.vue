@@ -295,10 +295,10 @@ function stylingFor(type: ConsoleType): string {
     case ConsoleType.Stderr: return 'text-red-200 border-red-700'
     case ConsoleType.Success: return 'text-green-400 border-green-700'
     case ConsoleType.Error: return 'text-red-400 border-red-700'
-    case ConsoleType.Info: return 'text-neutral-300 border-teal-700'
+    case ConsoleType.Info: return 'text-orange-300 border-orange-700'
     case ConsoleType.Secondary: return 'text-gray-500 border-gray-700'
-    case ConsoleType.Editing: return 'text-lime-400 border-lime-700'
-    case ConsoleType.Submitted: return 'text-lime-500 font-black border-lime-700'
+    case ConsoleType.Editing: return 'text-lime-400 border-green-700'
+    case ConsoleType.Submitted: return 'text-lime-500 font-black border-green-700'
     default: return 'text-orange-500'
   }
 }

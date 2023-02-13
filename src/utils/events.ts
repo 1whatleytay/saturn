@@ -1,4 +1,4 @@
-import { listen, TauriEvent } from '@tauri-apps/api/event'
+import { listen } from '@tauri-apps/api/event'
 
 import { collectLines, EditorTab } from './tabs'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
@@ -7,11 +7,17 @@ import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
 import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
+import { watch } from 'vue'
 
 export enum PromptType {
   NeverPrompt,
   PromptWhenNeeded,
   ForcePrompt
+}
+
+interface ConsoleEvent {
+  uuid?: string
+  message: string
 }
 
 export async function openTab(file: SelectedFile<string | Uint8Array>) {
@@ -166,6 +172,27 @@ export async function setupEvents() {
 
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
+  })
+
+  let events = new Map<string, number>() // uuid to number
+  watch(() => consoleData.console, () => events = new Map())
+
+  await listen('post-console-event', event => {
+    const payload = event.payload as ConsoleEvent
+
+    const push = () => pushConsole(payload.message, ConsoleType.Info)
+
+    if (payload.uuid) {
+      const id = events.get(payload.uuid)
+
+      if (id) {
+        consoleData.console[id] = payload.message
+      } else {
+        events.set(payload.uuid, push())
+      }
+    } else {
+      push()
+    }
   })
 
   await appWindow.onFileDropEvent(async event => {

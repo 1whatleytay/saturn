@@ -57,6 +57,7 @@ export const consoleData = reactive({
   console: ['Nothing yet.', '', ''],
   consoleMeta: new Map([
     [0, secondaryHighlight],
+    [1, secondaryHighlight],
     [2, editHighlight]
   ])
 } as ConsoleData)
@@ -66,7 +67,7 @@ export function openConsole() {
   consoleData.consoleMeta = new Map([[0, editHighlight]])
 }
 
-export function pushConsole(text: string, type: ConsoleType) {
+export function pushConsole(text: string, type: ConsoleType): number {
   const count = consoleData.console.length
   const meta = consoleData.consoleMeta.get(count)
   const editLine = count ? consoleData.console[count - 1] : null
@@ -99,6 +100,8 @@ export function pushConsole(text: string, type: ConsoleType) {
     consoleData.console.push(editLine ?? '')
     consoleData.consoleMeta.set(lastIndex, meta ?? editHighlight)
   }
+
+  return count - 1
 }
 
 // returns if the submission went through
