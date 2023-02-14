@@ -11,6 +11,7 @@ use crate::syscall::{MidiHandler, MidiRequest};
 
 #[derive(Clone, Serialize)]
 struct MidiNote {
+    sync: bool,
     instrument: u64,
     name: String,
     note: u64,
@@ -41,10 +42,11 @@ impl ForwardMidi {
 }
 
 impl MidiHandler for Arc<Mutex<ForwardMidi>> {
-    fn play(&mut self, request: &MidiRequest) {
+    fn play(&mut self, request: &MidiRequest, sync: bool) {
         let Some(name) = to_instrument(request.instrument as usize) else { return };
 
         self.lock().unwrap().app.emit_all("play-midi", MidiNote {
+            sync,
             name: name.into(),
             instrument: request.instrument as u64,
             note: request.pitch as u64,

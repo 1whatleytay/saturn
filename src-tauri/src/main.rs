@@ -59,6 +59,13 @@ fn post_input(text: String, state: tauri::State<'_, DebuggerBody>) {
     channel.send(text.into_bytes())
 }
 
+#[tauri::command]
+fn wake_sync(state: tauri::State<'_, DebuggerBody>) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
+
+    pointer.delegate.lock().unwrap().sync_wake.notify_one();
+}
+
 fn main() {
     let menu = create_menu();
 
@@ -88,6 +95,7 @@ fn main() {
             configure_display, // bitmap
             last_display, // bitmap
             midi_install,
+            wake_sync
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)

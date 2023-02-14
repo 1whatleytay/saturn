@@ -10,6 +10,7 @@ const soundfontUrl = convertFileSrc('', 'midi')
 const loadedInstruments = new Set<string>()
 
 export interface MidiNote {
+  sync: boolean
   name: string
   instrument: number
   note: number
@@ -33,8 +34,14 @@ function loadInstrument(instrument: string): Promise<boolean> {
 }
 
 export async function playNote(note: MidiNote) {
+  const wake = async () => await tauri.invoke('wake_sync')
+
   if (!loadedInstruments.has(note.name)) {
-    await loadInstrument(note.name)
+    if (!await loadInstrument(note.name)) {
+      console.error(`Failed to load instrument ${note.name}`)
+
+      return await wake()
+    }
   }
 
   if (note.duration > 0) {
@@ -42,5 +49,14 @@ export async function playNote(note: MidiNote) {
     MIDI.programChange(0, note.instrument)
     MIDI.noteOn(0, note.note, 127, 0)
     MIDI.noteOff(0, note.note, note.duration)
+  }
+
+  if (note.sync) {
+    if (note.duration > 0) {
+      await new Promise(resolve =>
+        window.setTimeout(resolve, note.duration * 1000))
+    }
+
+    await wake()
   }
 }

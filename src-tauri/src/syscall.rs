@@ -17,6 +17,7 @@ use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
 use tokio::select;
+use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 use crate::channels::ByteChannel;
 use crate::channels::ByteChannelConsumption::{ConsumeAndContinue, ConsumeAndStop, IgnoreAndStop};
@@ -48,7 +49,7 @@ pub trait ConsoleHandler {
 }
 
 pub trait MidiHandler {
-    fn play(&mut self, request: &MidiRequest);
+    fn play(&mut self, request: &MidiRequest, sync: bool);
     fn install(&mut self, instrument: u32) -> Pin<Box<dyn Future<Output = bool> + Send>>;
     fn installed(&mut self, instrument: u32) -> bool;
 }
@@ -56,6 +57,7 @@ pub trait MidiHandler {
 pub struct SyscallState {
     cancel_token: CancellationToken,
     pub input_buffer: Arc<ByteChannel>,
+    pub sync_wake: Arc<Notify>,
     heap_start: u32,
     console: Box<dyn ConsoleHandler + Send>,
     midi: Box<dyn MidiHandler + Send>,
@@ -72,6 +74,7 @@ impl SyscallState {
         return SyscallState {
             cancel_token: CancellationToken::new(),
             input_buffer: Arc::new(ByteChannel::new()),
+            sync_wake: Arc::new(Notify::new()),
             heap_start: 0x20000000,
             console,
             midi,
@@ -127,11 +130,11 @@ impl SyscallDelegate {
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
     }
 
-    fn play_installed(&self, request: &MidiRequest) -> bool {
+    fn play_installed(&self, request: &MidiRequest, sync: bool) -> bool {
         let mut syscall = self.state.lock().unwrap();
 
         if syscall.midi.installed(request.instrument) {
-            syscall.midi.play(&request);
+            syscall.midi.play(&request, sync);
 
             true
         } else {
@@ -513,7 +516,7 @@ impl SyscallDelegate {
     async fn midi_out(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let request = midi_request(&mut state.lock().unwrap().state().registers);
 
-        if self.play_installed(&request) {
+        if self.play_installed(&request, false) {
             return Completed
         }
 
@@ -527,7 +530,7 @@ impl SyscallDelegate {
             };
 
             if install.await {
-                state_clone.lock().unwrap().midi.play(&request)
+                state_clone.lock().unwrap().midi.play(&request, false)
             }
         });
 
@@ -563,8 +566,9 @@ impl SyscallDelegate {
     async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let request = midi_request(&mut state.lock().unwrap().state().registers);
 
-        if self.play_installed(&request) {
-            self.sleep_for_duration(request.duration as u64).await;
+        if self.play_installed(&request, true) {
+            let notifier = self.state.lock().unwrap().sync_wake.clone();
+            notifier.notified().await;
 
             return Completed
         }
@@ -572,9 +576,10 @@ impl SyscallDelegate {
         let install = self.state.lock().unwrap().midi.install(request.instrument);
 
         if install.await {
-            self.state.lock().unwrap().midi.play(&request);
+            self.state.lock().unwrap().midi.play(&request, true);
 
-            self.sleep_for_duration(request.duration as u64).await;
+            let notifier = self.state.lock().unwrap().sync_wake.clone();
+            notifier.notified().await;
         }
 
         Completed
