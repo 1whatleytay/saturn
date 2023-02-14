@@ -5,7 +5,7 @@ use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::State;
 use titan::debug::Debugger;
 use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
-use crate::syscall::SyscallState;
+use crate::syscall::{ConsoleHandler, MidiHandler, SyscallState};
 
 pub type MemoryType = SectionMemory<KeyboardHandler>;
 
@@ -22,7 +22,8 @@ pub fn swap(
     mut pointer: MutexGuard<Option<DebuggerState>>,
     mut debugger: Debugger<MemoryType>,
     finished_pcs: Vec<u32>,
-    print: Box<dyn FnMut(&str, bool) -> () + Send>
+    console: Box<dyn ConsoleHandler + Send>,
+    midi: Box<dyn MidiHandler + Send>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.debugger.lock().unwrap().pause()
@@ -40,7 +41,7 @@ pub fn swap(
     }
 
     let wrapped = Arc::new(Mutex::new(debugger));
-    let delegate = Arc::new(Mutex::new(SyscallState::new(print)));
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
 
     // Drop should cancel the last process and kill the other thread.
     *pointer = Some(DebuggerState {

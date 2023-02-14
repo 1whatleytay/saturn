@@ -10,7 +10,9 @@ use titan::debug::Debugger;
 use titan::debug::elf::setup::create_simple_state;
 use titan::elf::Elf;
 use titan::elf::program::ProgramHeaderFlags;
+use crate::midi::forward_midi;
 use crate::state::{DebuggerBody, setup_state, state_from_binary, swap};
+use crate::syscall::ConsoleHandler;
 
 #[derive(Serialize)]
 pub struct LineMarker {
@@ -76,10 +78,18 @@ struct PrintPayload<'a> {
     error: bool
 }
 
-fn forward_print(app_handle: tauri::AppHandle<Wry>) -> Box<dyn FnMut(&str, bool) -> () + Send> {
-    Box::new(move |text: &str, error: bool| {
-        app_handle.emit_all("print", PrintPayload { text, error }).ok();
-    })
+struct ForwardPrinter {
+    app: tauri::AppHandle<Wry>
+}
+
+impl ConsoleHandler for ForwardPrinter {
+    fn print(&mut self, text: &str, error: bool) {
+        self.app.emit_all("print", PrintPayload { text, error }).ok();
+    }
+}
+
+fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send> {
+    Box::new(ForwardPrinter { app })
 }
 
 #[tauri::command]
@@ -148,8 +158,9 @@ pub fn configure_elf(
     let mut cpu_state = create_simple_state(&elf, 0x100000);
     setup_state(&mut cpu_state);
 
-    let print = forward_print(app_handle);
-    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, print);
+    let console = forward_print(app_handle.clone());
+    let midi = forward_midi(app_handle);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, console, midi);
 
     true
 }
@@ -172,8 +183,9 @@ pub fn configure_asm(
     let mut cpu_state = state_from_binary(binary, 0x100000);
     setup_state(&mut cpu_state);
 
-    let print = forward_print(app_handle);
-    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, print);
+    let console = forward_print(app_handle.clone());
+    let midi = forward_midi(app_handle);
+    swap(state.lock().unwrap(), Debugger::new(cpu_state), finished_pcs, console, midi);
 
     result
 }

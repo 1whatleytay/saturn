@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
+use std::future::Future;
 use std::io::{Read, Write};
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::Rng;
@@ -24,11 +26,11 @@ use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Term
 type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
 
-struct MidiRequest {
-    pitch: u32, // 0 - 127
-    duration: u32, // in ms
-    instrument: u32, // 0 - 127
-    volume: u32, // 0 - 127
+pub struct MidiRequest {
+    pub pitch: u32, // 0 - 127
+    pub duration: u32, // in ms
+    pub instrument: u32, // 0 - 127
+    pub volume: u32, // 0 - 127
 }
 
 pub enum SyscallResult {
@@ -41,23 +43,38 @@ pub enum SyscallResult {
     Exception(Error), // Some Memory/CPU error should be reported.
 }
 
+pub trait ConsoleHandler {
+    fn print(&mut self, text: &str, error: bool);
+}
+
+pub trait MidiHandler {
+    fn play(&mut self, request: &MidiRequest);
+    fn install(&mut self, instrument: u32) -> Pin<Box<dyn Future<Output = bool> + Send>>;
+    fn installed(&mut self, instrument: u32) -> bool;
+}
+
 pub struct SyscallState {
     cancel_token: CancellationToken,
     pub input_buffer: Arc<ByteChannel>,
     heap_start: u32,
-    print: Box<dyn FnMut(&str, bool) -> () + Send>,
+    console: Box<dyn ConsoleHandler + Send>,
+    midi: Box<dyn MidiHandler + Send>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
     file_map: HashMap<u32, File>
 }
 
 impl SyscallState {
-    pub fn new(print: Box<dyn FnMut(&str, bool) -> () + Send>) -> SyscallState {
+    pub fn new(
+        console: Box<dyn ConsoleHandler + Send>,
+        midi: Box<dyn MidiHandler + Send>
+    ) -> SyscallState {
         return SyscallState {
             cancel_token: CancellationToken::new(),
             input_buffer: Arc::new(ByteChannel::new()),
             heap_start: 0x20000000,
-            print,
+            console,
+            midi,
             generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
             next_file: 3,
             file_map: HashMap::new()
@@ -105,10 +122,22 @@ impl SyscallDelegate {
 
     async fn send_print(&self, text: &str) {
         {
-            (self.state.lock().unwrap().print)(text, false);
+            self.state.lock().unwrap().console.print(text, false);
         }
 
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
+    }
+
+    fn play_installed(&self, request: &MidiRequest) -> bool {
+        let mut syscall = self.state.lock().unwrap();
+
+        if syscall.midi.installed(request.instrument) {
+            syscall.midi.play(&request);
+
+            true
+        } else {
+            false
+        }
     }
 
     async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
@@ -485,7 +514,23 @@ impl SyscallDelegate {
     async fn midi_out(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let request = midi_request(&mut state.lock().unwrap().state().registers);
 
+        if self.play_installed(&request) {
+            return Completed
+        }
 
+        let state_clone = self.state.clone();
+
+        tokio::spawn(async move {
+            let install = {
+                let mut lock = state_clone.lock().unwrap();
+
+                lock.midi.install(request.instrument)
+            };
+
+            if install.await {
+                state_clone.lock().unwrap().midi.play(&request)
+            }
+        });
 
         Completed
     }
@@ -519,7 +564,17 @@ impl SyscallDelegate {
     async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
         let request = midi_request(&mut state.lock().unwrap().state().registers);
 
+        if self.play_installed(&request) {
+            return Completed
+        }
 
+        let install = self.state.lock().unwrap().midi.install(request.instrument);
+
+        if install.await {
+            self.state.lock().unwrap().midi.play(&request);
+
+            self.sleep_for_duration(request.duration as u64).await;
+        }
 
         Completed
     }
