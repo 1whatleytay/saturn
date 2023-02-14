@@ -97,6 +97,7 @@ fn main() {
             midi_install,
             wake_sync
         ])
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)
         .run(tauri::generate_context!())
