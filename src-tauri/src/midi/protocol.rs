@@ -57,7 +57,9 @@ fn get_path(uri: &str, config: &tauri::Config) -> Result<String, MidiProtocolErr
         return Err(OutOfBounds)
     }
 
-    fs::read_to_string(path).map_err(|_| FileIO(path.to_str().map(|x| x.into())))
+    fs::read_to_string(&directory).map_err(|_| {
+        FileIO(directory.to_str().map(|x| x.into()))
+    })
 }
 
 pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response, Box<dyn Error>> {
@@ -71,9 +73,8 @@ pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response
         return builder.body(vec![])
     }
 
-    let Ok(text) = get_path(request.uri(), &app.config()) else {
-        return builder.status(400).body(vec![]);
-    };
-
-    builder.body(text.into_bytes())
+    match get_path(request.uri(), &app.config()) {
+        Ok(text) => builder.body(text.into_bytes()),
+        Err(error) => builder.status(400).body(error.to_string().into_bytes())
+    }
 }

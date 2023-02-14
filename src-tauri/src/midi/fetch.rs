@@ -95,7 +95,7 @@ async fn download_file(
         };
 
         if &expected != &result[..] {
-            println!(
+            eprintln!(
                 "Failed to verify hashes, expected {} got {}",
                 sha256, hex::encode(&result[..])
             );
