@@ -537,30 +537,19 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn sleep_for_duration(&self, time: u64) -> bool {
-        let token = {
-            let state = self.state.lock().unwrap();
-
-            state.cancel_token.clone()
-        };
-
+    async fn sleep_for_duration(&self, time: u64) {
         let duration = Duration::from_millis(time);
 
-        select! {
-            _ = token.cancelled() => { false }
-            _ = tokio::time::sleep(duration) => { true }
-        }
+        tokio::time::sleep(duration).await
     }
 
     async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
         // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
         let time = a0(debugger) as u64;
 
-        if self.sleep_for_duration(time).await {
-            Completed
-        } else {
-            Aborted
-        }
+        self.sleep_for_duration(time).await;
+
+        Completed
     }
 
     async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
@@ -666,39 +655,50 @@ impl SyscallDelegate {
         Unimplemented(44)
     }
 
+    async fn wrap_cancel<F: Future<Output = SyscallResult>>(&self, f: F) -> SyscallResult {
+        let token = self.state.lock().unwrap().cancel_token.clone();
+
+        select! {
+            result = f => result,
+            _ = token.cancelled() => Aborted
+        }
+    }
+
     pub async fn dispatch(&self, state: &Mutex<DebuggerType>, code: u32) -> SyscallResult {
         match code {
-            1 => self.print_integer(state).await,
-            2 => self.print_float(state).await,
-            3 => self.print_double(state).await,
-            4 => self.print_string(state).await,
-            5 => self.read_integer(state).await,
-            6 => self.read_float(state).await,
-            7 => self.read_double(state).await,
-            8 => self.read_string(state).await,
-            9 => self.alloc_heap(state).await,
-            10 => self.terminate(state).await,
-            11 => self.print_character(state).await,
-            12 => self.read_character(state).await,
-            13 => self.open_file(state).await,
-            14 => self.read_file(state).await,
-            15 => self.write_file(state).await,
-            16 => self.close_file(state).await,
-            17 => self.terminate_valued(state).await,
-            30 => self.system_time(state).await,
-            31 => self.midi_out(state).await,
-            32 => self.sleep(state).await,
-            33 => self.midi_out_sync(state).await,
-            34 => self.print_hexadecimal(state).await,
-            35 => self.print_binary(state).await,
-            36 => self.print_unsigned(state).await,
-            40 => self.set_seed(state).await,
-            41 => self.random_int(state).await,
-            42 => self.random_int_ranged(state).await,
-            43 => self.random_float(state).await,
-            44 => self.random_double(state).await,
-            _ => Unknown(code)
-        }
+            1 => self.wrap_cancel(self.print_integer(state)).await,
+            2 => self.wrap_cancel(self.print_float(state)).await,
+            3 => self.wrap_cancel(self.print_double(state)).await,
+            4 => self.wrap_cancel(self.print_string(state)).await,
+            5 => self.wrap_cancel(self.read_integer(state)).await,
+            6 => self.wrap_cancel(self.read_float(state)).await,
+            7 => self.wrap_cancel(self.read_double(state)).await,
+            8 => self.wrap_cancel(self.read_string(state)).await,
+            9 => self.wrap_cancel(self.alloc_heap(state)).await,
+            10 => self.wrap_cancel(self.terminate(state)).await,
+            11 => self.wrap_cancel(self.print_character(state)).await,
+            12 => self.wrap_cancel(self.read_character(state)).await,
+            13 => self.wrap_cancel(self.open_file(state)).await,
+            14 => self.wrap_cancel(self.read_file(state)).await,
+            15 => self.wrap_cancel(self.write_file(state)).await,
+            16 => self.wrap_cancel(self.close_file(state)).await,
+            17 => self.wrap_cancel(self.terminate_valued(state)).await,
+            30 => self.wrap_cancel(self.system_time(state)).await,
+            31 => self.wrap_cancel(self.midi_out(state)).await,
+            32 => self.wrap_cancel(self.sleep(state)).await,
+            33 => self.wrap_cancel(self.midi_out_sync(state)).await,
+            34 => self.wrap_cancel(self.print_hexadecimal(state)).await,
+            35 => self.wrap_cancel(self.print_binary(state)).await,
+            36 => self.wrap_cancel(self.print_unsigned(state)).await,
+            40 => self.wrap_cancel(self.set_seed(state)).await,
+            41 => self.wrap_cancel(self.random_int(state)).await,
+            42 => self.wrap_cancel(self.random_int_ranged(state)).await,
+            43 => self.wrap_cancel(self.random_float(state)).await,
+            44 => self.wrap_cancel(self.random_double(state)).await,
+            _ => return Unknown(code)
+        };
+
+        Completed
     }
 
     async fn handle_frame(

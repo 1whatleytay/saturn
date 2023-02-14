@@ -123,6 +123,8 @@ pub async fn resume(
         SyscallDelegate::new(state).run(&debugger).await
     }).await.unwrap();
 
+    println!("Closing resume!");
+
     flush_display(debugger_clone.lock().unwrap().memory(), display);
 
     Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
