@@ -3,6 +3,7 @@ declare module 'midicube' {
     instrument?: string
     instruments?: string[]
     soundfontUrl?: string
+    targetFormat?: string
     onerror?: (error: string) => void
     onsuccess?: () => void
     onprogress?: (state: any, progress: any) => void

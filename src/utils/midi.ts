@@ -23,6 +23,7 @@ function loadInstrument(instrument: string): Promise<boolean> {
     MIDI.loadPlugin({
       instrument,
       soundfontUrl,
+      targetFormat: 'mp3',
       onerror: () => resolve(false),
       onsuccess: () => {
         loadedInstruments.add(instrument)
