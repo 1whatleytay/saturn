@@ -111,16 +111,24 @@ export function useTabs(): TabsResult {
     selected: null
   } as Tabs)
 
+  function pushEmpty() {
+    if (!editor.tabs.length) {
+      createTab('Untitled', [''])
+    }
+  }
+
   async function restore() {
     const item = localStorage.getItem(restoreKey)
 
     if (!item) {
+      pushEmpty()
       return
     }
 
     const state = JSON.parse(item) as TabsRestoreState
 
     if (state.version != tabsVersion) {
+      pushEmpty()
       return
     }
 
@@ -163,9 +171,7 @@ export function useTabs(): TabsResult {
       })
     }
 
-    if (!editor.tabs.length) {
-      createTab('Untitled', [''])
-    }
+    pushEmpty()
 
     if (editor.tabs.length) {
       const hasSelected = editor.tabs.some(x => x.uuid === state.selected)
