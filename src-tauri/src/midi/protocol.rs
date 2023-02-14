@@ -24,7 +24,15 @@ pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response
         let mut directory = app_local_data_dir(&app.config())?;
         let path = Path::new(uri.path()).strip_prefix("/").ok()?;
 
+        directory.push("midi/");
+        let base = directory.clone();
+
         directory.push(path);
+
+        // Hopefully no workarounds for this.
+        if !directory.starts_with(base) {
+            return None
+        }
 
         Some(directory)
     };

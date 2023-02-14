@@ -8,6 +8,7 @@ import { assembleWithBinary } from './mips'
 import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
+import { MidiNote, playNote } from './midi'
 
 export enum PromptType {
   NeverPrompt,
@@ -172,6 +173,10 @@ export async function setupEvents() {
 
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
+  })
+
+  await listen('play-midi', async event => {
+    await playNote(event.payload as MidiNote)
   })
 
   let events = new Map<string, number>() // uuid to number

@@ -11,9 +11,10 @@ use crate::syscall::{MidiHandler, MidiRequest};
 
 #[derive(Clone, Serialize)]
 struct MidiNote {
-    instrument: String,
+    instrument: u64,
+    name: String,
     note: u64,
-    duration: u64,
+    duration: f64,
     volume: u64
 }
 
@@ -24,23 +25,30 @@ pub struct ForwardMidi {
 
 impl ForwardMidi {
     async fn install_async(root: Arc<Mutex<ForwardMidi>>, instrument: u32) -> bool {
-        let Some(instrument) = to_instrument(instrument as usize) else { return false };
-        let instruments = Some(vec![instrument.into()]);
+        let Some(name) = to_instrument(instrument as usize) else { return false };
+        let instruments = Some(vec![name.into()]);
 
         let handle = root.lock().unwrap().app.clone();
 
-        install_instruments(None, instruments, &handle).await.is_some()
+        let result = install_instruments(None, instruments, &handle).await.is_some();
+
+        if result {
+            root.lock().unwrap().installed.insert(instrument);
+        }
+
+        result
     }
 }
 
 impl MidiHandler for Arc<Mutex<ForwardMidi>> {
     fn play(&mut self, request: &MidiRequest) {
-        let Some(instrument) = to_instrument(request.instrument as usize) else { return };
+        let Some(name) = to_instrument(request.instrument as usize) else { return };
 
-        self.lock().unwrap().app.emit_all("play_midi", MidiNote {
-            instrument: instrument.into(),
+        self.lock().unwrap().app.emit_all("play-midi", MidiNote {
+            name: name.into(),
+            instrument: request.instrument as u64,
             note: request.pitch as u64,
-            duration: request.duration as u64,
+            duration: request.duration as f64 / 1000f64,
             volume: request.volume as u64
         }).ok();
     }
@@ -66,7 +74,7 @@ impl MidiHandler for Arc<Mutex<ForwardMidi>> {
             return false
         };
 
-        directory.push(format!("{}-mp3.js", name));
+        directory.push(format!("midi/{}-mp3.js", name));
 
         let result = directory.exists();
 

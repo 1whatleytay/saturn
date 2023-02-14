@@ -98,12 +98,11 @@ const V0_REG: usize = 2;
 const A0_REG: usize = 4;
 const A1_REG: usize = 5;
 const A2_REG: usize = 6;
-const A3_REG: usize = 6;
+const A3_REG: usize = 7;
 
 fn a0(state: &Mutex<DebuggerType>) -> u32 {
     reg(state, A0_REG)
 }
-
 fn midi_request(registers: &Registers) -> MidiRequest {
     MidiRequest {
         pitch: registers.line[A0_REG],
@@ -565,6 +564,8 @@ impl SyscallDelegate {
         let request = midi_request(&mut state.lock().unwrap().state().registers);
 
         if self.play_installed(&request) {
+            self.sleep_for_duration(request.duration as u64).await;
+
             return Completed
         }
 

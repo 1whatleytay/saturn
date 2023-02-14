@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Sha256, Digest};
 use tauri::{AppHandle, Manager, PathResolver, Wry};
 use tauri::api::http::{Client, ClientBuilder, HttpRequestBuilder, StatusCode};
 use tauri::api::path::app_local_data_dir;
@@ -13,14 +14,6 @@ use tauri::api::path::app_local_data_dir;
 struct ConsoleEvent {
     uuid: Option<String>,
     message: String
-}
-
-#[derive(Serialize)]
-pub struct MidiNote {
-    instrument: String,
-    pitch: u8,
-    volume: u8,
-    duration: f64,
 }
 
 #[derive(Deserialize)]
@@ -79,7 +72,7 @@ async fn grab_default_provider(
 }
 
 async fn download_file(
-    client: &Client, base_url: &str, file: String
+    client: &Client, base_url: &str, file: String, sha256: Option<&str>
 ) -> Option<(String, Vec<u8>)> {
     let path = format!("{}{}", base_url, file);
     let request = HttpRequestBuilder::new("GET", &path).ok()?;
@@ -92,13 +85,33 @@ async fn download_file(
 
     let bytes = response.bytes().await.ok()?.data;
 
+    if let Some(sha256) = sha256 {
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        let result = hasher.finalize();
+
+        let Ok(expected) = hex::decode(sha256) else {
+            return None
+        };
+
+        if &expected != &result[..] {
+            println!(
+                "Failed to verify hashes, expected {} got {}",
+                sha256, hex::encode(&result[..])
+            );
+
+            return None
+        }
+    }
+
     Some((file, bytes))
 }
 
 async fn download_files<F>(
     url: &str,
     files: &Vec<String>,
-    handler: F
+    handler: F,
+    sha256: &Option<HashMap<String, String>>
 ) -> Option<HashMap<String, Vec<u8>>> where F: Fn(usize) -> () {
     let count = AtomicUsize::new(0);
 
@@ -106,7 +119,13 @@ async fn download_files<F>(
     let result = futures::future::try_join_all(files.iter()
         .map(|file| {
             async {
-                let result = download_file(&client, url, file.clone()).await;
+                let hash = if let Some(map) = sha256 {
+                    Some(map.get(file).map(|x| x.as_str()).ok_or(())?)
+                } else {
+                    None
+                };
+
+                let result = download_file(&client, url, file.clone(), hash).await;
 
                 if result.is_some() {
                     count.fetch_add(1, Ordering::Acquire);
@@ -121,11 +140,15 @@ async fn download_files<F>(
 }
 
 async fn request_providers<F: Fn(usize) -> ()>(
-    providers: &Vec<String>, files: &Vec<String>, handler: F
+    providers: &Vec<String>, files: &Vec<String>, handler: F, sha256: &Option<HashMap<String, String>>
 ) -> Option<HashMap<String, Vec<u8>>> {
     for url in providers {
         // Storing all file content in memory can be really bad (sound-fonts can be huge).
-        if let Some(files) = download_files(url, &files, |x| handler(x)).await {
+        let result = download_files(
+            url, &files, |x| handler(x), sha256
+        ).await;
+
+        if let Some(files) = result {
             return Some(files)
         }
     }
@@ -171,7 +194,9 @@ pub async fn install_instruments(
 
     handler(0);
 
-    let data = request_providers(&provider.providers, &files, handler).await?;
+    let data = request_providers(
+        &provider.providers, &files, handler, &provider.hashes
+    ).await?;
 
     let mut directory = app_local_data_dir(&app.config())?;
     directory.push("midi/");

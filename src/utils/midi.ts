@@ -5,35 +5,42 @@ import { convertFileSrc } from '@tauri-apps/api/tauri'
 
 (window as any).MIDI = MIDI
 
-export async function install() {
-  const result = await tauri.invoke('midi_install', {
-    instruments: ['trombone', 'synth_choir', 'pad_4_choir', 'koto']
-  })
+const soundfontUrl = convertFileSrc('', 'midi')
 
-  console.log(result)
+const loadedInstruments = new Set<string>()
+
+export interface MidiNote {
+  name: string
+  instrument: number
+  note: number
+  duration: number
+  volume: number
 }
 
-const soundfontUrl = convertFileSrc('midi/FatBoy/', 'midi')
+function loadInstrument(instrument: string): Promise<boolean> {
+  return new Promise(resolve => {
+    MIDI.loadPlugin({
+      instrument,
+      soundfontUrl,
+      onerror: () => resolve(false),
+      onsuccess: () => {
+        loadedInstruments.add(instrument)
 
-export async function loadInstrument() {
-  MIDI.loadPlugin({
-    instrument: 'acoustic_grand_piano',
-    soundfontUrl,
-    onerror: console.error,
-    onsuccess: () => {
-      console.log('done loading!')
-
-      var delay = 0; // play one note every quarter second
-      var note = 50; // the MIDI note
-      var velocity = 127; // how hard the note hits
-      // play the note
-      MIDI.setVolume(0, 127);
-      MIDI.noteOn(0, note, velocity, delay);
-      MIDI.noteOff(0, note, delay + 0.20);
-    }
+        resolve(true)
+      }
+    })
   })
 }
 
-export async function playNote() {
+export async function playNote(note: MidiNote) {
+  if (!loadedInstruments.has(note.name)) {
+    await loadInstrument(note.name)
+  }
 
+  if (note.duration > 0) {
+    MIDI.setVolume(0, note.volume)
+    MIDI.programChange(0, note.instrument)
+    MIDI.noteOn(0, note.note, 127, 0)
+    MIDI.noteOff(0, note.note, note.duration)
+  }
 }
