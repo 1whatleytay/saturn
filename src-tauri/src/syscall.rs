@@ -10,6 +10,7 @@ use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::Memory;
 use titan::cpu::memory::section::SectionMemory;
+use titan::cpu::state::Registers;
 use titan::debug::Debugger;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
@@ -22,6 +23,13 @@ use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Term
 
 type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
+
+struct MidiRequest {
+    pitch: u32, // 0 - 127
+    duration: u32, // in ms
+    instrument: u32, // 0 - 127
+    volume: u32, // 0 - 127
+}
 
 pub enum SyscallResult {
     Completed, // Syscall completed successfully.
@@ -73,9 +81,19 @@ const V0_REG: usize = 2;
 const A0_REG: usize = 4;
 const A1_REG: usize = 5;
 const A2_REG: usize = 6;
+const A3_REG: usize = 6;
 
 fn a0(state: &Mutex<DebuggerType>) -> u32 {
     reg(state, A0_REG)
+}
+
+fn midi_request(registers: &Registers) -> MidiRequest {
+    MidiRequest {
+        pitch: registers.line[A0_REG],
+        duration: registers.line[A1_REG],
+        instrument: registers.line[A2_REG],
+        volume: registers.line[A3_REG],
+    }
 }
 
 const PRINT_BUFFER_TIME: Duration = Duration::from_millis(15);
@@ -464,8 +482,12 @@ impl SyscallDelegate {
         }
     }
 
-    async fn midi_out(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(31)
+    async fn midi_out(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let request = midi_request(&mut state.lock().unwrap().state().registers);
+
+
+
+        Completed
     }
 
     async fn sleep_for_duration(&self, time: u64) -> bool {
@@ -494,8 +516,12 @@ impl SyscallDelegate {
         }
     }
 
-    async fn midi_out_sync(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
-        Unimplemented(33)
+    async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+        let request = midi_request(&mut state.lock().unwrap().state().registers);
+
+
+
+        Completed
     }
 
     async fn print_hexadecimal(&self, state: &Mutex<DebuggerType>) -> SyscallResult {

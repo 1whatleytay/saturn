@@ -1,24 +1,26 @@
 use std::collections::HashMap;
-use std::error::Error;
+
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use futures::{StreamExt};
-use futures::stream::FuturesUnordered;
-use percent_encoding::percent_decode_str;
+
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, PathResolver, Wry};
-use tauri::api::http::{Client, ClientBuilder, HttpRequestBuilder};
+use tauri::api::http::{Client, ClientBuilder, HttpRequestBuilder, StatusCode};
 use tauri::api::path::app_local_data_dir;
-use tauri::http::{Request, Response, ResponseBuilder};
-use tauri::http::method::Method;
-use wry::http::Uri;
 
 #[derive(Clone, Serialize)]
 struct ConsoleEvent {
     uuid: Option<String>,
     message: String
+}
+
+#[derive(Serialize)]
+pub struct MidiNote {
+    instrument: String,
+    pitch: u8,
+    volume: u8,
+    duration: f64,
 }
 
 #[derive(Deserialize)]
@@ -69,7 +71,6 @@ async fn grab_default_provider(
             Some(provider)
         },
         None => {
-            println!("Loaded default provider is totally empty!");
             *container = MidiProviderContainer::Empty;
 
             None
@@ -79,17 +80,19 @@ async fn grab_default_provider(
 
 async fn download_file(
     client: &Client, base_url: &str, file: String
-) -> tauri::api::Result<(String, Vec<u8>)> {
+) -> Option<(String, Vec<u8>)> {
     let path = format!("{}{}", base_url, file);
-    println!("Downloading file {}...", &path);
-    let request = HttpRequestBuilder::new("GET", &path)?;
+    let request = HttpRequestBuilder::new("GET", &path).ok()?;
 
-    let response = client.send(request).await?;
-    let bytes = response.bytes().await?.data;
+    let response = client.send(request).await.ok()?;
 
-    println!("File {} gave {} bytes!", &path, bytes.len());
+    if response.status() != StatusCode::OK {
+        return None
+    }
 
-    Ok((file, bytes))
+    let bytes = response.bytes().await.ok()?.data;
+
+    Some((file, bytes))
 }
 
 async fn download_files<F>(
@@ -100,25 +103,21 @@ async fn download_files<F>(
     let count = AtomicUsize::new(0);
 
     let client = ClientBuilder::new().build().ok()?;
-    let result = files.iter()
+    let result = futures::future::try_join_all(files.iter()
         .map(|file| {
             async {
                 let result = download_file(&client, url, file.clone()).await;
 
-                count.fetch_add(1, Ordering::Acquire);
-                handler(count.load(Ordering::Acquire));
+                if result.is_some() {
+                    count.fetch_add(1, Ordering::Acquire);
+                    handler(count.load(Ordering::Acquire));
+                }
 
-                result
+                result.ok_or(())
             }
-        })
-        .collect::<FuturesUnordered<_>>()
-        .collect::<Vec<_>>()
-        .await
-        .into_iter()
-        .filter_map(|x| x.ok())
-        .collect::<HashMap<String, Vec<u8>>>();
+        })).await.ok()?;
 
-    Some(result)
+    Some(result.into_iter().collect())
 }
 
 async fn request_providers<F: Fn(usize) -> ()>(
@@ -137,7 +136,7 @@ async fn request_providers<F: Fn(usize) -> ()>(
 pub async fn install_instruments(
     provider_url: Option<String>,
     instruments: Option<Vec<String>>,
-    app: AppHandle<Wry>
+    app: &AppHandle<Wry>
 ) -> Option<()> {
     let mut provider = provider_url
         .map(|url| Arc::new(MidiDefaultProvider { providers: vec![url], hashes: None }));
@@ -150,16 +149,12 @@ pub async fn install_instruments(
 
     let postfix = "-mp3.js";
 
-    println!("Creating Instruments");
-
     let files = instruments
         .map(|instruments| instruments.into_iter()
             .map(|item| format!("{}{}", item, postfix))
             .collect::<Vec<String>>())
         .or_else(|| provider.hashes.as_ref()
             .map(|files| files.keys().cloned().collect::<Vec<String>>()))?;
-
-    println!("Requesting Providers");
 
     let download_uuid = uuid::Uuid::new_v4().to_string();
 
@@ -204,47 +199,20 @@ pub async fn install_instruments(
     Some(())
 }
 
-
 #[tauri::command]
 pub async fn midi_install(
     provider_url: Option<String>,
     instruments: Option<Vec<String>>,
     app: AppHandle<Wry>
 ) -> bool {
-    let console = install_instruments(provider_url, instruments, app).await;
+    let console = install_instruments(provider_url, instruments, &app).await;
 
-    console.is_some()
-}
-
-pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response, Box<dyn Error>> {
-    // Disable CORS, nothing super private here.
-    let builder = ResponseBuilder::new()
-        .header("Access-Control-Allow-Headers", "*")
-        .header("Access-Control-Allow-Origin", "*");
-
-    // Check for preflight, very primitive check.
-    if request.method() == Method::OPTIONS {
-        return builder.body(vec![])
+    if console.is_none() {
+        app.emit_all("post-console-event", ConsoleEvent {
+            uuid: None,
+            message: "Failed to download MIDI instruments.".into()
+        }).ok();
     }
 
-    let file_path = || -> Option<PathBuf> {
-        let decode = percent_decode_str(request.uri()).decode_utf8().ok()?;
-        let uri = Uri::try_from(&*decode).ok()?;
-        let mut directory = app_local_data_dir(&app.config())?;
-        let path = Path::new(uri.path()).strip_prefix("/").ok()?;
-
-        directory.push(path);
-
-        Some(directory)
-    };
-
-    let Some(path) = file_path() else {
-        return builder.status(400).body(vec![]);
-    };
-
-    let Ok(text) = fs::read_to_string(path) else {
-        return builder.status(400).body(vec![]);
-    };
-
-    builder.body(text.into_bytes())
+    console.is_some()
 }
