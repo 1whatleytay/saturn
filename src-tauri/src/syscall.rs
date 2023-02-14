@@ -696,9 +696,7 @@ impl SyscallDelegate {
             43 => self.wrap_cancel(self.random_float(state)).await,
             44 => self.wrap_cancel(self.random_double(state)).await,
             _ => return Unknown(code)
-        };
-
-        Completed
+        }
     }
 
     async fn handle_frame(

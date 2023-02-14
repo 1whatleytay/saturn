@@ -108,3 +108,16 @@ export async function selectSaveAssembly(): Promise<SelectedFile<undefined> | nu
 export async function writeFile(path: string, content: string) {
   await writeTextFile(path, content)
 }
+
+export async function readFile(path: string): Promise<SelectedFile<string | null>> {
+  const name = await basename(path)
+  let data: string | null
+
+  try {
+    data = await readTextFile(path)
+  } catch (e) {
+    data = null
+  }
+
+  return { name, path, data }
+}

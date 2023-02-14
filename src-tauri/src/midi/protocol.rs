@@ -1,11 +1,64 @@
 use std::error::Error;
+use std::fmt::{Display, Formatter};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use percent_encoding::percent_decode_str;
 use tauri::{AppHandle, Wry};
 use tauri::api::path::app_local_data_dir;
 use tauri::http::{Request, Response, ResponseBuilder, Uri};
 use tauri::http::method::Method;
+use crate::midi::protocol::MidiProtocolError::{FileIO, MissingAppDir, OutOfBounds, PathResolve, URIDecode, URIParse};
+
+#[derive(Debug)]
+enum MidiProtocolError {
+    URIDecode(String),
+    URIParse(String),
+    MissingAppDir,
+    PathResolve(String),
+    OutOfBounds,
+    FileIO(Option<String>),
+}
+
+impl Display for MidiProtocolError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            URIDecode(url) => write!(f, "Failed to decode given URI: {}", url),
+            URIParse(url) => write!(f, "Failed to parse percent decoded URI: {}", url),
+            MissingAppDir => write!(f, "Could not resolve app directory."),
+            PathResolve(path) => write!(f, "Could not resolve path: {}", path),
+            OutOfBounds => write!(f, "Directory moved out of bounds."),
+            FileIO(path) => write!(
+                f, "Could not read from file: {}",
+                path.as_ref().unwrap_or(&"None".to_string())
+            ),
+        }
+    }
+}
+
+impl Error for MidiProtocolError { }
+
+fn get_path(uri: &str, config: &tauri::Config) -> Result<String, MidiProtocolError> {
+    let decode = percent_decode_str(uri).decode_utf8()
+        .map_err(|_| URIDecode(uri.into()))?;
+
+    let uri = Uri::try_from(&*decode).map_err(|_| URIParse(decode.to_string()))?;
+    let mut directory = app_local_data_dir(config).ok_or(MissingAppDir)?;
+
+    let path = Path::new(uri.path()).strip_prefix("/")
+        .map_err(|_| PathResolve(uri.path().into()))?;
+
+    directory.push("midi/");
+    let base = directory.clone();
+
+    directory.push(path);
+
+    // Hopefully no workarounds for this.
+    if !directory.starts_with(base) {
+        return Err(OutOfBounds)
+    }
+
+    fs::read_to_string(path).map_err(|_| FileIO(path.to_str().map(|x| x.into())))
+}
 
 pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response, Box<dyn Error>> {
     // Disable CORS, nothing super private here.
@@ -18,30 +71,7 @@ pub fn midi_protocol(app: &AppHandle<Wry>, request: &Request) -> Result<Response
         return builder.body(vec![])
     }
 
-    let file_path = || -> Option<PathBuf> {
-        let decode = percent_decode_str(request.uri()).decode_utf8().ok()?;
-        let uri = Uri::try_from(&*decode).ok()?;
-        let mut directory = app_local_data_dir(&app.config())?;
-        let path = Path::new(uri.path()).strip_prefix("/").ok()?;
-
-        directory.push("midi/");
-        let base = directory.clone();
-
-        directory.push(path);
-
-        // Hopefully no workarounds for this.
-        if !directory.starts_with(base) {
-            return None
-        }
-
-        Some(directory)
-    };
-
-    let Some(path) = file_path() else {
-        return builder.status(400).body(vec![]);
-    };
-
-    let Ok(text) = fs::read_to_string(path) else {
+    let Ok(text) = get_path(request.uri(), &app.config()) else {
         return builder.status(400).body(vec![]);
     };
 

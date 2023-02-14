@@ -18,7 +18,11 @@ export interface StorageResult {
   storage: StorageState
 }
 
-export function useStorage(highlights: HighlightsInterface, find: FindInterface, tab: () => EditorTab | null): StorageResult {
+export function useStorage(
+  highlights: HighlightsInterface,
+  find: FindInterface,
+  tab: () => EditorTab | null
+): StorageResult {
   const storage = reactive({
     editor: createEditor(),
     language: createLanguage(),
@@ -115,7 +119,7 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
     return new MipsHighlighter()
   }
 
-  watch(() => tab(), tab => {
+  function highlightAll(current: EditorTab | null) {
     // Might need to look at tab file extension to pick languages
     storage.editor = createEditor()
     storage.language = createLanguage()
@@ -125,10 +129,13 @@ export function useStorage(highlights: HighlightsInterface, find: FindInterface,
 
     highlights.dismissHighlight()
 
-    if (tab && tab.lines) {
-      highlight(0, 0, tab.lines)
+    if (current && current.lines) {
+      highlight(0, 0, current.lines)
     }
-  })
+  }
+
+  highlightAll(tab())
+  watch(() => tab(), tab => { highlightAll(tab) })
 
   return {
     storage
