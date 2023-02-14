@@ -68,12 +68,14 @@ function clearDebug() {
 function closeExecution() {
   clearDebug()
 
+  consoleData.registers = null
   consoleData.execution = null
 }
 
 export function postBuildMessage(result: AssemblerResult): boolean {
   switch (result.status) {
     case 'Error':
+      consoleData.mode = null
       consoleData.tab = DebugTab.Console
       consoleData.showConsole = true
 
