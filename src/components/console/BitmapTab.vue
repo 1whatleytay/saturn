@@ -186,7 +186,7 @@ function checkConnected() {
   if (consoleData.execution) {
     state.interval = window.setInterval(() => {
       reloadDisplay()
-    }, 60)
+    }, 20)
   } else {
     reloadDisplay()
 
@@ -289,30 +289,42 @@ async function renderLastDisplay(context: CanvasRenderingContext2D) {
   await renderOrdered(context, last.width, last.height, Uint8Array.from(last.data))
 }
 
-async function reloadDisplay() {
-  const context = canvas.value?.getContext('2d')
-  const execution = consoleData.execution
+let inflight = false
 
-  if (!context) {
+async function reloadDisplay() {
+  if (inflight) {
     return
   }
 
-  if (!execution) {
-    return await renderLastDisplay(context)
-  }
+  inflight = true
 
-  if (state.useProtocol) {
-    try {
-      await renderFrameProtocol(context)
-    } catch (e) {
-      console.error(e)
+  try {
+    const context = canvas.value?.getContext('2d')
+    const execution = consoleData.execution
 
-      state.useProtocol = false
+    if (!context) {
+      return
+    }
+
+    if (!execution) {
+      return await renderLastDisplay(context)
+    }
+
+    if (state.useProtocol) {
+      try {
+        await renderFrameProtocol(context)
+      } catch (e) {
+        console.error(e)
+
+        state.useProtocol = false
+        await renderFrameFallback(context, execution)
+      }
+    } else {
       await renderFrameFallback(context, execution)
     }
-  } else {
-    await renderFrameFallback(context, execution)
-  }
+  } catch (e) { }
+
+  inflight = false
 }
 </script>
 
