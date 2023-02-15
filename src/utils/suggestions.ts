@@ -33,7 +33,7 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
     token: null as Token | null,
     results: [] as SuggestionMatch[],
     debounce: null as {
-      interval: number,
+      interval: number | null,
       token: Token,
       end: number
     } | null
@@ -61,16 +61,25 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
 
     const now = Date.now()
 
+    let initial = true
+
     if (suggestions.debounce) {
-      window.clearTimeout(suggestions.debounce.interval)
+      if (suggestions.debounce.interval) {
+        window.clearTimeout(suggestions.debounce.interval)
+      }
 
       if (suggestions.debounce.end <= now) {
         return makeSuggestions(token)
       }
+    } else if (!suggestions.results.length) {
+      initial = false
+      makeSuggestions(token)
     }
 
     suggestions.debounce = {
-      interval: window.setTimeout(() => makeSuggestions(token), debounceTimeout),
+      interval: initial
+        ? window.setTimeout(() => makeSuggestions(token), debounceTimeout)
+        : null,
       token,
       end: now + forceTimeout
     }
@@ -94,7 +103,9 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
     suggestions.results = []
 
     if (suggestions.debounce) {
-      window.clearTimeout(suggestions.debounce.interval)
+      if (suggestions.debounce.interval) {
+        window.clearTimeout(suggestions.debounce.interval)
+      }
 
       suggestions.debounce = null
     }
@@ -125,7 +136,9 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
 
   function flushSuggestions(): boolean {
     if (suggestions.debounce) {
-      window.clearInterval(suggestions.debounce.interval)
+      if (suggestions.debounce.interval) {
+        window.clearInterval(suggestions.debounce.interval)
+      }
 
       makeSuggestions(suggestions.debounce.token)
     }
