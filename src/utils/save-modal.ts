@@ -16,7 +16,7 @@ export interface SaveModalResult {
 }
 
 export function useSaveModal(
-  save: (tab: EditorTab) => void,
+  save: (tab: EditorTab) => Promise<boolean>,
   close: (tab: EditorTab) => void
 ): SaveModalResult {
   const state = reactive({
@@ -29,9 +29,11 @@ export function useSaveModal(
     }
   }
 
-  function selectSave() {
+  async function selectSave() {
     if (state.tab) {
-      save(state.tab)
+      if (await save(state.tab)) {
+        close(state.tab)
+      }
 
       state.tab = null
     }
