@@ -55,11 +55,7 @@
         v-for="i in renderCount"
         :key="getIndex(i)"
         class="h-6 flex items-center pr-16"
-        :class="{
-          'bg-breakpoint-neutral': hasBreakpoint(getIndex(i)) && getIndex(i) !== stoppedIndex,
-          'bg-breakpoint-stopped': getIndex(i) === stoppedIndex,
-          'bg-yellow-500 bg-opacity-5': !(tab()?.writable ?? true)
-        }"
+        :class="lineStyling(i)"
       >
         <div>
           <span
@@ -85,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, StyleValue, watch } from 'vue'
 
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
@@ -128,6 +124,18 @@ const {
 const computedRanges = computed(() => {
   return range(renderStart.value, renderCount.value)
 })
+
+function lineStyling(i: number): Record<string, boolean> {
+  const index = getIndex(i)
+  const breakpoint = hasBreakpoint(index)
+  const isStopped = index === stoppedIndex.value
+
+  return {
+    'bg-breakpoint-neutral': breakpoint && !isStopped,
+    'bg-breakpoint-stopped': isStopped,
+    'bg-yellow-500 bg-opacity-5': !breakpoint && !isStopped && !(tab()?.writable ?? true)
+  }
+}
 
 const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)
