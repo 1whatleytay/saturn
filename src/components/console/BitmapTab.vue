@@ -184,10 +184,12 @@ watch(() => settings.bitmap.height, recheckWidth)
 
 function checkConnected() {
   if (consoleData.execution) {
+    inflight = false
     state.interval = window.setInterval(() => {
       reloadDisplay()
     }, 20)
   } else {
+    inflight = false
     reloadDisplay()
 
     if (state.interval) {
