@@ -283,11 +283,14 @@ function makeVisible(offset: number) {
   }
 }
 
-watch(() => position.value.offsetY, async (value) => {
+const updateAndShow = async (value: number) => {
   await nextTick()
 
   makeVisible(value)
-})
+}
+
+watch(() => position.value.offsetX, () => updateAndShow(position.value.offsetY))
+watch(() => position.value.offsetY, updateAndShow)
 
 watch(() => stoppedIndex.value, (index) => {
   if (index) {

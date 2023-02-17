@@ -262,11 +262,14 @@ function makeVisible(offset: number) {
   }
 }
 
-watch(() => position.value.offsetY, async value => {
+const updateAndShow = async (value: number) => {
   await nextTick()
 
   makeVisible(value)
-})
+}
+
+watch(() => position.value.offsetX, () => updateAndShow(position.value.offsetY))
+watch(() => position.value.offsetY, updateAndShow)
 
 watch(() => consoleData.console.length, async (value, old) => {
   if (old - 1 === cursor.line) {
