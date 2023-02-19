@@ -196,7 +196,7 @@ const directiveParts = [
   { name: 'End Macro', replace: '.end_macro' },
 ].map(x => ({ ...x, type: SuggestionType.Directive })) as Suggestion[]
 
-const fuseOptions = {
+export const fuseOptions = {
   keys: ['replace'],
   includeScore: true,
   includeMatches: true
@@ -205,4 +205,3 @@ const fuseOptions = {
 export const instructions = new Fuse(instructionParts, fuseOptions)
 export const registers = new Fuse(registerParts, fuseOptions)
 export const directives = new Fuse(directiveParts, fuseOptions)
-export const lineSuggestions = new Fuse(instructionParts.concat(directiveParts), fuseOptions)
