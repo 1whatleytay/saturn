@@ -1,6 +1,7 @@
 import { Token } from './language'
 import Fuse from 'fuse.js'
 import { suggestions } from '../../state/state'
+import { tr } from 'date-fns/locale'
 
 export interface MatchRange {
   start: number
@@ -84,9 +85,20 @@ export class SuggestionsStorage {
     const drop = this.body.splice(line, deleted, ...input)
 
     // l -> line, s -> suggestion
-    drop.forEach(l => l.forEach(s => this.map.delete(s.id)))
-    input.forEach(l => l.forEach(s => this.map.set(s.id, s)))
+    let mutated = false
 
-    this.cacheMap = new Map()
+    drop.forEach(l => {
+      mutated = true
+      l.forEach(s => this.map.delete(s.id))
+    })
+
+    input.forEach(l => l.forEach(s => {
+      mutated = true
+      this.map.set(s.id, s)
+    }))
+
+    if (mutated) {
+      this.cacheMap = new Map()
+    }
   }
 }
