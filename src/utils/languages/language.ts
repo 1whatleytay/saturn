@@ -63,9 +63,13 @@ export function getStyle(type: TokenType, known: boolean = false): string {
   }
 }
 
+export interface HighlightResult {
+  tokens: Token[]
+  suggestions: Suggestion[]
+}
+
 export interface Language {
-  highlight(line: string): Token[]
-  inspect(tokens: Token[]): Suggestion[] // for exports on a line
+  highlight(line: string): HighlightResult
   suggest(token: Token): SuggestionMatch[] // for line while user is typing
 }
 

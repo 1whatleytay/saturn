@@ -31,9 +31,9 @@ export function useStorage(
   } as StorageState)
 
   function highlight(line: number, deleted: number, lines: string[]) {
-    const tokens = lines.map(part => storage.language.highlight(part))
+    const result = lines.map(part => storage.language.highlight(part))
 
-    storage.highlights.splice(line, deleted, ...tokens)
+    storage.highlights.splice(line, deleted, ...result.map(x => x.tokens))
   }
 
   async function checkSyntax() {

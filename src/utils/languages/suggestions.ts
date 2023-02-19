@@ -9,7 +9,9 @@ export enum SuggestionType {
   Instruction,
   Register,
   Directive,
-  Label
+  Label,
+  Function, // Macro
+  Variable
 }
 
 export interface Suggestion {
