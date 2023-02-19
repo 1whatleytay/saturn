@@ -1,9 +1,24 @@
-import { getStyle, Token, TokenType } from '../language'
+import { getStyle, HighlightResult, Token, TokenType } from '../language'
+import { Suggestion, SuggestionType } from '../suggestions'
+
+enum ItemSuggestionMarker {
+  Macro,
+  Eqv
+}
+
+function toSuggestionType(marker: ItemSuggestionMarker): SuggestionType {
+  switch (marker) {
+    case ItemSuggestionMarker.Eqv: return SuggestionType.Variable
+    case ItemSuggestionMarker.Macro: return SuggestionType.Function
+  }
+}
 
 interface Item {
   type: TokenType,
   known: boolean,
   next: number
+  marker?: ItemSuggestionMarker
+  body?: string // for suggestions
 }
 
 // Port of https://github.com/1whatleytay/titan/blob/main/src/assembler/lexer.rs
@@ -47,7 +62,7 @@ const knownInstructions = new Set([
   'lb', 'lh', 'lw', 'lbu', 'lhu', 'sb', 'sh', 'sw',
   'madd', 'maddu', 'mul', 'msub', 'msubu', 'abs', 'blt', 'bgt',
   'ble', 'bge', 'neg', 'negu', 'not', 'li', 'la', 'move',
-  'sge', 'sgt', 'b', 'subi', 'subiu',
+  'sge', 'sgt', 'b', 'subi', 'subiu', 'nop'
 ])
 
 function isWhitespace(c: string): boolean {
@@ -120,10 +135,25 @@ function readItem(line: string, index: number, initial: boolean): Item {
     case '.': {
       const count = takeName(line, start + 1)
 
+      const body = line.substring(start + 1, start + 1 + count)
+
+      let marker: ItemSuggestionMarker | undefined = undefined
+
+      switch (body) {
+        case 'eqv':
+          marker = ItemSuggestionMarker.Eqv
+          break
+
+        case 'macro':
+          marker = ItemSuggestionMarker.Macro
+          break
+      }
+
       return {
         type: TokenType.Directive,
         known: knownDirectives.has(line.substring(start + 1, start + 1 + count)),
-        next: start + 1 + count
+        next: start + 1 + count,
+        marker
       }
     }
 
@@ -182,11 +212,14 @@ function readItem(line: string, index: number, initial: boolean): Item {
         // Check for color for labels
         const nextUp = start + count + takeSpace(line, start + count)
 
+        const body = line.substring(start, start + count)
+
         if (nextUp < line.length && line[nextUp] == ':') {
           return {
             type: TokenType.Label,
             known: false,
-            next: nextUp + 1 // including colon
+            next: nextUp + 1, // including colon
+            body
           }
         }
 
@@ -202,31 +235,49 @@ function readItem(line: string, index: number, initial: boolean): Item {
         return {
           type: TokenType.Symbol,
           known: false,
-          next: start + count
+          next: start + count,
+          body
         }
       }
     }
   }
 }
 
-export function lex(line: string): Token[] {
-  const result: Token[] = []
+export function lex(line: string): HighlightResult {
+  const tokens: Token[] = []
+  const suggestions: Suggestion[] = []
 
   let index = 0
   let initial = true
 
+  let marker: ItemSuggestionMarker | undefined = undefined
+
   while (index < line.length) {
-    const { type, known, next } = readItem(line, index, initial)
+    const item = readItem(line, index, initial)
 
     // Labels are like, the only token that can be placed before an instruction.
-    if (type !== TokenType.Label) {
+    if (item.type !== TokenType.Label) {
       initial = false
     }
 
-    if (index === next) {
-      const some = takeSome(line, next)
+    if (item.body) {
+      if (item.type == TokenType.Label) {
+        suggestions.push({
+          replace: item.body,
+          type: SuggestionType.Label
+        })
+      } else if (marker !== undefined) {
+        suggestions.push({
+          replace: item.body,
+          type: toSuggestionType(marker)
+        })
+      }
+    }
 
-      result.push({
+    if (index === item.next) {
+      const some = takeSome(line, item.next)
+
+      tokens.push({
         start: index,
         text: line.substring(index, index + some),
         type: TokenType.Nothing,
@@ -235,16 +286,18 @@ export function lex(line: string): Token[] {
 
       index += some
     } else {
-      result.push({
+      tokens.push({
         start: index,
-        text: line.substring(index, next),
-        type,
-        color: getStyle(type, known)
+        text: line.substring(index, item.next),
+        type: item.type,
+        color: getStyle(item.type, item.known)
       })
 
-      index = next
+      index = item.next
     }
+
+    marker = item.marker
   }
 
-  return result
+  return { tokens, suggestions }
 }

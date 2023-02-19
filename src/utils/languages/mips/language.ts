@@ -1,15 +1,11 @@
-import { Language, Token, TokenType } from '../language'
-import { Suggestion, SuggestionMatch } from '../suggestions'
+import { HighlightResult, Language, Token, TokenType } from '../language'
+import { SuggestionMatch } from '../suggestions'
 import { lex } from './lexer'
 import { directives, instructions, mergeResults, registers, registersSet, toSuggestionMatches } from './suggestions'
 
 export class MipsHighlighter implements Language {
-  highlight(line: string): Token[] {
+  highlight(line: string): HighlightResult {
     return lex(line)
-  }
-
-  inspect(tokens: Token[]): Suggestion[] {
-    return []
   }
 
   suggest(token: Token): SuggestionMatch[] {
