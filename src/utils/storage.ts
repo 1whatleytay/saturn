@@ -6,6 +6,7 @@ import { MipsHighlighter } from './languages/mips/language'
 import { assembleText } from './mips'
 import { HighlightsInterface } from './highlights'
 import { FindInterface } from './find'
+import { SuggestionsStorage } from './languages/suggestions'
 
 export interface StorageState {
   editor: Editor
@@ -14,7 +15,11 @@ export interface StorageState {
   debounce: number | null
 }
 
-export interface StorageResult {
+export interface StorageInterface {
+  suggestionsStorage(): SuggestionsStorage
+}
+
+export type StorageResult = StorageInterface & {
   storage: StorageState
 }
 
@@ -30,10 +35,14 @@ export function useStorage(
     debounce: null as number | null
   } as StorageState)
 
+  // Not reactive.
+  let suggestions = new SuggestionsStorage()
+
   function highlight(line: number, deleted: number, lines: string[]) {
     const result = lines.map(part => storage.language.highlight(part))
 
     storage.highlights.splice(line, deleted, ...result.map(x => x.tokens))
+    suggestions.update(line, deleted, result.map(x => x.suggestions))
   }
 
   async function checkSyntax() {
@@ -125,6 +134,8 @@ export function useStorage(
     storage.language = createLanguage()
     storage.highlights = [] // needs highlighting here
 
+    suggestions = new SuggestionsStorage()
+
     dispatchCheckSyntax()
 
     highlights.dismissHighlight()
@@ -138,6 +149,7 @@ export function useStorage(
   watch(() => tab(), tab => { highlightAll(tab) })
 
   return {
-    storage
+    storage,
+    suggestionsStorage: () => suggestions
   } as StorageResult
 }

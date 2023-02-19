@@ -14,7 +14,7 @@
       left: `${position.offsetX}px`,
       top: `${position.offsetY}px`,
     }"
-    @wheel="scrollSuggestions"
+    @wheel.prevent.stop="scrollSuggestions"
     ref="suggestionsParent"
   >
     <div
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { applyMergeSuggestion, suggestions, position } from '../state/state'
+import { applyMergeSuggestion, position, suggestions } from '../state/state'
 import { ref, watch } from 'vue'
 import { SuggestionType } from '../utils/languages/suggestions'
 
@@ -143,6 +143,15 @@ function suggestionLetter(type?: SuggestionType): string {
     case SuggestionType.Directive:
       return 'D'
 
+    case SuggestionType.Label:
+      return 'L'
+
+    case SuggestionType.Variable:
+      return 'V'
+
+    case SuggestionType.Function:
+      return 'F'
+
     default:
       return 'O'
   }
@@ -158,6 +167,15 @@ function suggestionStyle(type?: SuggestionType): string {
 
     case SuggestionType.Directive:
       return 'bg-red-300 text-red-800'
+
+    case SuggestionType.Label:
+      return 'bg-yellow-300 text-yellow-800'
+
+    case SuggestionType.Variable:
+      return 'bg-green-300 text-green-800'
+
+    case SuggestionType.Function:
+      return 'bg-purple-300 text-purple-800'
 
     default:
       return 'bg-gray-700'

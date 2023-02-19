@@ -1,5 +1,5 @@
 import { grabWhitespace, Language, Token } from './languages/language'
-import { findToken, SuggestionMatch } from './languages/suggestions'
+import { findToken, SuggestionMatch, SuggestionsStorage } from './languages/suggestions'
 import { reactive } from 'vue'
 
 export interface MergeSuggestion {
@@ -27,7 +27,10 @@ export type SuggestionsResult = SuggestionsInterface & {
   state: SuggestionsState
 }
 
-export function useSuggestions(language: () => Language): SuggestionsResult {
+export function useSuggestions(
+  language: () => Language,
+  storage: () => SuggestionsStorage | undefined
+): SuggestionsResult {
   const suggestions = reactive({
     index: 0,
     token: null as Token | null,
@@ -42,7 +45,7 @@ export function useSuggestions(language: () => Language): SuggestionsResult {
   function makeSuggestions(token: Token) {
     suggestions.index = 0
     suggestions.token = token
-    suggestions.results = language().suggest(token)
+    suggestions.results = language().suggest(token, storage())
 
     suggestions.debounce = null
   }

@@ -1,4 +1,4 @@
-import { Suggestion, SuggestionMatch } from './suggestions'
+import { Suggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
 
 export enum TokenType {
   Comment,
@@ -70,7 +70,9 @@ export interface HighlightResult {
 
 export interface Language {
   highlight(line: string): HighlightResult
-  suggest(token: Token): SuggestionMatch[] // for line while user is typing
+
+  // for line while user is typing
+  suggest(token: Token, storage?: SuggestionsStorage): SuggestionMatch[]
 }
 
 // For Tokens

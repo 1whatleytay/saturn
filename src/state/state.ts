@@ -28,9 +28,14 @@ export const find = useFind(() => tabBody.value, widthQuery)
 
 export const highlights = useHighlights(widthQuery)
 
-export const { storage } = useStorage(highlights, find, tab)
+export const {
+  storage,
+  suggestionsStorage
+} = useStorage(highlights, find, tab)
 
-export const suggestions = useSuggestions(() => storage.language)
+export const suggestions = useSuggestions(
+  () => storage.language, suggestionsStorage
+)
 
 function showSuggestionsAt(cursor: SelectionIndex) {
   const highlights = storage.highlights[cursor.line]
