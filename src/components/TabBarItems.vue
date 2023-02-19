@@ -7,7 +7,7 @@
       flex items-center justify-center
       font-black
       text-sky-300
-    " @click="build()">
+    " @click="build()" title="Build">
       <ArrowDownIcon class="w-4 h-4" />
     </button>
 
@@ -18,7 +18,7 @@
       flex items-center justify-center
       font-black
       text-red-300
-    " @click="stop()">
+    " @click="stop()" title="Stop">
       <StopIcon class="w-4 h-4" />
     </button>
 
@@ -29,7 +29,7 @@
       flex items-center justify-center
       font-black
       text-yellow-200
-    " @click="pause()">
+    " @click="pause()" title="Pause">
       <PauseIcon class="w-4 h-4" />
     </button>
 
@@ -42,7 +42,7 @@
     " @click="step()" :class="{
       'text-gray-300 cursor-default': !allowResume,
       'hover:bg-slate-800': allowResume
-    }" :disabled="!allowResume">
+    }" :disabled="!allowResume" title="Step">
       <ChevronRightIcon class="w-4 h-4" />
     </button>
 
@@ -54,7 +54,7 @@
     " :class="{
       'text-gray-300 cursor-default bg-neutral-800': !allowResume,
       'text-green-300 hover:bg-slate-800': allowResume
-    }" @click="resume()" :disabled="!allowResume">
+    }" @click="resume()" :disabled="!allowResume" title="Run">
       <PlayIcon class="w-4 h-4" />
     </button>
 
