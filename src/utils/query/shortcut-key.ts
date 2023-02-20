@@ -11,6 +11,11 @@ function metaKeyPlatform(): boolean {
 
 export const isMetaKey = metaKeyPlatform()
 
-export function hasActionKey(event: KeyboardEvent): boolean {
+interface ActionMarkedEvent {
+  metaKey: boolean
+  ctrlKey: boolean
+}
+
+export function hasActionKey(event: ActionMarkedEvent): boolean {
   return isMetaKey ? event.metaKey : event.ctrlKey
 }
