@@ -10,7 +10,7 @@
         {{ values[0] }}
       </div>
 
-      <div class="w-32 px-4 py-2 hover:bg-neutral-800 cursor-pointer">
+      <div class="w-32 px-4 py-2 hover:bg-neutral-800 cursor-pointer select-all">
         <span v-if="values[1] !== undefined && values[1] !== null">
           0x{{ values[1].toString(16) }}
         </span>
