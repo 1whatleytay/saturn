@@ -53,7 +53,7 @@
         <div
           v-for="(item, index) in row.items"
           :key="index"
-          class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0"
+          class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
         >
           {{ item }}
         </div>
