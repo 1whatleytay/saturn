@@ -1,5 +1,5 @@
-import { getStyle, HighlightResult, Token, TokenType } from '../language'
-import { Suggestion, SuggestionType } from '../suggestions'
+import { getStyle, grabWhitespace, HighlightResult, Token, TokenType } from '../language'
+import { MarkedSuggestion, SuggestionType } from '../suggestions'
 
 enum ItemSuggestionMarker {
   Macro,
@@ -245,7 +245,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
 export function lex(line: string): HighlightResult {
   const tokens: Token[] = []
-  const suggestions: Suggestion[] = []
+  const suggestions: MarkedSuggestion[] = []
 
   let index = 0
   let initial = true
@@ -264,12 +264,14 @@ export function lex(line: string): HighlightResult {
       if (item.type == TokenType.Label) {
         suggestions.push({
           replace: item.body,
-          type: SuggestionType.Label
+          type: SuggestionType.Label,
+          index: index + takeSpace(line, index) // start of the line body
         })
       } else if (marker !== undefined) {
         suggestions.push({
           replace: item.body,
-          type: toSuggestionType(marker)
+          type: toSuggestionType(marker),
+          index: index + takeSpace(line, index)
         })
       }
     }

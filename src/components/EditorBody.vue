@@ -9,7 +9,7 @@
       class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0 bg-neutral-900 pt-2"
       @click.self
       @wheel.stop
-      :style="{ top: `${lineOffset}px` }"
+      :style="{ top: `${state.lineOffset}px` }"
     >
       <div :style="{ height: `${topPadding}px` }" />
 
@@ -75,42 +75,58 @@
       <SelectionOverlay v-if="computedRanges" :range="computedRanges" />
       <Suggestions />
       <FindOverlay :start="renderStart" :count="renderCount" />
-      <ErrorOverlay />
+      <GotoOverlay
+        v-if="gotoHighlights.state.highlight"
+        @click="jumpGoto"
+        :highlight="gotoHighlights.state.highlight"
+      />
+      <ErrorOverlay
+        v-if="highlights.state.highlight"
+        :highlight="highlights.state.highlight"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
 import { useVirtualize } from '../utils/virtualization'
 import {
-  range,
-  getSelection,
-  dropSelection,
-  lineStart,
-  position,
-  dropCursor,
+  cursorCoordinates,
   dragTo,
-  pasteText,
-  storage,
-  handleKey,
+  dropCursor,
+  dropSelection,
   find,
+  getSelection,
+  handleKey,
+  lineStart,
+  pasteText,
+  position,
+  range,
+  storage,
   tab,
-  tabBody
+  tabBody,
+  highlights, goto, gotoHighlights
 } from '../state/state'
 
 import Cursor from './Cursor.vue'
 import FindOverlay from './FindOverlay.vue'
+import GotoOverlay from './GotoOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
 import Suggestions from './Suggestions.vue'
 import SelectionOverlay from './SelectionOverlay.vue'
-
-const lineOffset = ref(0)
+import { hasActionKey } from '../utils/query/shortcut-key'
 
 const lineHeight = 24 // h-6 -> 1.5rem -> 24px
+
+const state = reactive({
+  lineOffset: 0
+})
+
+let mouseDown = false
 
 const {
   getIndex,
@@ -172,7 +188,7 @@ function handleScroll() {
   }
 
   updateBounds()
-  lineOffset.value = scroll.value.offsetTop - scroll.value.scrollTop
+  state.lineOffset = scroll.value.offsetTop - scroll.value.scrollTop
 }
 
 function editorCoordinates(event: MouseEvent): { x: number, y: number } {
@@ -202,28 +218,56 @@ async function toggleBreakpoint(index: number) {
   await setBreakpoint(index, remove)
 }
 
-const mouseDown = ref(false)
-
 function handleDown(event: MouseEvent) {
   input.value?.focus()
 
   const { x, y } = editorCoordinates(event)
 
-  mouseDown.value = true
+  mouseDown = true
   dropCursor(x, y)
 }
 
 const handleMove = (event: MouseEvent) => {
-  if ((event.buttons & 1) > 0 && mouseDown.value) {
+  const checkGoto = hasActionKey(event)
+  const click = (event.buttons & 1) > 0 && mouseDown
+
+  if (checkGoto || click) {
     const { x, y } = editorCoordinates(event)
-    dragTo(x, y)
-  } else {
-    mouseDown.value = false
+
+    if (checkGoto) {
+      const { line, index } = cursorCoordinates(x, y)
+
+      goto.hover(line, index)
+    }
+
+    if (click) {
+      dragTo(x, y)
+    }
+  }
+
+  if (!checkGoto) {
+    goto.dismiss()
+  }
+
+  if (!click) {
+    mouseDown = false
+  }
+}
+
+function jumpGoto() {
+  const index = goto.jump()
+  const cursor = tab()?.cursor
+
+  if (index && cursor) {
+    cursor.line = index.line
+    cursor.index = index.index
+
+    cursor.highlight = null
   }
 }
 
 const handleUp = () => {
-  mouseDown.value = false
+  mouseDown = false
 }
 
 function handleCopy(event: ClipboardEvent) {

@@ -1,7 +1,4 @@
 import { Token } from './language'
-import Fuse from 'fuse.js'
-import { suggestions } from '../../state/state'
-import { tr } from 'date-fns/locale'
 
 export interface MatchRange {
   start: number
@@ -23,6 +20,7 @@ export interface Suggestion {
   type?: SuggestionType
 }
 
+export type MarkedSuggestion = Suggestion & { index: number }
 export type SuggestionMatch = Suggestion & { range?: MatchRange }
 
 export function findTokenIndex(tokens: Token[], index: number): number | null {
@@ -58,7 +56,7 @@ export function findToken(tokens: Token[], index: number): Token | null {
   return tokens[point]
 }
 
-type IdentifiedSuggestion = Suggestion & { id: number }
+type IdentifiedSuggestion = MarkedSuggestion & { id: number }
 
 export class SuggestionsStorage {
   id: number = 0 // incremented
@@ -80,17 +78,18 @@ export class SuggestionsStorage {
     return value
   }
 
-  update(line: number, deleted: number, insert: Suggestion[][]) {
+  update(line: number, deleted: number, insert: MarkedSuggestion[][]) {
     const input = insert.map(l => l.map(s => ({ id: this.id++, ...s })))
+
     const drop = this.body.splice(line, deleted, ...input)
 
     // l -> line, s -> suggestion
     let mutated = false
 
-    drop.forEach(l => {
+    drop.forEach(l => l.forEach(s => {
       mutated = true
-      l.forEach(s => this.map.delete(s.id))
-    })
+      this.map.delete(s.id)
+    }))
 
     input.forEach(l => l.forEach(s => {
       mutated = true

@@ -31,6 +31,7 @@ export interface CursorInterface {
   pasteText(text: string): void
   dropCursor(x: number, y: number): void
   dragTo(x: number, y: number): void
+  cursorCoordinates(x: number, y: number): SelectionIndex
   lineStart(line: number): number
   handleKey(event: KeyboardEvent): void
   applyMergeSuggestion(suggestion: MergeSuggestion): void
@@ -655,11 +656,11 @@ export function useCursor(
     }
   }
 
-  function putCursorAtCoordinates(x: number, y: number) {
+  function cursorCoordinates(x: number, y: number): SelectionIndex {
     const count = editor().lineCount()
 
     if (count <= 0) {
-      return
+      return { line: 0, index: 0 }
     }
 
     const lineIndex = Math.floor(y / lineHeight)
@@ -668,7 +669,7 @@ export function useCursor(
 
     const index = calculator.position(text, x)
 
-    putCursor({ line, index })
+    return { line, index }
   }
 
   function dropCursor(x: number, y: number) {
@@ -676,14 +677,14 @@ export function useCursor(
     editor().commit()
     suggestions?.dismissSuggestions()
 
-    putCursorAtCoordinates(x, y)
+    putCursor(cursorCoordinates(x, y))
   }
 
   function dragTo(x: number, y: number) {
     const value = cursor()
 
     makeSelection()
-    putCursorAtCoordinates(x, y)
+    putCursor(cursorCoordinates(x, y))
 
     if (value.highlight
       && value.highlight.line === value.line
@@ -710,6 +711,7 @@ export function useCursor(
     getSelection,
     dropSelection,
     dropCursor,
+    cursorCoordinates,
     dragTo,
     pasteText,
     handleKey,
