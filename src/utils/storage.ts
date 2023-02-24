@@ -5,7 +5,6 @@ import { Language, Token } from './languages/language'
 import { MipsHighlighter } from './languages/mips/language'
 import { assembleText } from './mips'
 import { HighlightsInterface } from './highlights'
-import { FindInterface } from './find'
 import { SuggestionsStorage } from './languages/suggestions'
 
 export interface StorageState {
@@ -23,10 +22,12 @@ export type StorageResult = StorageInterface & {
   storage: StorageState
 }
 
+type ShiftCallback = (line: number, deleted: number, insert: string[]) => void
+
 export function useStorage(
-  highlights: HighlightsInterface,
-  find: FindInterface,
-  tab: () => EditorTab | null
+  error: HighlightsInterface,
+  tab: () => EditorTab | null,
+  dirty: ShiftCallback = () => {}
 ): StorageResult {
   const storage = reactive({
     editor: createEditor(),
@@ -51,9 +52,9 @@ export function useStorage(
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]
 
-      highlights.setHighlight(result.marker.line, tokens, result.marker.offset, result.message)
+      error.setHighlight(result.marker.line, tokens, result.marker.offset, result.message)
     } else {
-      highlights.dismissHighlight()
+      error.dismissHighlight()
     }
   }
 
@@ -106,9 +107,10 @@ export function useStorage(
       current.marked = true
     }
 
-    find.dirty(line, deleted, lines)
-    highlights.shiftHighlight(line, deleted, lines.length)
+    error.shiftHighlight(line, deleted, lines.length)
     shiftBreakpoints(line, deleted, lines.length)
+
+    dirty(line, deleted, lines)
 
     dispatchCheckSyntax()
   }
@@ -138,7 +140,7 @@ export function useStorage(
 
     dispatchCheckSyntax()
 
-    highlights.dismissHighlight()
+    error.dismissHighlight()
 
     if (current && current.lines) {
       highlight(0, 0, current.lines)

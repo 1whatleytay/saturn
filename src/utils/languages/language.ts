@@ -1,4 +1,4 @@
-import { Suggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
+import { MarkedSuggestion, Suggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
 
 export enum TokenType {
   Comment,
@@ -65,7 +65,7 @@ export function getStyle(type: TokenType, known: boolean = false): string {
 
 export interface HighlightResult {
   tokens: Token[]
-  suggestions: Suggestion[]
+  suggestions: MarkedSuggestion[]
 }
 
 export interface Language {

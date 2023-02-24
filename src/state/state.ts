@@ -7,6 +7,7 @@ import { useStorage } from '../utils/storage'
 import { useFind } from '../utils/find'
 import { useSuggestions } from '../utils/suggestions'
 import { useTabs } from '../utils/tabs'
+import { GotoMessage, useGoto } from '../utils/goto'
 
 export const settings = useSettings()
 
@@ -27,11 +28,21 @@ export const {
 export const find = useFind(() => tabBody.value, widthQuery)
 
 export const highlights = useHighlights(widthQuery)
+export const gotoHighlights = useHighlights<GotoMessage>(widthQuery)
+
+function onDirty(line: number, deleted: number, insert: string[]) {
+  find.dirty(line, deleted, insert)
+  gotoHighlights.shiftHighlight(line, deleted, insert.length)
+}
+
+const storageResult = useStorage(highlights, tab, onDirty)
 
 export const {
   storage,
   suggestionsStorage
-} = useStorage(highlights, find, tab)
+} = storageResult
+
+export const goto = useGoto(gotoHighlights, storageResult)
 
 export const suggestions = useSuggestions(
   () => storage.language, suggestionsStorage
@@ -55,6 +66,7 @@ export const {
   pasteText,
   dropCursor,
   dragTo,
+  cursorCoordinates,
   handleKey,
   applyMergeSuggestion
 } = useCursor(

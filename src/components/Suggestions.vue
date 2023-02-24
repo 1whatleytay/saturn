@@ -70,7 +70,7 @@
 <script setup lang="ts">
 import { applyMergeSuggestion, position, suggestions } from '../state/state'
 import { ref, watch } from 'vue'
-import { SuggestionType } from '../utils/languages/suggestions'
+import { suggestionLetter, suggestionStyle } from '../utils/query/suggestion-styles'
 
 const props = withDefaults(defineProps<{
   lineHeight?: number
@@ -131,54 +131,4 @@ watch(() => suggestions.state.index, value => {
     scrollSuggestionsTo(bottom - parentHeight + 16)
   }
 })
-
-function suggestionLetter(type?: SuggestionType): string {
-  switch (type) {
-    case SuggestionType.Instruction:
-      return 'I'
-
-    case SuggestionType.Register:
-      return 'R'
-
-    case SuggestionType.Directive:
-      return 'D'
-
-    case SuggestionType.Label:
-      return 'L'
-
-    case SuggestionType.Variable:
-      return 'V'
-
-    case SuggestionType.Function:
-      return 'F'
-
-    default:
-      return 'O'
-  }
-}
-
-function suggestionStyle(type?: SuggestionType): string {
-  switch (type) {
-    case SuggestionType.Instruction:
-      return 'bg-cyan-500 text-cyan-900'
-
-    case SuggestionType.Register:
-      return 'bg-orange-300 text-orange-800'
-
-    case SuggestionType.Directive:
-      return 'bg-red-300 text-red-800'
-
-    case SuggestionType.Label:
-      return 'bg-yellow-300 text-yellow-800'
-
-    case SuggestionType.Variable:
-      return 'bg-green-300 text-green-800'
-
-    case SuggestionType.Function:
-      return 'bg-purple-300 text-purple-800'
-
-    default:
-      return 'bg-gray-700'
-  }
-}
 </script>
