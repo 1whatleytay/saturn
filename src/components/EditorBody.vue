@@ -227,6 +227,9 @@ function handleDown(event: MouseEvent) {
   dropCursor(x, y)
 }
 
+let lastX = null as number | null
+let lastY = null as number | null
+
 const handleMove = (event: MouseEvent) => {
   const checkGoto = hasActionKey(event)
   const click = (event.buttons & 1) > 0 && mouseDown
@@ -234,7 +237,9 @@ const handleMove = (event: MouseEvent) => {
   if (checkGoto || click) {
     const { x, y } = editorCoordinates(event)
 
-    if (checkGoto) {
+    // goto should only happen if the user moves the mouse
+    // (Cmd + C should not search goto, its expensive)
+    if (checkGoto && lastX !== event.pageX || lastY !== event.pageY) {
       const { line, index } = cursorCoordinates(x, y)
 
       goto.hover(line, index)
@@ -244,6 +249,9 @@ const handleMove = (event: MouseEvent) => {
       dragTo(x, y)
     }
   }
+
+  lastX = event.pageX
+  lastY = event.pageY
 
   if (!checkGoto) {
     goto.dismiss()
