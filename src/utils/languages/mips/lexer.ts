@@ -13,6 +13,13 @@ function toSuggestionType(marker: ItemSuggestionMarker): SuggestionType {
   }
 }
 
+function toSuggestionName(marker: ItemSuggestionMarker): string {
+  switch (marker) {
+    case ItemSuggestionMarker.Eqv: return 'Eqv'
+    case ItemSuggestionMarker.Macro: return 'Macro'
+  }
+}
+
 interface Item {
   type: TokenType,
   known: boolean,
@@ -264,6 +271,7 @@ export function lex(line: string): HighlightResult {
       if (item.type == TokenType.Label) {
         suggestions.push({
           replace: item.body,
+          name: 'Label',
           type: SuggestionType.Label,
           index: index + takeSpace(line, index) // start of the line body
         })
@@ -271,6 +279,7 @@ export function lex(line: string): HighlightResult {
         suggestions.push({
           replace: item.body,
           type: toSuggestionType(marker),
+          name: toSuggestionName(marker),
           index: index + takeSpace(line, index)
         })
       }
