@@ -2,7 +2,7 @@ import { Editor, LineRange, SelectionIndex } from './editor'
 import { computed, ComputedRef } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { SizeCalculator } from './query/text-size'
-import { consumeBackwards, consumeForwards } from './query/alt-consume'
+import { consumeBackwards, consumeDirection, consumeForwards } from './query/alt-consume'
 import { hasActionKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
 import { EditorSettings } from './settings'
@@ -691,8 +691,8 @@ export function useCursor(
 
       const directional = backwardSpace !== forwardSpace
 
-      const backward = directional && backwardSpace ? 0 : consumeBackwards(line, index.index)
-      const forward = directional && forwardSpace ? 0 : consumeForwards(line, index.index)
+      const backward = directional && backwardSpace ? 0 : consumeDirection(line, index.index, -1, false)
+      const forward = directional && forwardSpace ? 0 : consumeDirection(line, index.index, +1, false)
 
       const backwardIndex = { index: index.index - backward, line: index.line }
       const forwardIndex = { index: index.index + forward, line: index.line }
