@@ -29,7 +29,7 @@ export interface CursorInterface {
   getSelection(): string | null
   dropSelection(): void
   pasteText(text: string): void
-  dropCursor(x: number, y: number): void
+  dropCursor(x: number, y: number, detail?: number): void
   dragTo(x: number, y: number): void
   cursorCoordinates(x: number, y: number): SelectionIndex
   lineStart(line: number): number
@@ -672,12 +672,50 @@ export function useCursor(
     return { line, index }
   }
 
-  function dropCursor(x: number, y: number) {
-    cursor().highlight = null
-    editor().commit()
-    suggestions?.dismissSuggestions()
+  function dropCursor(x: number, y: number, detail?: number) {
+    const index = cursorCoordinates(x, y)
 
-    putCursor(cursorCoordinates(x, y))
+    if (detail === 2) {
+      const line = editor().lineAt(index.line)
+
+      function isSpace(text?: string) {
+        if (text) {
+          return /\s/.test(text)
+        }
+
+        return false
+      }
+
+      const backwardSpace = isSpace(line[index.index - 1])
+      const forwardSpace = isSpace(line[index.index])
+
+      const directional = backwardSpace !== forwardSpace
+
+      const backward = directional && backwardSpace ? 0 : consumeBackwards(line, index.index)
+      const forward = directional && forwardSpace ? 0 : consumeForwards(line, index.index)
+
+      const backwardIndex = { index: index.index - backward, line: index.line }
+      const forwardIndex = { index: index.index + forward, line: index.line }
+
+      const current = cursor()
+      putCursor(forwardIndex, current)
+      current.highlight = alignCursor(backwardIndex)
+    } else if (detail === 3) {
+      const line = editor().lineAt(index.line)
+
+      const start = { index: 0, line: index.line }
+      const end = { index: line.length, line: index.line }
+
+      const current = cursor()
+      putCursor(end, current)
+      current.highlight = alignCursor(start)
+    } else {
+      cursor().highlight = null
+      editor().commit()
+      suggestions?.dismissSuggestions()
+
+      putCursor(index)
+    }
   }
 
   function dragTo(x: number, y: number) {
