@@ -22,7 +22,7 @@ export function consumeDirection(
   // then consume hard
 
   let result = 0
-  const inbounds = () => cursor + result > 0 && cursor + result < line.length
+  const inbounds = () => cursor + result >= 0 && cursor + result < line.length
 
   if (spaced) {
     const space = /\s/
