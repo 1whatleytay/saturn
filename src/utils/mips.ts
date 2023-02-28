@@ -98,12 +98,12 @@ export interface LastDisplay {
 }
 
 class Breakpoints {
-  public lineToPc: Map<number, number>
+  public lineToPc: Map<number, number[]>
   public pcToLine: Map<number, number>
 
   public mapLines(lines: number[]): number[] {
     return lines
-      .map(line => this.lineToPc.get(line))
+      .flatMap(line => this.lineToPc.get(line))
       .filter(point => !!point) as number[]
   }
 
@@ -115,7 +115,17 @@ class Breakpoints {
     for (const [pc, line] of Object.entries(breakpoints)) {
       const pcNumber = parseInt(pc)
 
-      this.lineToPc.set(line, pcNumber)
+      let lineMap = this.lineToPc.get(line)
+
+      if (!lineMap) {
+        lineMap = []
+
+        this.lineToPc.set(line, lineMap)
+      }
+
+      lineMap.push(pcNumber)
+
+      // this.lineToPc.set(line, pcNumber)
       this.pcToLine.set(pcNumber, line)
     }
   }

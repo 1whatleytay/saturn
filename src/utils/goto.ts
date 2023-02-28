@@ -1,9 +1,8 @@
 import { HighlightsResult } from './highlights'
-import { findTokenIndex, MarkedSuggestion, SuggestionMatch, SuggestionType } from './languages/suggestions'
+import { findTokenIndex, MarkedSuggestion, SuggestionType } from './languages/suggestions'
 import { StorageResult } from './storage'
 import { SelectionIndex } from './editor'
-import { grabWhitespace, Token } from './languages/language'
-import { ca } from 'date-fns/locale'
+import { Token } from './languages/language'
 
 export interface GotoMessage {
   label: string
