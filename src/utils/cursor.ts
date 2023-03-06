@@ -603,7 +603,7 @@ export function useCursor(
           if (doDelete) {
             nextPosition = editor().deleteForwards(value, event.altKey)
           } else {
-            nextPosition = editor().backspace(value, event.altKey)
+            nextPosition = editor().backspace(value, event.altKey, settings.tabSize)
           }
 
           putCursor(nextPosition)

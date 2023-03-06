@@ -125,7 +125,6 @@ class Breakpoints {
 
       lineMap.push(pcNumber)
 
-      // this.lineToPc.set(line, pcNumber)
       this.pcToLine.set(pcNumber, line)
     }
   }

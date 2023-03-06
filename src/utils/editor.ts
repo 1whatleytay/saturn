@@ -1,4 +1,4 @@
-import { consumeBackwards, consumeForwards } from './query/alt-consume'
+import { consumeBackwards, consumeForwards, consumeSpace } from './query/alt-consume'
 import { grabWhitespace } from './languages/language'
 
 export interface SelectionIndex {
@@ -337,11 +337,13 @@ export class Editor {
     return { line: index.line + 1, index: spacing.length }
   }
 
-  backspace(index: SelectionIndex, alt: boolean = false): SelectionIndex {
+  backspace(index: SelectionIndex, alt: boolean = false, space: number = 1): SelectionIndex {
     const line = this.data[index.line]
 
     if (index.index > 0) {
-      const consumption = alt ? consumeBackwards(line, index.index) : 1
+      const consumption = alt
+        ? consumeBackwards(line, index.index)
+        : consumeSpace(line, index.index, -1, space)
 
       const leading = line.substring(0, index.index - consumption)
       const trailing = line.substring(index.index)

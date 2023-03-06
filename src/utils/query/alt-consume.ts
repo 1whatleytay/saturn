@@ -51,3 +51,25 @@ export function consumeBackwards(line: string, index: number, hard: Set<string> 
 export function consumeForwards(line: string, index: number, hard: Set<string> = hardCharacters): number {
   return consumeDirection(line, index, +1, true, hard)
 }
+
+export function consumeSpace(line: string, index: number, direction: number, max: number): number {
+  const directionOffset = direction < 0 ? 1 : 0
+  const cursor = index - directionOffset
+
+  if (cursor <= 0 || cursor >= line.length) {
+    return 1
+  }
+
+  // keep consuming space
+  // then consume hard
+
+  let result = 0
+  const inbounds = () => cursor + result >= 0 && cursor + result < line.length
+
+  const space = /\s/
+  while (inbounds() && Math.abs(result) < max && space.test(line[cursor + result])) {
+    result += direction
+  }
+
+  return Math.max(1, direction * result)
+}
