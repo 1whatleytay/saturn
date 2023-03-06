@@ -115,7 +115,7 @@ fn midi_request(registers: &Registers) -> MidiRequest {
     }
 }
 
-const PRINT_BUFFER_TIME: Duration = Duration::from_millis(15);
+const PRINT_BUFFER_TIME: Duration = Duration::from_millis(5);
 
 impl SyscallDelegate {
     pub fn new(state: Arc<Mutex<SyscallState>>) -> SyscallDelegate {
@@ -157,10 +157,14 @@ impl SyscallDelegate {
         Unimplemented(3)
     }
 
-    fn grab_string<Mem: Memory>(mut address: u32, memory: &Mem) -> Result<String, Error> {
+    fn grab_string<Mem: Memory>(mut address: u32, memory: &Mem, max: Option<usize>) -> Result<String, Error> {
         let mut buffer = String::new();
 
         loop {
+            if max.map(|max| buffer.len() >= max).unwrap_or(false) {
+                break
+            }
+
             let byte = memory.get(address)?;
 
             if byte == 0 {
@@ -184,7 +188,7 @@ impl SyscallDelegate {
             let mut lock = state.lock().unwrap();
             let address = lock.state().registers.line[A0_REG];
 
-            match Self::grab_string(address, lock.memory()) {
+            match Self::grab_string(address, lock.memory(), Some(1000)) {
                 Ok(buffer) => buffer,
                 Err(error) => return Exception(error),
             }
@@ -371,7 +375,7 @@ impl SyscallDelegate {
         let flags = debugger.state().registers.line[A1_REG];
         // Mode/$a2 is ignored.
 
-        let filename = match Self::grab_string(address, debugger.memory()) {
+        let filename = match Self::grab_string(address, debugger.memory(), Some(400)) {
             Ok(buffer) => buffer,
             Err(error) => return Exception(error),
         };
