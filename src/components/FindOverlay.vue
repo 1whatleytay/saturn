@@ -1,6 +1,5 @@
 <template>
   <div v-if="find.state.show">
-    {{ findIndices.length }}
     <div
       v-for="matches in findIndices"
       class="absolute"
