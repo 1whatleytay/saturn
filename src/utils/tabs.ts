@@ -92,6 +92,7 @@ function backupKey(uuid: string): string {
 
 interface RestoreTab {
   uuid: string
+  title?: string
   path: string | null
   breakpoints: number[]
   writable: boolean
@@ -136,17 +137,16 @@ export function useTabs(): TabsResult {
     editor.selected = null
 
     for (const tab of state.tabs) {
-      let title = 'Untitled'
+      const title = tab.title || 'Untitled'
       let lines = ['']
 
       if (tab.path) {
-        const { name, data } = await readFile(tab.path)
+        const { data } = await readFile(tab.path)
 
         if (!data) {
           continue
         }
 
-        title = name
         lines = data.split('\n')
       } else {
         const data = localStorage.getItem(backupKey(tab.uuid))
@@ -214,6 +214,7 @@ export function useTabs(): TabsResult {
     for (const tab of editor.tabs) {
       const restore = {
         uuid: tab.uuid,
+        title: tab.title,
         path: tab.path,
         breakpoints: tab.breakpoints,
         writable: tab.writable,
@@ -333,9 +334,13 @@ export function useTabs(): TabsResult {
   async function loadElf(named: string, elf: ArrayBuffer) {
     const value = await disassembleElf(named, elf)
 
+    const bytes = new Uint8Array(elf)
+    let binary = ''
+    bytes.forEach(byte => binary += String.fromCharCode(byte))
+
     const lines = value.error ? [value.error] : value.lines
     const profile = {
-      kind: 'elf', elf, breakpoints: value.breakpoints
+      kind: 'elf', elf: window.btoa(binary), breakpoints: value.breakpoints
     } as ElfExecutionProfile
 
     createTab(named, lines, null, profile, false)

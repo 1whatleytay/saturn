@@ -9,7 +9,7 @@
       mt-6 p-2
       overflow-y-clip
       bg-neutral-900 border border-neutral-800
-      absolute mx-[-0.08rem]
+      absolute mx-[-0.08rem] z-20
     " :style="{
       left: `${position.offsetX}px`,
       top: `${position.offsetY}px`,

@@ -69,7 +69,9 @@ const knownInstructions = new Set([
   'lb', 'lh', 'lw', 'lbu', 'lhu', 'sb', 'sh', 'sw',
   'madd', 'maddu', 'mul', 'msub', 'msubu', 'abs', 'blt', 'bgt',
   'ble', 'bge', 'neg', 'negu', 'not', 'li', 'la', 'move',
-  'sge', 'sgt', 'b', 'subi', 'subiu', 'nop'
+  'sge', 'sgt', 'b', 'subi', 'subiu', 'nop', 'bltu', 'bleu',
+  'bgtu', 'bgeu', 'sle', 'sgeu', 'sgtu', 'sleu', 'sne', 'seq',
+  'beqz', 'bnez'
 ])
 
 function isWhitespace(c: string): boolean {

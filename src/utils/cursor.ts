@@ -468,14 +468,16 @@ export function useCursor(
       }
     }
 
+    const lineOffset = 1
+
     if (all) {
       editor().crop(start, crops)
 
-      putCursor({ line: value.line, index: cursorIndex })
+      putCursor({ line: value.line + lineOffset, index: cursorIndex })
 
       if (value.highlight && highlightIndex) {
         putCursor({
-          line: value.highlight.line, index: highlightIndex
+          line: value.highlight.line + lineOffset, index: highlightIndex
         }, value.highlight)
       }
     } else {
@@ -484,7 +486,7 @@ export function useCursor(
       // This should... maybe be correct cursor positioning
       const { leading: cursorLeading } = grabWhitespace(editor().lineAt(value.line))
       if (value.index >= cursorLeading.length) {
-        putCursor({ line: value.line, index: value.index + 2 })
+        putCursor({ line: value.line + lineOffset, index: value.index + 2 })
       }
 
       if (value.highlight) {
@@ -492,7 +494,7 @@ export function useCursor(
 
         if (value.highlight.index >= highlightLeading.length) {
           putCursor({
-            line: value.highlight.line, index: value.highlight.index + 2
+            line: value.highlight.line + lineOffset, index: value.highlight.index + 2
           }, value.highlight)
         }
       }

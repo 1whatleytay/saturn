@@ -2,7 +2,7 @@ import { invoke, tauri } from '@tauri-apps/api'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
-  elf: ArrayBuffer // not sure what to do here
+  elf: string // not sure what to do here
   breakpoints: Record<number, number>
 }
 
@@ -184,9 +184,14 @@ export class ExecutionState {
 
     switch (this.profile.kind) {
       case 'elf': {
-        const result = await tauri.invoke('configure_elf', {
-          bytes: Array.from(new Uint8Array(this.profile.elf))
-        })
+        const text = window.atob(this.profile.elf)
+
+        const bytes = new Array(text.length);
+        for (let i = 0; i < text.length; i++) {
+          bytes[i] = text.charCodeAt(i)
+        }
+
+        const result = await tauri.invoke('configure_elf', { bytes })
 
         return result ? { status: 'Success', breakpoints: { } } : {
           status: 'Error',

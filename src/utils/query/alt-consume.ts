@@ -66,8 +66,7 @@ export function consumeSpace(line: string, index: number, direction: number, max
   let result = 0
   const inbounds = () => cursor + result >= 0 && cursor + result < line.length
 
-  const space = /\s/
-  while (inbounds() && Math.abs(result) < max && space.test(line[cursor + result])) {
+  while (inbounds() && Math.abs(result) < max && line[cursor + result] === ' ') {
     result += direction
   }
 

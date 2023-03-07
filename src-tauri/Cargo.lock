@@ -1199,9 +1199,9 @@ dependencies = [
 
 [[package]]
 name = "io-lifetimes"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1abeb7a0dd0f8181267ff8adc397075586500b81b28a73e8a0208b00fc170fb3"
+checksum = "cfa919a82ea574332e2de6e74b4c36e74d41982b335080fa59d4ef31be20fdf3"
 dependencies = [
  "libc",
  "windows-sys 0.45.0",
@@ -3012,7 +3012,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#52cfb4c0b08a6fa99e663091b5c3379d845ab5a4"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#9667a4ce5b40b2bf5e7369d46431caf04a0d8926"
 dependencies = [
  "bitflags",
  "byteorder",

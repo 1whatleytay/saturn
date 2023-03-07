@@ -11,7 +11,7 @@
           {{ text.leading }}
         </span>
 
-        <span class="rounded opacity-30 px-1 -mx-1 bg-blue-500">
+        <span class="rounded opacity-30 px-0.5 -mx-0.5 bg-blue-500">
           <span class="opacity-0">
             {{ text.body }}
           </span>
