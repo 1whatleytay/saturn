@@ -54,7 +54,7 @@ export function useSuggestions(
     const token = findToken(tokens, index)
 
     if (!token || !token.text.trim().length) {
-      suggestions.results = []
+      dismissSuggestions()
 
       return
     }
@@ -81,7 +81,9 @@ export function useSuggestions(
 
     suggestions.debounce = {
       interval: initial
-        ? window.setTimeout(() => makeSuggestions(token), debounceTimeout)
+        ? window.setTimeout(() => {
+          makeSuggestions(token)
+        }, debounceTimeout)
         : null,
       token,
       end: now + forceTimeout

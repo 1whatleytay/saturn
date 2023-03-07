@@ -1,4 +1,4 @@
-import { getStyle, grabWhitespace, HighlightResult, Token, TokenType } from '../language'
+import { getStyle, HighlightResult, Token, TokenType } from '../language'
 import { MarkedSuggestion, SuggestionType } from '../suggestions'
 
 enum ItemSuggestionMarker {
