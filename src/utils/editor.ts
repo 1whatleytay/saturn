@@ -300,7 +300,7 @@ export class Editor {
   }
 
   dropTab(line: number, spacing: number): number {
-    const regex = new RegExp(`^(\\s{0,${spacing}}|\\t)`, 'g')
+    const regex = new RegExp(`^( {1,${spacing}}|\\t)`, 'g')
     const match = this.data[line].match(regex)
 
     if (match && match.length) {

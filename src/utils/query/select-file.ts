@@ -49,7 +49,7 @@ export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
 
 export async function readInputFile(path: string): Promise<SelectedFile<string | Uint8Array> | null> {
   const name = await basename(path)
-  const extension = await extname(path)
+  const extension = await extname(path).catch(() => null)
 
   let data: string | Uint8Array
 

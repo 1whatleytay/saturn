@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+import { computed, ComputedRef, reactive, watch } from 'vue'
 import { Editor } from './editor'
 import { collectLines, EditorTab } from './tabs'
 import { Language, Token } from './languages/language'
@@ -8,7 +8,7 @@ import { HighlightsInterface } from './highlights'
 import { SuggestionsStorage } from './languages/suggestions'
 
 export interface StorageState {
-  editor: Editor
+  // editor: Editor
   language: Language
   highlights: Token[][]
   debounce: number | null
@@ -19,6 +19,7 @@ export interface StorageInterface {
 }
 
 export type StorageResult = StorageInterface & {
+  editor: ComputedRef<Editor>
   storage: StorageState
 }
 
@@ -126,13 +127,17 @@ export function useStorage(
     )
   }
 
+  const editor = computed(() => {
+    return createEditor()
+  })
+
   function createLanguage(): Language {
     return new MipsHighlighter()
   }
 
   function highlightAll(current: EditorTab | null) {
     // Might need to look at tab file extension to pick languages
-    storage.editor = createEditor()
+    // storage.editor = createEditor()
     storage.language = createLanguage()
     storage.highlights = [] // needs highlighting here
 
@@ -151,6 +156,7 @@ export function useStorage(
   watch(() => tab(), tab => { highlightAll(tab) })
 
   return {
+    editor,
     storage,
     suggestionsStorage: () => suggestions
   } as StorageResult

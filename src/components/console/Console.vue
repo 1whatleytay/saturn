@@ -34,25 +34,25 @@
         <Tab
           title="Console"
           :selected="consoleData.tab === DebugTab.Console"
-          @select="consoleData.tab = DebugTab.Console"
+          @mousedown="consoleData.tab = DebugTab.Console"
         />
 
         <Tab
           title="Registers"
           :selected="consoleData.tab === DebugTab.Registers"
-          @select="consoleData.tab = DebugTab.Registers"
+          @mousedown="consoleData.tab = DebugTab.Registers"
         />
 
         <Tab
           title="Memory"
           :selected="consoleData.tab === DebugTab.Memory"
-          @select="consoleData.tab = DebugTab.Memory"
+          @mousedown="consoleData.tab = DebugTab.Memory"
         />
 
         <Tab
           title="Bitmap"
           :selected="consoleData.tab === DebugTab.Bitmap"
-          @select="consoleData.tab = DebugTab.Bitmap"
+          @mousedown="consoleData.tab = DebugTab.Bitmap"
         />
 
         <button class="w-10 h-10 ml-auto

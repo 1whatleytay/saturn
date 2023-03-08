@@ -5,7 +5,7 @@ import { resume, step, pause, stop, build, postBuildMessage } from './debug'
 import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
 import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
-import { find, suggestions, editor, createTab, closeTab, loadElf, tab } from '../state/state'
+import { find, suggestions, tabsState, createTab, closeTab, loadElf, tab } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
@@ -24,10 +24,10 @@ interface ConsoleEvent {
 export async function openTab(file: SelectedFile<string | Uint8Array>) {
   const { name, path, data } = file
 
-  const existing = editor.tabs.find(tab => tab.path === path)
+  const existing = tabsState.tabs.find(tab => tab.path === path)
 
   if (existing) {
-    editor.selected = existing.uuid
+    tabsState.selected = existing.uuid
     return
   }
 
@@ -106,8 +106,8 @@ export async function setupEvents() {
   })
 
   await listen('close-tab', () => {
-    if (editor.selected) {
-      closeTab(editor.selected)
+    if (tabsState.selected) {
+      closeTab(tabsState.selected)
     }
   })
 
@@ -215,7 +215,7 @@ export async function setupEvents() {
   })
 
   await appWindow.onCloseRequested(async event => {
-    const ids = editor.tabs.map(x => x.uuid)
+    const ids = tabsState.tabs.map(x => x.uuid)
 
     for (const id of ids) {
       if (!closeTab(id)) {

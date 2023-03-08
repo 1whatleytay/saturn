@@ -16,7 +16,7 @@ function widthQuery(text: string) {
 }
 
 export const {
-  editor,
+  tabsState,
   tab,
   tabBody,
   createTab,
@@ -38,6 +38,7 @@ function onDirty(line: number, deleted: number, insert: string[]) {
 const storageResult = useStorage(highlights, tab, onDirty)
 
 export const {
+  editor,
   storage,
   suggestionsStorage
 } = storageResult
@@ -70,7 +71,7 @@ export const {
   handleKey,
   applyMergeSuggestion
 } = useCursor(
-  () => storage.editor,
+  () => editor.value,
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
   settings.editor,
   regular,

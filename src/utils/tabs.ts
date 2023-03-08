@@ -75,7 +75,7 @@ export interface TabsInterface {
 }
 
 export type TabsResult = TabsInterface & {
-  editor: Tabs
+  tabsState: Tabs
   tabBody: ComputedRef<string[]>
   saveModal: SaveModalResult
 }
@@ -347,7 +347,7 @@ export function useTabs(): TabsResult {
   }
 
   return {
-    editor,
+    tabsState: editor,
     tabBody,
     tab: () => tab.value,
     closeTab,

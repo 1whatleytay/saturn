@@ -1,6 +1,5 @@
 <template>
   <button
-    @click="emit('select')"
     class="
       hover:bg-neutral-800
       text-slate-300
@@ -12,7 +11,6 @@
       px-6
       text-xs
       font-medium
-      max-w-xs
       border-b-2
     "
     :class="{
@@ -20,7 +18,9 @@
       'border-transparent': !props.selected,
     }"
   >
-    {{ props.title }}
+    <span class="max-w-[260px] truncate">
+      {{ props.title }}
+    </span>
 
     <button
       v-if="props.deletable"
@@ -50,5 +50,5 @@ const props = withDefaults(defineProps<{
   marked: false
 })
 
-const emit = defineEmits(['select', 'delete'])
+const emit = defineEmits(['delete'])
 </script>

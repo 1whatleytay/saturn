@@ -4,13 +4,15 @@
 
     <div class="h-10 flex items-center overflow-x-auto items-start bg-neutral-900 w-full fixed z-20 top-0">
       <Tab
-        v-for="tab in editor.tabs"
+        v-for="tab in tabsState.tabs"
+        :ref="component => refTab(tab.uuid, component)"
         :key="tab.uuid"
         :title="tab.title"
         :marked="tab.marked"
-        :selected="editor.selected === tab.uuid"
+        :selected="tabsState.selected === tab.uuid"
         :deletable="true"
-        @select="editor.selected = tab.uuid"
+        :style="styleForTab(tab.uuid)"
+        @mousedown="(e: MouseEvent) => handleDown(e, tab.uuid)"
         @delete="closeTab(tab.uuid)"
       />
 
@@ -35,10 +37,114 @@
 import Tab from './Tab.vue'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 
-import { closeTab, createTab, saveModal, editor } from '../state/state'
+import { closeTab, createTab, saveModal, tabsState } from '../state/state'
 
 import TabBarItems from './TabBarItems.vue'
 import SaveModal from './SaveModal.vue'
+import { nextTick, onMounted, onUnmounted, reactive, StyleValue } from 'vue'
+
+const state = reactive({
+  dragging: false,
+  start: 0,
+  offset: 0
+})
+
+let tabElements = new Map<string, HTMLElement>()
+
+function refTab(uuid: string, component: any) {
+  if (component) {
+    tabElements.set(uuid, component.$el)
+  } else {
+    tabElements.delete(uuid)
+  }
+}
+
+const transitionTransform = {
+  transitionProperty: 'transform',
+  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  transitionDuration: '150ms'
+}
+
+function styleForTab(uuid: string): StyleValue {
+  if (state.dragging && uuid === tabsState.selected) {
+    return {
+      transform: `translateX(${state.offset}px)`
+    }
+  }
+
+  return transitionTransform
+}
+
+function handleDown(event: MouseEvent, uuid: string) {
+  tabsState.selected = uuid
+
+  const item = tabElements.get(tabsState.selected)
+  if (item) {
+    state.dragging = true
+
+    state.start = event.clientX - item.offsetLeft
+  }
+}
+
+const handleMove = async (event: MouseEvent) => {
+  if (!state.dragging || !tabsState.selected) {
+    return
+  }
+
+  const item = tabElements.get(tabsState.selected)
+
+  if (!item) {
+    return
+  }
+
+  const offset = event.clientX - state.start - item.offsetLeft
+  const middle = item.offsetWidth / 2 + item.offsetLeft + offset
+
+  state.offset = offset
+
+  for (const [key, element] of tabElements.entries()) {
+    if (key === tabsState.selected) {
+      continue
+    }
+
+    const start = element.offsetLeft
+    const end = start + element.offsetWidth
+
+    if (start <= middle && middle <= end) {
+      const first = tabsState.tabs.findIndex(x => x.uuid === tabsState.selected)
+      const second = tabsState.tabs.findIndex(x => x.uuid === key)
+
+      if (first < 0 || second < 0) {
+        continue
+      }
+
+      const temp = tabsState.tabs[first]
+      tabsState.tabs[first] = tabsState.tabs[second]
+      tabsState.tabs[second] = temp
+
+      await nextTick()
+      state.offset = event.clientX - state.start - item.offsetLeft
+
+      break
+    }
+  }
+}
+
+const handleUp = () => {
+  state.dragging = false
+  state.start = 0
+  state.offset = 0
+}
+
+onMounted(() => {
+  window.addEventListener('mouseup', handleUp)
+  window.addEventListener('mousemove', handleMove)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mouseup', handleUp)
+  window.removeEventListener('mousemove', handleMove)
+})
 
 function create() {
   createTab('Untitled', [''])
