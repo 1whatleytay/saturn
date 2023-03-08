@@ -14,7 +14,7 @@ export function consumeDirection(
   const directionOffset = direction < 0 ? 1 : 0
   const cursor = index - directionOffset
 
-  if (cursor <= 0 || cursor >= line.length) {
+  if (cursor < 0 || cursor >= line.length) {
     return 1
   }
 
@@ -56,7 +56,7 @@ export function consumeSpace(line: string, index: number, direction: number, max
   const directionOffset = direction < 0 ? 1 : 0
   const cursor = index - directionOffset
 
-  if (cursor <= 0 || cursor >= line.length) {
+  if (cursor < 0 || cursor >= line.length) {
     return 1
   }
 
