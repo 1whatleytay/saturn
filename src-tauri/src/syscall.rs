@@ -344,7 +344,7 @@ impl SyscallDelegate {
     }
 
     async fn print_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let character = state.lock().unwrap().state().registers.line[V0_REG] as u8 as char;
+        let character = state.lock().unwrap().state().registers.line[A0_REG] as u8 as char;
 
         self.send_print(&character.to_string()).await;
 

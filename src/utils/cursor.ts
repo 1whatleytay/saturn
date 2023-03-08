@@ -541,6 +541,8 @@ export function useCursor(
       case 'z': {
         const frame = editor().undo()
 
+        suggestions?.dismissSuggestions()
+
         if (frame) {
           putCursor(frame)
           value.highlight = null

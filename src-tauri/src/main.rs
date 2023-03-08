@@ -27,12 +27,12 @@ use crate::debug::{read_bytes, write_bytes, set_register, swap_breakpoints};
 use crate::midi::{midi_protocol, midi_install, MidiProviderContainer};
 
 #[tauri::command]
-fn post_key(key: char, state: tauri::State<'_, DebuggerBody>) {
+fn post_key(key: char, up: bool, state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let mut keyboard = pointer.keyboard.lock().unwrap();
 
-    keyboard.push_key(key)
+    keyboard.push_key(key, up)
 }
 
 #[tauri::command]

@@ -280,12 +280,12 @@ export class ExecutionState {
     await tauri.invoke('stop')
   }
   
-  public async postKey(key: string) {
+  public async postKey(key: string, up: boolean) {
     if (key.length !== 1) {
       return
     }
     
-    await tauri.invoke('post_key', { key })
+    await tauri.invoke('post_key', { key, up })
   }
   
   public async postInput(text: string) {

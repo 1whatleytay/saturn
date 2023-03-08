@@ -5,7 +5,8 @@
     <button
       ref="wrapper"
       @click="focusSelf"
-      @keydown="handleKey"
+      @keydown="e => handleKey(e, false)"
+      @keyup="e => handleKey(e, true)"
       class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 mx-auto md:mx-0 max-w-full"
       :style="{ width: `${correctedWidth}px` }"
     >
@@ -123,12 +124,27 @@ function sizeCheck(value: number): string | null {
   return null
 }
 
-async function handleKey(event: KeyboardEvent) {
+function mapKey(key: string): string | null {
+  if (key.length <= 1) {
+    return key
+  } else {
+    switch (key) {
+      case 'Enter': return '\n'
+      default: return null
+    }
+  }
+}
+
+async function handleKey(event: KeyboardEvent, up: boolean) {
   if (!consoleData.execution) {
     return
   }
 
-  await consoleData.execution.postKey(event.key)
+  const mapped = mapKey(event.key)
+  
+  if (mapped !== null) {
+    await consoleData.execution.postKey(mapped, up)
+  }
 }
 
 function focusSelf() {
