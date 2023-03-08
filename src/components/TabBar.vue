@@ -86,8 +86,13 @@ function handleDown(event: MouseEvent, uuid: string) {
   }
 }
 
+let lastX = 0
+
 const handleMove = async (event: MouseEvent) => {
-  if (!state.dragging || !tabsState.selected) {
+  const previousX = lastX
+  lastX = event.clientX
+
+  if (previousX === event.clientX || !state.dragging || !tabsState.selected) {
     return
   }
 
@@ -96,6 +101,8 @@ const handleMove = async (event: MouseEvent) => {
   if (!item) {
     return
   }
+
+  const rightOnly = previousX < event.clientX
 
   const offset = event.clientX - state.start - item.offsetLeft
   const middle = item.offsetWidth / 2 + item.offsetLeft + offset
@@ -115,6 +122,11 @@ const handleMove = async (event: MouseEvent) => {
       const second = tabsState.tabs.findIndex(x => x.uuid === key)
 
       if (first < 0 || second < 0) {
+        continue
+      }
+
+      // We don't want to make a lot of swaps in the same place
+      if (first < second !== rightOnly) {
         continue
       }
 
