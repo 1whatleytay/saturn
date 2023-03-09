@@ -2,31 +2,33 @@
   <div @click.stop>
     <SaveModal :dialog="saveModal" />
 
-    <div class="h-10 flex items-center overflow-x-auto items-start bg-neutral-900 w-full fixed z-20 top-0">
-      <Tab
-        v-for="tab in tabsState.tabs"
-        :ref="component => refTab(tab.uuid, component)"
-        :key="tab.uuid"
-        :title="tab.title"
-        :marked="tab.marked"
-        :selected="tabsState.selected === tab.uuid"
-        :deletable="true"
-        :style="styleForTab(tab.uuid)"
-        @mousedown="(e: MouseEvent) => handleDown(e, tab.uuid)"
-        @delete="closeTab(tab.uuid)"
-      />
+    <div class="h-10 flex items-center items-start bg-neutral-900 w-full fixed z-20 top-0">
+      <div class="flex flex-grow items-center overflow-x-auto items-start">
+        <Tab
+          v-for="tab in tabsState.tabs"
+          :ref="component => refTab(tab.uuid, component)"
+          :key="tab.uuid"
+          :title="tab.title"
+          :marked="tab.marked"
+          :selected="tabsState.selected === tab.uuid"
+          :deletable="true"
+          :style="styleForTab(tab.uuid)"
+          @mousedown="(e: MouseEvent) => handleDown(e, tab.uuid)"
+          @delete="closeTab(tab.uuid)"
+        />
 
-      <button class="w-10 h-10
-          hover:bg-slate-800
-          text-slate-300
-          shrink-0
-          flex items-center justify-center
-          font-black
-        " @click="create">
-        <PlusIcon class="w-4 h-4" />
-      </button>
+        <button class="w-10 h-10
+            hover:bg-slate-800
+            text-slate-300
+            shrink-0
+            flex items-center justify-center
+            font-black
+          " @click="create">
+          <PlusIcon class="w-4 h-4" />
+        </button>
+      </div>
 
-      <TabBarItems class="ml-auto" />
+      <TabBarItems class="ml-auto shrink-0" />
     </div>
 
     <div class="w-full h-10 border-b-2 opacity-0" />
