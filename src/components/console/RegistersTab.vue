@@ -1,27 +1,44 @@
 <template>
   <div
-    class="font-mono text-sm overflow-x-auto flex flex-col flex-wrap grow content-start"
+    class="font-mono text-sm overflow-x-auto flex flex-wrap grow content-start"
   >
     <div
-      v-for="values in registersMap" :key="values[0]"
-      class="flex border-b border-neutral-700 w-52"
+      v-for="section of mappedSections"
+      :key="section.name"
+      class="px-6 w-full mb-2"
     >
-      <div class="w-20 px-4 py-2 text-neutral-400">
-        {{ values[0] }}
+      <div :class="section.classes" class="flex items-center font-sans mt-2 mb-1 pb-1 text-lg border-b border-gray-700 font-light w-full">
+        <Square3Stack3DIcon class="w-4 h-4 mr-2" />
+
+        {{ section.name }}
       </div>
 
-      <div class="w-32 px-4 py-2 hover:bg-neutral-800 cursor-pointer select-all">
-        <span v-if="values[1] !== undefined && values[1] !== null">
-          0x{{ values[1].toString(16) }}
-        </span>
+      <div class="flex items-center flex-wrap w-full">
+        <div
+          v-for="register of section.values"
+          :key="register.name"
+          class="w-28 p-1 h-12"
+        >
+          <div class="text-xs mb-1" :class="[section.classes, register.value === undefined ? 'opacity-50' : '']">
+            {{ register.name }}
+          </div>
+
+          <div v-if="register.value !== undefined" class="text-gray-100">
+            0x{{ register.value?.toString(16) }}
+          </div>
+        </div>
       </div>
     </div>
+
+    <div class="w-full mb-16" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { consoleData } from '../../state/console-data'
+
+import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 
 const registers = [
   '$zero', '$at', '$v0', '$v1',
@@ -34,19 +51,51 @@ const registers = [
   '$gp', '$sp', '$fp', '$ra',
 ]
 
-const registersMap = computed(() => {
-  const core = registers.map(
-    (name, index) => [name, consoleData.registers?.line[index]]
-  ) as [string, number][]
-  const other = [
-    ['hi', consoleData.registers?.hi], ['lo', consoleData.registers?.lo]
-  ] as [string, number][]
+interface RegisterValue {
+  name: string
+  value?: number
+}
 
-  const result = []
-  result.push(['pc', consoleData.registers?.pc])
-  result.push(...core)
-  result.push(...other)
+interface OutlinedSection {
+  name: string,
+  classes: string
+  indices: number[]
+  system: boolean
+}
 
-  return result
+const sections = [
+  { name: 'System', classes: 'text-purple-300', indices: [0, 1, 26, 27, 28, 29, 30, 31], system: true },
+  { name: 'Values', classes: 'text-red-300', indices: [2, 3, 4, 5, 6, 7] },
+  { name: 'Temporary', classes: 'text-cyan-300', indices: [8, 9, 10, 11, 12, 13, 14, 15, 24, 25] },
+  { name: 'Saved', classes: 'text-green-300', indices: [16, 17, 18, 19, 20, 21, 22, 23] },
+] as OutlinedSection[]
+
+interface RegisterSection {
+  name: string,
+  classes: string
+  values: RegisterValue[]
+}
+
+const mappedSections = computed((): RegisterSection[] => {
+  const system = [
+    { name: 'pc', value: consoleData.registers?.pc },
+    { name: 'hi', value: consoleData.registers?.hi },
+    { name: 'lo', value: consoleData.registers?.lo },
+  ] as RegisterValue[]
+
+  return sections.map(section => {
+    const values = section.system ? system.slice() : []
+
+    values.push(...section.indices.map(index => ({
+      name: registers[index],
+      value: consoleData.registers?.line[index]
+    })))
+
+    return {
+      name: section.name,
+      classes: section.classes,
+      values
+    }
+  })
 })
 </script>
