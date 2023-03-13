@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { consoleData, DebugTab } from '../../state/console-data'
-import { computed, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, watch } from 'vue'
 
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/vue/24/solid'
 
@@ -239,6 +239,8 @@ const checkMemory = () => {
     updateMemoryData()
   }
 }
+
+onMounted(updateMemoryData)
 
 watch(() => memory.address, checkMemory)
 watch(() => consoleData.tab, checkMemory)
