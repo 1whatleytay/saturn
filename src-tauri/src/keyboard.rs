@@ -19,7 +19,9 @@ pub struct KeyboardHandler {
 
 impl KeyboardState {
     pub fn push_key(&mut self, key: char, up: bool) {
-        self.keys.push(key);
+        if !up {
+            self.keys.push(key)
+        }
 
         let offset = key as usize;
 
