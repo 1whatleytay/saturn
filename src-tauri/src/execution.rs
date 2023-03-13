@@ -150,15 +150,13 @@ pub async fn step(
 pub fn pause(
     state: tauri::State<'_, DebuggerBody>,
     display: tauri::State<'_, FlushDisplayBody>
-) -> Option<ResumeResult> {
-    let Some(pointer) = &*state.lock().unwrap() else { return None };
+) {
+    let Some(pointer) = &*state.lock().unwrap() else { return };
 
     let mut debugger = pointer.debugger.lock().unwrap();
     debugger.pause();
 
-    flush_display(debugger.memory(), display);
-
-    Some(ResumeResult::from_frame(debugger.frame(), &vec![], None))
+    flush_display(debugger.memory(), display)
 }
 
 #[tauri::command]

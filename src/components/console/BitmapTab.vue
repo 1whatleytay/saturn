@@ -26,17 +26,17 @@
       <div class="text-neutral-300 ml-2">
         <div class="py-1">
           <label for="bitmap-width" class="inline-block font-bold pr-4 w-32">Display Width</label>
-          <NumberField id="bitmap-width" v-model="settings.bitmap.width" :checker="sizeCheck" />
+          <NumberField id="bitmap-width" v-model="settings.bitmap.width" :checker="sizeCheck" classes="text-xs" />
         </div>
 
         <div class="py-1">
           <label for="bitmap-height" class="inline-block font-bold pr-4 w-32">Display Height</label>
-          <NumberField id="bitmap-height" v-model="settings.bitmap.height" :checker="sizeCheck" />
+          <NumberField id="bitmap-height" v-model="settings.bitmap.height" :checker="sizeCheck" classes="text-xs" />
         </div>
 
         <div class="py-1">
           <label for="bitmap-address" class="inline-block font-bold pr-4 w-32">Address</label>
-          <NumberField id="bitmap-address" v-model="settings.bitmap.address" :hex="true" :checker="memoryCheck" />
+          <NumberField id="bitmap-address" v-model="settings.bitmap.address" :hex="true" :checker="memoryCheck" classes="text-xs" />
 
           <button
             class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 active:bg-slate-700"

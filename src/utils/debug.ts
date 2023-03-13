@@ -146,11 +146,9 @@ export async function resume() {
 
 export async function pause() {
   if (consoleData.execution) {
-    clearDebug()
-
     consoleData.showConsole = true
 
-    postDebugInformation(await consoleData.execution.pause())
+    await consoleData.execution.pause()
   }
 }
 

@@ -55,6 +55,7 @@ pub fn set_register(register: u32, value: u32, state: tauri::State<'_, DebuggerB
         0 ..= 31 => state.registers.line[register as usize] = value,
         32 => state.registers.hi = value,
         33 => state.registers.lo = value,
+        34 => state.registers.pc = value,
         _ => { }
     }
 }

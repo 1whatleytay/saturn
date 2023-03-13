@@ -37,7 +37,7 @@ interface ConsoleLineMeta {
 interface ConsoleData {
   showConsole: boolean
   execution: ExecutionState | null
-  mode: ExecutionModeType | null,
+  mode: ExecutionModeType | null
   registers: Registers | null
   tab: DebugTab
   console: string[]

@@ -69,7 +69,8 @@
         "resizable": true,
         "title": "Saturn",
         "width": 800,
-        "titleBarStyle": "Visible"
+        "titleBarStyle": "Visible",
+        "theme": "Dark"
       }
     ]
   }

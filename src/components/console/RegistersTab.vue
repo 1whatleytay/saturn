@@ -13,32 +13,43 @@
         {{ section.name }}
       </div>
 
-      <div class="flex items-center flex-wrap w-full">
+      <div class="flex items-center flex-wrap w-full -ml-2">
         <div
           v-for="register of section.values"
           :key="register.name"
-          class="w-28 p-1 h-12"
+          class="w-28 py-1 px-0.5 h-12"
         >
-          <div class="text-xs mb-1" :class="[section.classes, register.value === undefined ? 'opacity-50' : '']">
+          <div class="text-xs pl-2" :class="[section.classes, register.value === undefined ? 'opacity-50' : '']">
             {{ register.name }}
           </div>
 
-          <div v-if="register.value !== undefined" class="text-gray-100">
-            0x{{ register.value?.toString(16) }}
-          </div>
+          <NumberField
+            v-if="register.value !== undefined"
+            :classes="`
+              pl-2 py-1 rounded
+              hover:bg-neutral-800 select-all cursor-text
+              w-28 bg-transparent
+              text-sm
+              ${register.marked ? 'text-orange-200' : 'text-gray-100'}`"
+            :model-value="register.value"
+            @update:model-value="value => setRegister(register.id, value)"
+            :hex="true"
+          />
         </div>
       </div>
     </div>
-
-    <div class="w-full mb-16" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { consoleData } from '../../state/console-data'
+import { settings } from '../../state/state'
 
-import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
+import { Cog6ToothIcon, Square3Stack3DIcon } from '@heroicons/vue/24/outline'
+import { RegisterFormat } from '../../utils/settings'
+import { Registers } from '../../utils/mips'
+import NumberField from './NumberField.vue'
 
 const registers = [
   '$zero', '$at', '$v0', '$v1',
@@ -53,7 +64,9 @@ const registers = [
 
 interface RegisterValue {
   name: string
+  id: number
   value?: number
+  marked: boolean
 }
 
 interface OutlinedSection {
@@ -76,20 +89,50 @@ interface RegisterSection {
   values: RegisterValue[]
 }
 
+let lastRegisters = null as Registers | null
+
+watch(() => consoleData.execution, value => {
+  console.log(`execution changed: ${!consoleData.execution}`)
+  if (!value) {
+    lastRegisters = null
+  }
+})
+
+watch(() => consoleData.registers, (value, old) => {
+  console.log(`setting ${value?.line[8]} -> ${old?.line[8]}`)
+  if (!!old) {
+    lastRegisters = old
+  } else {
+    console.log('old is null')
+  }
+})
+
+function register(name: string, id: number, get: (registers: Registers) => number | undefined): RegisterValue {
+  const lastState = lastRegisters
+  const currentState = consoleData.registers
+
+  const value = currentState ? get(currentState) : undefined
+
+  console.log(!!lastState)
+
+  const marked = !!lastState && !!value && get(lastState) !== value
+
+  return { name, id, value, marked }
+}
+
 const mappedSections = computed((): RegisterSection[] => {
   const system = [
-    { name: 'pc', value: consoleData.registers?.pc },
-    { name: 'hi', value: consoleData.registers?.hi },
-    { name: 'lo', value: consoleData.registers?.lo },
+    register('pc', 34, r => r.pc),
+    register('hi', 32, r => r.hi),
+    register('lo', 33, r => r.lo),
   ] as RegisterValue[]
 
   return sections.map(section => {
     const values = section.system ? system.slice() : []
 
-    values.push(...section.indices.map(index => ({
-      name: registers[index],
-      value: consoleData.registers?.line[index]
-    })))
+    values.push(...section.indices.map(index =>
+      register(registers[index], index, r => r.line[index])
+    ))
 
     return {
       name: section.name,
@@ -98,4 +141,27 @@ const mappedSections = computed((): RegisterSection[] => {
     }
   })
 })
+
+function setRegister(id: number, value: number) {
+  if (consoleData.execution && consoleData.registers) {
+    switch (id) {
+      case 32:
+        consoleData.registers.hi = value
+        break
+
+      case 33:
+        consoleData.registers.lo = value
+        break
+
+      case 34:
+        consoleData.registers.pc = value
+        break
+
+      default:
+        consoleData.registers.line[id] = value
+        break
+    }
+    consoleData.execution.setRegister(id, value)
+  }
+}
 </script>

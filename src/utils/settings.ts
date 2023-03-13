@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { configureDisplay } from './mips'
 
-const settingsVersion = 1
+const settingsVersion = 2
 
 export interface BitmapSettings {
   width: number
@@ -13,15 +13,25 @@ export interface EditorSettings {
   tabSize: number
 }
 
+export enum RegisterFormat {
+  Hexadecimal,
+  Decimal
+}
+
+export interface RegisterSettings {
+  format: RegisterFormat
+}
+
 export interface Settings {
   version: number // 1
   editor: EditorSettings
   bitmap: BitmapSettings
+  registers: RegisterSettings
 }
 
 function defaultSettings(): Settings {
   return {
-    version: 1,
+    version: settingsVersion,
     editor: {
       tabSize: 4
     },
@@ -29,6 +39,9 @@ function defaultSettings(): Settings {
       width: 64,
       height: 64,
       address: 0x10008000
+    },
+    registers: {
+      format: RegisterFormat.Hexadecimal
     }
   }
 }

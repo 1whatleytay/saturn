@@ -38,10 +38,9 @@
       shrink-0
       flex items-center justify-center
       font-black
-      text-teal-300
     " @click="step()" :class="{
       'text-gray-300 cursor-default': !allowResume,
-      'hover:bg-slate-800': allowResume
+      'text-teal-300 hover:bg-slate-800': allowResume
     }" :disabled="!allowResume" title="Step">
       <ChevronRightIcon class="w-4 h-4" />
     </button>

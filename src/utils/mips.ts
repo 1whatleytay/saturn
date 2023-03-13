@@ -264,10 +264,8 @@ export class ExecutionState {
     })
   }
 
-  public async pause(): Promise<ExecutionResult> {
-    const result = await tauri.invoke('pause')
-
-    return result as ExecutionResult
+  public async pause() {
+    await tauri.invoke('pause')
   }
 
   public async step(): Promise<ExecutionResult> {
@@ -300,6 +298,11 @@ export class ExecutionState {
     const result = await tauri.invoke('read_bytes', { address, count })
 
     return result as (number | null)[] | null
+  }
+
+  // register: 32 -> hi, 33 -> lo, 34 -> pc
+  public async setRegister(register: number, value: number) {
+    await tauri.invoke('set_register', { register, value })
   }
   
   public constructor(

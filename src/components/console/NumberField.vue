@@ -2,12 +2,15 @@
   <span class="relative group">
     <input
       type="text"
-      class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+      class="font-mono bg-neutral-800 text-neutral-300 px-2 py-1 rounded"
       spellcheck="false"
-      :class="{
-        'ring-2 ring-red-500': state.error !== null
-      }"
+      :class="[
+        state.error !== null ? 'ring-2 ring-red-500' : '',
+        props.classes
+      ]"
       v-model="state.value"
+      @change="clean"
+      @keydown.enter="clean"
     />
 
     <span v-if="state.error" class="
@@ -16,6 +19,7 @@
       bg-neutral-900 rounded
       shadow-xl
       absolute z-30
+      w-80
       text-red-400 font-medium font-sans
       hidden group-hover:block">
       {{ state.error }}
@@ -29,9 +33,11 @@ import { reactive, watch } from 'vue'
 const props = withDefaults(defineProps<{
   modelValue: number,
   hex?: boolean,
+  classes?: string
   checker?: (value: number) => string | null
 }>(), {
-  hex: false
+  hex: false,
+  classes: ''
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -41,6 +47,10 @@ const state = reactive({
   value: formatHex(props.modelValue, props.hex),
   error: null as string | null,
 })
+
+function clean() {
+  state.value = formatHex(props.modelValue, props.hex)
+}
 
 watch(() => props.modelValue, value => {
   if (value !== state.expected) {
@@ -84,7 +94,7 @@ function formatHex(value: number, hex: boolean): string {
 watch(() => state.value, value => {
   const result = parse(value)
 
-  if (result) {
+  if (result !== null) {
     if (props.checker) {
       state.error = props.checker(result)
     } else {
