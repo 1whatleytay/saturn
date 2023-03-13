@@ -468,7 +468,7 @@ export function useCursor(
       }
     }
 
-    const lineOffset = 1
+    const lineOffset = value.highlight ? 0 : 1
 
     if (all) {
       editor().crop(start, crops)
@@ -477,7 +477,7 @@ export function useCursor(
 
       if (value.highlight && highlightIndex) {
         putCursor({
-          line: value.highlight.line + lineOffset, index: highlightIndex
+          line: value.highlight.line, index: highlightIndex
         }, value.highlight)
       }
     } else {
@@ -487,6 +487,8 @@ export function useCursor(
       const { leading: cursorLeading } = grabWhitespace(editor().lineAt(value.line))
       if (value.index >= cursorLeading.length) {
         putCursor({ line: value.line + lineOffset, index: value.index + 2 })
+      } else {
+        putCursor({ line: value.line + lineOffset, index: value.index })
       }
 
       if (value.highlight) {
@@ -494,7 +496,7 @@ export function useCursor(
 
         if (value.highlight.index >= highlightLeading.length) {
           putCursor({
-            line: value.highlight.line + lineOffset, index: value.highlight.index + 2
+            line: value.highlight.line, index: value.highlight.index + 2
           }, value.highlight)
         }
       }
