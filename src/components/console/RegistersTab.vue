@@ -33,6 +33,7 @@
               ${register.marked ? 'text-orange-200' : 'text-gray-100'}`"
             :model-value="register.value"
             @update:model-value="value => setRegister(register.id, value)"
+            :checker="checker"
             :hex="true"
           />
         </div>
@@ -92,28 +93,28 @@ interface RegisterSection {
 let lastRegisters = null as Registers | null
 
 watch(() => consoleData.execution, value => {
-  console.log(`execution changed: ${!consoleData.execution}`)
   if (!value) {
     lastRegisters = null
   }
 })
 
 watch(() => consoleData.registers, (value, old) => {
-  console.log(`setting ${value?.line[8]} -> ${old?.line[8]}`)
   if (!!old) {
     lastRegisters = old
-  } else {
-    console.log('old is null')
   }
 })
+
+function checker(value: number): string | null {
+  const valid = value >= 0 && value <= 0xffffffff
+
+  return !valid ? 'Value must be between 0x0 and 0xffffffff' : null
+}
 
 function register(name: string, id: number, get: (registers: Registers) => number | undefined): RegisterValue {
   const lastState = lastRegisters
   const currentState = consoleData.registers
 
   const value = currentState ? get(currentState) : undefined
-
-  console.log(!!lastState)
 
   const marked = !!lastState && !!value && get(lastState) !== value
 

@@ -59,8 +59,12 @@ watch(() => props.modelValue, value => {
   }
 })
 
-function parse(text: string): number | null {
+function parse(leading: string): number | null {
   let result: number
+
+  const hasSign = leading.length && leading[0] === '+' || leading[0] === '-'
+  const text = hasSign ? leading.substring(1) : leading
+  const negative = hasSign && leading[0] === '-'
 
   if (text.startsWith('0x')) {
     const rest = text.substring(2)
@@ -80,12 +84,18 @@ function parse(text: string): number | null {
     result = parseInt(text)
   }
 
+  if (negative) {
+    result = 0x100000000 - result
+  }
+
   return isNaN(result) ? null : result
 }
 
 function formatHex(value: number, hex: boolean): string {
   if (hex) {
-    return `0x${value.toString(16)}`
+    const signed = Math.abs(value).toString(16)
+
+    return `${value < 0 ? '-' : ''}0x${signed}`
   } else {
     return value.toString()
   }
