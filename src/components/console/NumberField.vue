@@ -10,6 +10,7 @@
       ]"
       v-model="state.value"
       @change="clean"
+      :disabled="!props.editable"
       @keydown.enter="clean"
     />
 
@@ -34,10 +35,12 @@ const props = withDefaults(defineProps<{
   modelValue: number,
   hex?: boolean,
   classes?: string
-  checker?: (value: number) => string | null
+  checker?: (value: number) => string | null,
+  editable?: boolean
 }>(), {
   hex: false,
-  classes: ''
+  classes: '',
+  editable: true
 })
 
 const emit = defineEmits(['update:modelValue'])
