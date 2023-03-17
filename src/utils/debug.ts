@@ -66,9 +66,6 @@ function clearDebug() {
 }
 
 function closeExecution() {
-  clearDebug()
-
-  consoleData.registers = null
   consoleData.execution = null
 }
 

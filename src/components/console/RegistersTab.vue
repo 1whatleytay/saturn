@@ -18,8 +18,9 @@
           v-for="register of section.values"
           :key="register.name"
           class="w-28 py-1 px-0.5 h-12"
+          :class="!consoleData.execution ? 'opacity-50' : ''"
         >
-          <div class="text-xs pl-2" :class="[section.classes, register.value === undefined ? 'opacity-50' : '']">
+          <div class="text-xs pl-2 group" :class="section.classes">
             {{ register.name }}
           </div>
 
@@ -34,6 +35,7 @@
             :model-value="register.value"
             @update:model-value="value => setRegister(register.id, value)"
             :checker="checker"
+            :editable="!!consoleData.execution"
             :hex="true"
           />
         </div>
