@@ -1,5 +1,5 @@
 <template>
-  <span class="relative group">
+  <span class="inline-block relative group">
     <input
       type="text"
       class="font-mono bg-neutral-800 text-neutral-300 px-2 py-1 rounded"
@@ -36,11 +36,13 @@ const props = withDefaults(defineProps<{
   hex?: boolean,
   classes?: string
   checker?: (value: number) => string | null,
-  editable?: boolean
+  editable?: boolean,
+  cleanOnly?: boolean
 }>(), {
   hex: false,
   classes: '',
-  editable: true
+  editable: true,
+  cleanOnly: true
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -51,8 +53,18 @@ const state = reactive({
   error: null as string | null,
 })
 
+let debounce = null as number | null
+
 function clean() {
-  state.value = formatHex(props.modelValue, props.hex)
+  if (debounce) {
+    window.clearTimeout(debounce)
+  }
+
+  if (props.cleanOnly) {
+    emit('update:modelValue', state.expected)
+  }
+
+  state.value = formatHex(state.expected, props.hex)
 }
 
 watch(() => props.modelValue, value => {
@@ -116,7 +128,18 @@ watch(() => state.value, value => {
 
     if (state.error === null) {
       state.expected = result
-      emit('update:modelValue', result)
+
+      if (debounce) {
+        window.clearTimeout(debounce)
+      }
+
+      if (!props.cleanOnly) {
+        emit('update:modelValue', result)
+      } else {
+        debounce = window.setTimeout(() => {
+          emit('update:modelValue', result)
+        }, 500)
+      }
     }
   } else {
     state.error = 'This field only accepts numerical values'

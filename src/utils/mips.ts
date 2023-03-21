@@ -44,7 +44,7 @@ export type BinaryResult = {
   result: AssemblerResult
 }
 
-interface BitmapConfig {
+export interface BitmapConfig {
   width: number
   height: number
   address: number

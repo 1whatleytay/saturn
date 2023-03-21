@@ -1,11 +1,13 @@
 import { reactive, watch } from 'vue'
-import { configureDisplay } from './mips'
+import { BitmapConfig, configureDisplay } from './mips'
 
 const settingsVersion = 2
 
 export interface BitmapSettings {
-  width: number
-  height: number
+  displayWidth: number
+  displayHeight: number
+  unitWidth: number
+  unitHeight: number
   address: number
 }
 
@@ -36,8 +38,10 @@ function defaultSettings(): Settings {
       tabSize: 4
     },
     bitmap: {
-      width: 64,
-      height: 64,
+      displayWidth: 64,
+      displayHeight: 64,
+      unitWidth: 1,
+      unitHeight: 1,
       address: 0x10008000
     },
     registers: {
@@ -67,14 +71,22 @@ function toStorage(settings: Settings) {
   localStorage.setItem(storageKey, value)
 }
 
+export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
+  return {
+    width: Math.floor(bitmap.displayWidth / bitmap.unitWidth),
+    height: Math.floor(bitmap.displayHeight / bitmap.unitHeight),
+    address: bitmap.address
+  }
+}
+
 export function useSettings(): Settings {
   const state = reactive(fromStorage())
 
-  configureDisplay(state.bitmap).then(() => { })
+  configureDisplay(displayConfig(state.bitmap)).then(() => { })
 
   watch(() => state.bitmap, async bitmap => {
     // Update tauri backend.
-    await configureDisplay(bitmap)
+    await configureDisplay(displayConfig(bitmap))
   }, { deep: true })
 
   let debounce = null as number | null
