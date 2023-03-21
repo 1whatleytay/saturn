@@ -187,6 +187,8 @@ function readItem(line: string, index: number, initial: boolean): Item {
     }
 
     case ',':
+    case '+':
+    case '-':
     case '(':
     case ')':
     case ':':
