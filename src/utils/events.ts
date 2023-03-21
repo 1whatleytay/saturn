@@ -9,6 +9,7 @@ import { find, suggestions, tabsState, createTab, closeTab, loadElf, tab } from 
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
+import { splitLines } from './split-lines'
 
 export enum PromptType {
   NeverPrompt,
@@ -33,7 +34,7 @@ export async function openTab(file: SelectedFile<string | Uint8Array>) {
 
   switch (typeof data) {
     case 'string':
-      const split = data.split('\n')
+      const split = splitLines(data)
 
       createTab(name, split.length ? split : [''], path)
       break

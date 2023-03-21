@@ -1,5 +1,6 @@
 import { consumeBackwards, consumeForwards, consumeSpace } from './query/alt-consume'
 import { grabWhitespace } from './languages/language'
+import { splitLines } from './split-lines'
 
 export interface SelectionIndex {
   line: number,
@@ -270,7 +271,7 @@ export class Editor {
 
 // Technical Debt: insert vs paste (concern: speed for splitting by \n)
   paste(index: SelectionIndex, text: string): SelectionIndex {
-    const textLines = text.split('\n')
+    const textLines = splitLines(text)
 
     if (!textLines.length) {
       return index

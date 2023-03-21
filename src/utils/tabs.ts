@@ -7,6 +7,7 @@ import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
 import { readFile } from './query/select-file'
+import { splitLines } from './split-lines'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -138,25 +139,18 @@ export function useTabs(): TabsResult {
 
     for (const tab of state.tabs) {
       const title = tab.title || 'Untitled'
-      let lines = ['']
-
+      let data: string | null
       if (tab.path) {
-        const { data } = await readFile(tab.path)
-
-        if (!data) {
-          continue
-        }
-
-        lines = data.split('\n')
+        data = (await readFile(tab.path)).data
       } else {
-        const data = localStorage.getItem(backupKey(tab.uuid))
-
-        if (!data) {
-          continue
-        }
-
-        lines = data.split('\n')
+        data = localStorage.getItem(backupKey(tab.uuid))
       }
+
+      if (!data) {
+        continue
+      }
+
+      const lines = splitLines(data)
 
       editor.tabs.push({
         uuid: tab.uuid,
