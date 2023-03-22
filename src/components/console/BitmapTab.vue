@@ -155,11 +155,14 @@ function unitCheck(value: number): string | null {
 }
 
 function mapKey(key: string): string | null {
-  if (key.length <= 1) {
-    return key
+  const lower = key.toLowerCase()
+
+  if (lower.length <= 1) {
+    return lower
   } else {
     switch (key) {
       case 'Enter': return '\n'
+      case 'Space': return ' '
       default: return null
     }
   }
