@@ -22,7 +22,7 @@ use crate::state::DebuggerBody;
 
 use crate::menu::platform_shortcuts;
 use crate::build::{assemble, disassemble, assemble_binary, configure_elf, configure_asm};
-use crate::execution::{resume, step, pause, stop};
+use crate::execution::{resume, pause, stop};
 use crate::debug::{read_bytes, write_bytes, set_register, swap_breakpoints};
 use crate::midi::{midi_protocol, midi_install, MidiProviderContainer};
 
@@ -83,7 +83,6 @@ fn main() {
             configure_elf, // build
             configure_asm, // build
             resume, // execution
-            step, // execution
             pause, // execution
             stop, // execution
             read_bytes, // debug
