@@ -64,6 +64,7 @@ impl ResumeResult {
             Some(SyscallResult::Terminated(code)) => ResumeMode::Finished {
                 pc: frame.registers.pc, code: Some(code)
             },
+            Some(SyscallResult::Aborted) => ResumeMode::Paused,
             Some(SyscallResult::Exception(error)) => ResumeMode::Invalid {
                 message: error.to_string()
             },
@@ -123,6 +124,9 @@ pub async fn resume(
         debugger.lock().unwrap().set_breakpoints(breakpoints_set);
     }
 
+    // Ensure the cancel token hasn't been set previously.
+    state.lock().unwrap().renew();
+
     let delegate = SyscallDelegate::new(state);
 
     let (frame, result) = {
@@ -153,10 +157,10 @@ pub fn pause(
 ) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    let mut debugger = pointer.debugger.lock().unwrap();
-    debugger.pause();
+    pointer.debugger.lock().unwrap().pause();
+    pointer.delegate.lock().unwrap().cancel();
 
-    flush_display(debugger.memory(), display)
+    flush_display(pointer.debugger.lock().unwrap().memory(), display);
 }
 
 #[tauri::command]

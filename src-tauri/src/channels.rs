@@ -1,10 +1,8 @@
 use std::cmp::min;
 use std::sync::Mutex;
-use tokio::select;
 use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TrySendError::Full;
-use tokio_util::sync::CancellationToken;
 
 struct ByteChannelReceiver {
     receiver: mpsc::Receiver<Vec<u8>>,
@@ -93,15 +91,12 @@ impl ByteChannel {
     }
 
     async fn take(
-        &self, state: &mut AsyncMutexGuard<'_, ByteChannelReceiver>, token: &CancellationToken
+        &self, state: &mut AsyncMutexGuard<'_, ByteChannelReceiver>
     ) -> Option<(usize, Vec<u8>)> {
         if let Some(value) = state.peek.take() {
             Some(value)
         } else {
-            let result = select! {
-                _ = token.cancelled() => None,
-                value = state.receiver.recv() => value
-            };
+            let result = state.receiver.recv().await;
 
             result
                 .or_else(|| self.pop_cache())
@@ -109,7 +104,7 @@ impl ByteChannel {
         }
     }
 
-    pub async fn read(&self, count: usize, token: &CancellationToken) -> Option<Vec<u8>> {
+    pub async fn read(&self, count: usize) -> Option<Vec<u8>> {
         let mut output = vec![];
 
         while count > output.len() {
@@ -117,7 +112,7 @@ impl ByteChannel {
 
             let mut state = self.receiver.lock().await;
 
-            let (index, value) = self.take(&mut state, token).await?;
+            let (index, value) = self.take(&mut state).await?;
             let bytes = min(needs, value.len() - index);
 
             let end = index + bytes;
@@ -132,7 +127,7 @@ impl ByteChannel {
     }
 
     pub async fn read_until<F: FnMut(u8) -> ByteChannelConsumption>(
-        &self, mut f: F, token: &CancellationToken
+        &self, mut f: F
     ) -> Option<Vec<u8>> {
         let mut output = vec![];
         let mut full = false;
@@ -140,7 +135,7 @@ impl ByteChannel {
         while !full {
             let mut state = self.receiver.lock().await;
 
-            let (index, value) = self.take(&mut state, token).await?;
+            let (index, value) = self.take(&mut state).await?;
 
             let mut end = index;
 
