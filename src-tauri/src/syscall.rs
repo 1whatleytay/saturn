@@ -55,7 +55,7 @@ pub trait MidiHandler {
 }
 
 pub struct SyscallState {
-    cancel_token: CancellationToken,
+    pub cancel_token: CancellationToken,
     pub input_buffer: Arc<ByteChannel>,
     pub sync_wake: Arc<Notify>,
     heap_start: u32,
@@ -82,6 +82,10 @@ impl SyscallState {
             next_file: 3,
             file_map: HashMap::new()
         }
+    }
+
+    pub fn renew(&mut self) {
+        self.cancel_token = CancellationToken::new()
     }
 
     pub fn cancel(&self) {
@@ -123,9 +127,7 @@ impl SyscallDelegate {
     }
 
     async fn send_print(&self, text: &str) {
-        {
-            self.state.lock().unwrap().console.print(text, false);
-        }
+        self.state.lock().unwrap().console.print(text, false);
 
         tokio::time::sleep(PRINT_BUFFER_TIME).await;
     }
@@ -199,14 +201,12 @@ impl SyscallDelegate {
         Completed
     }
 
-    fn lock_input(&self) -> (CancellationToken, Arc<ByteChannel>) {
-        let syscall = self.state.lock().unwrap();
-
-        (syscall.cancel_token.clone(), syscall.input_buffer.clone())
+    fn lock_input(&self) -> Arc<ByteChannel> {
+        self.state.lock().unwrap().input_buffer.clone()
     }
 
     async fn read_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let (token, buffer) = self.lock_input();
+        let buffer = self.lock_input();
 
         let mut positive = Option::<bool>::None;
         let mut value: i64 = 0;
@@ -245,7 +245,7 @@ impl SyscallDelegate {
             } else {
                 IgnoreAndStop
             }
-        }, &token).await;
+        }).await;
 
         if result.is_none() {
             return Aborted
@@ -283,7 +283,7 @@ impl SyscallDelegate {
         }
 
         let data = {
-            let (token, input_buffer) = self.lock_input();
+            let input_buffer = self.lock_input();
 
             let mut data: Vec<u8> = vec![];
 
@@ -301,7 +301,7 @@ impl SyscallDelegate {
                 data.push(b);
 
                 ConsumeAndContinue
-            }, &token).await;
+            }).await;
 
             data.push('\0' as u8);
 
@@ -352,9 +352,9 @@ impl SyscallDelegate {
     }
 
     async fn read_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let (token, buffer) = self.lock_input();
+        let buffer = self.lock_input();
 
-        let result = buffer.read(1, &token).await;
+        let result = buffer.read(1).await;
 
         let Some(result) = result else {
             return Aborted
@@ -662,10 +662,12 @@ impl SyscallDelegate {
     async fn wrap_cancel<F: Future<Output = SyscallResult>>(&self, f: F) -> SyscallResult {
         let token = self.state.lock().unwrap().cancel_token.clone();
 
-        select! {
+        let result = select! {
             result = f => result,
             _ = token.cancelled() => Aborted
-        }
+        };
+
+        result
     }
 
     pub async fn dispatch(&self, state: &Mutex<DebuggerType>, code: u32) -> SyscallResult {
