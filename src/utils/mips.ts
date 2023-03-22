@@ -24,8 +24,13 @@ export interface LineMarker {
   offset: number
 }
 
+interface Breakpoint {
+  line: number
+  pcs: number[]
+}
+
 export interface AssemblerSuccess {
-  breakpoints: Record<number, number>
+  breakpoints: Breakpoint[]
 }
 
 export interface AssemblerError {
@@ -108,24 +113,28 @@ class Breakpoints {
   }
 
   // pc -> line
-  constructor(breakpoints: Record<number, number>) {
+  constructor(breakpoints: Breakpoint[]) {
     this.lineToPc = new Map()
     this.pcToLine = new Map()
 
-    for (const [pc, line] of Object.entries(breakpoints)) {
-      const pcNumber = parseInt(pc)
-
-      let lineMap = this.lineToPc.get(line)
+    for (const breakpoint of breakpoints) {
+      let lineMap = this.lineToPc.get(breakpoint.line)
 
       if (!lineMap) {
         lineMap = []
 
-        this.lineToPc.set(line, lineMap)
+        this.lineToPc.set(breakpoint.line, lineMap)
       }
 
-      lineMap.push(pcNumber)
+      const anchorPc = breakpoint.pcs[0]
 
-      this.pcToLine.set(pcNumber, line)
+      if (anchorPc !== undefined) {
+        lineMap.push(anchorPc)
+      }
+
+      for (const pc of breakpoint.pcs) {
+        this.pcToLine.set(pc, breakpoint.line)
+      }
     }
   }
 }
@@ -193,7 +202,7 @@ export class ExecutionState {
 
         const result = await tauri.invoke('configure_elf', { bytes })
 
-        return result ? { status: 'Success', breakpoints: { } } : {
+        return result ? { status: 'Success', breakpoints: [] } : {
           status: 'Error',
           message: 'Configured ELF was not valid',
           body: null,
@@ -206,22 +215,11 @@ export class ExecutionState {
           text: this.text
         }) as AssemblerResult
 
-        switch (result.status) {
-          case 'Success':
-            this.breakpoints = new Breakpoints(result.breakpoints)
-
-            return { status: 'Success', breakpoints: { } }
-
-          case 'Error':
-            return {
-              status: 'Error',
-              message: result.message,
-              body: result.body,
-              marker: result.marker
-            }
+        if (result.status === 'Success') {
+          this.breakpoints = new Breakpoints(result.breakpoints)
         }
 
-        break
+        return result
       }
 
       default:
@@ -310,9 +308,14 @@ export class ExecutionState {
     public profile: ExecutionProfile
   ) {
     switch (profile.kind) {
-      case 'elf':
-        this.breakpoints = new Breakpoints(profile.breakpoints)
+      case 'elf': {
+        const breakpoints = Object.entries(profile.breakpoints)
+          .map(([pc, line]) => ({ line, pcs: [parseInt(pc)] }) as Breakpoint)
+
+        this.breakpoints = new Breakpoints(breakpoints)
+
         break
+      }
 
       default:
         this.breakpoints = null
