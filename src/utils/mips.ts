@@ -104,7 +104,7 @@ export interface LastDisplay {
 
 class Breakpoints {
   public lineToPc: Map<number, number[]>
-  public pcToLine: Map<number, number>
+  public pcToGroup: Map<number, Breakpoint>
 
   public mapLines(lines: number[]): number[] {
     return lines
@@ -115,7 +115,7 @@ class Breakpoints {
   // pc -> line
   constructor(breakpoints: Breakpoint[]) {
     this.lineToPc = new Map()
-    this.pcToLine = new Map()
+    this.pcToGroup = new Map()
 
     for (const breakpoint of breakpoints) {
       let lineMap = this.lineToPc.get(breakpoint.line)
@@ -133,7 +133,7 @@ class Breakpoints {
       }
 
       for (const pc of breakpoint.pcs) {
-        this.pcToLine.set(pc, breakpoint.line)
+        this.pcToGroup.set(pc, breakpoint)
       }
     }
   }
@@ -230,7 +230,9 @@ export class ExecutionState {
   }
 
   public async resume(
-    breakpoints: number[], listen: (result: AssemblerResult) => void = () => { }
+    count: number | null,
+    breakpoints: number[] | null,
+    listen: (result: AssemblerResult) => void = () => { }
   ): Promise<ExecutionResult | null> {
     const assemblerResult = await this.configure()
 
@@ -242,8 +244,13 @@ export class ExecutionState {
       }
     }
 
+    const mappedBreakpoints = breakpoints
+      ? this.breakpoints?.mapLines(breakpoints) ?? []
+      : []
+
     const result = await tauri.invoke('resume', {
-      breakpoints: this.breakpoints?.mapLines(breakpoints) ?? []
+      breakpoints: mappedBreakpoints,
+      count
     })
 
     return result as ExecutionResult
@@ -264,12 +271,6 @@ export class ExecutionState {
 
   public async pause() {
     await tauri.invoke('pause')
-  }
-
-  public async step(): Promise<ExecutionResult> {
-    const result = await tauri.invoke('step')
-
-    return result as ExecutionResult
   }
 
   public async stop() {

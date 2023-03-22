@@ -130,9 +130,9 @@ export async function resume() {
   consoleData.showConsole = true
   consoleData.mode = ExecutionModeType.Running
 
-  const result = await consoleData.execution.resume(usedBreakpoints, result => {
-    postBuildMessage(result)
-  })
+  const result = await consoleData.execution.resume(
+    null, usedBreakpoints, result => postBuildMessage(result)
+  )
 
   if (result) {
     postDebugInformation(result)
@@ -142,29 +142,56 @@ export async function resume() {
 }
 
 export async function pause() {
-  if (consoleData.execution) {
-    consoleData.showConsole = true
-
-    await consoleData.execution.pause()
+  if (!consoleData.execution) {
+    return
   }
+
+  consoleData.showConsole = true
+
+  await consoleData.execution.pause()
 }
 
 export async function step() {
-  if (consoleData.execution) {
-    clearDebug()
+  if (!consoleData.execution) {
+    return
+  }
 
-    consoleData.showConsole = true
+  const breakpoints = consoleData.execution.breakpoints
 
-    postDebugInformation(await consoleData.execution.step())
+  let skip = 1
+  if (breakpoints && consoleData.registers) {
+    const pc = consoleData.registers.pc
+    const group = breakpoints.pcToGroup.get(pc)
+
+    if (group) {
+      const index = group.pcs.findIndex(x => x === pc)
+
+      if (index >= 0) {
+        skip = group.pcs.length - index
+      }
+    }
+  }
+
+  clearDebug()
+  consoleData.mode = ExecutionModeType.Running
+
+  const result = await consoleData.execution.resume(skip, null)
+
+  consoleData.showConsole = true
+
+  if (result) {
+    postDebugInformation(result)
   }
 }
 
 export async function stop() {
-  if (consoleData.execution) {
-    consoleData.mode = ExecutionModeType.Stopped
-
-    await consoleData.execution.stop()
-
-    closeExecution()
+  if (!consoleData.execution) {
+    return
   }
+
+  consoleData.mode = ExecutionModeType.Stopped
+
+  await consoleData.execution.stop()
+
+  closeExecution()
 }
