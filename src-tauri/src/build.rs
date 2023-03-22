@@ -21,10 +21,16 @@ pub struct LineMarker {
 }
 
 #[derive(Serialize)]
+pub struct Breakpoint {
+    line: usize,
+    pcs: Vec<u32>
+}
+
+#[derive(Serialize)]
 #[serde(tag="status")]
 pub enum AssemblerResult {
     Error { marker: Option<LineMarker>, message: String, body: Option<String> },
-    Success { breakpoints: HashMap<u32, usize> }
+    Success { breakpoints: Vec<Breakpoint> }
 }
 
 impl AssemblerResult {
@@ -33,7 +39,10 @@ impl AssemblerResult {
     ) -> (Option<Binary>, AssemblerResult) {
         match result {
             Ok(binary) => {
-                let breakpoints = binary.source_breakpoints(source);
+                let breakpoints = binary.source_breakpoints(source)
+                    .into_iter()
+                    .map(|b| Breakpoint { line: b.line, pcs: b.pcs })
+                    .collect();
 
                 (Some(binary), AssemblerResult::Success { breakpoints })
             },
