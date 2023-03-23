@@ -383,18 +383,21 @@ export function useCursor(
       }
     } else {
       const alignment = settings.tabSize
-      const tabs = ' '.repeat(alignment)
 
       if (region) {
+        const tabs = ' '.repeat(alignment)
+
         for (let line = region.startLine; line <= region.endLine; line++) {
           editor().put({ line, index: 0 }, tabs)
 
           adjustCursor(line, +alignment)
         }
       } else {
-        editor().put(value, tabs)
+        const spaces = settings.tabSize - (value.index % settings.tabSize)
 
-        putCursor({ line: value.line, index: value.index + alignment })
+        editor().put(value, ' '.repeat(spaces))
+
+        putCursor({ line: value.line, index: value.index + spaces })
       }
     }
   }
