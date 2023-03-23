@@ -62,7 +62,7 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
     }
 
     // Keeping this around temporarily.
-    let heap_end = 0x7FFFFFFCu32;
+    let heap_end = 0x80000000u32;
 
     let heap = Region {
         start: heap_end - heap_size,
@@ -73,17 +73,16 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
 
     let mut state = State::new(binary.entry, memory);
 
-    state.registers.line[29] = heap_end;
+    state.registers.line[29] = heap_end - 4; // give some space
 
     state
 }
 
 pub fn setup_state(state: &mut State<MemoryType>) {
-    let screen = Region { start: 0x10008000, data: vec![0; 0x4000] };
-    // let keyboard = Region { start: 0xFFFF0000, data: vec![0; 0x100] };
+    let max_screen = 0x8000;
+    let screen = Region { start: 0x10008000, data: vec![0; max_screen] };
 
     state.memory.mount(screen);
-    // state.memory.mount(keyboard);
 
     state.registers.line[28] = 0x10008000
 }
