@@ -74,6 +74,10 @@ watch(() => props.modelValue, value => {
   }
 })
 
+watch(() => props.hex, value => {
+  state.value = formatHex(props.modelValue, value)
+})
+
 function parse(leading: string): number | null {
   let result: number
 
