@@ -15,6 +15,8 @@ mod channels;
 mod midi;
 
 use std::sync::Mutex;
+use tauri::Manager;
+use tauri::WindowEvent::Destroyed;
 
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
@@ -74,6 +76,17 @@ fn main() {
         .manage(Mutex::new(FlushDisplayState::default()) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
+        .on_window_event(|event| {
+            if let Destroyed = event.event() {
+                // Relieve some pressure on tokio.
+                stop(
+                    event.window().state(),
+                    event.window().state()
+                )
+
+                // Assuming tokio will join threads for me if needed.
+            }
+        })
         .on_menu_event(handle_event)
         .invoke_handler(tauri::generate_handler![
             platform_shortcuts, // util
