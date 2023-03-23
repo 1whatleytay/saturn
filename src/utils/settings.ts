@@ -73,8 +73,8 @@ function toStorage(settings: Settings) {
 
 export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
   return {
-    width: Math.floor(bitmap.displayWidth / bitmap.unitWidth),
-    height: Math.floor(bitmap.displayHeight / bitmap.unitHeight),
+    width: Math.ceil(bitmap.displayWidth / bitmap.unitWidth),
+    height: Math.ceil(bitmap.displayHeight / bitmap.unitHeight),
     address: bitmap.address
   }
 }
