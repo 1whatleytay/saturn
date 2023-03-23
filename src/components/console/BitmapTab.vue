@@ -14,8 +14,8 @@
       <canvas
         ref="canvas"
         class="w-full h-full bitmap-display rounded"
-        :width="config.width * 4"
-        :height="config.height * 4"
+        :width="config.width"
+        :height="config.height"
       />
     </button>
 
@@ -276,20 +276,12 @@ async function renderFrameFallback(context: CanvasRenderingContext2D, execution:
     data.data[i + 3] = 255
   }
 
-  const resizeWidth = width * 4
-  const resizeHeight = height * 4
-
-  const image = await createImageBitmap(data, {
-    resizeWidth, resizeHeight,
-    resizeQuality: 'pixelated'
-  })
-
-  context.drawImage(image, 0, 0, resizeWidth, resizeHeight)
+  context.putImageData(data, 0, 0)
 }
 
 const protocol = convertFileSrc('', 'display')
 
-async function renderOrdered(
+function renderOrdered(
   context: CanvasRenderingContext2D,
   width: number, height: number, memory: Uint8Array
 ) {
@@ -299,15 +291,7 @@ async function renderOrdered(
     data.data[a] = memory[a]
   }
 
-  const resizeWidth = width * 4
-  const resizeHeight = height * 4
-
-  const image = await createImageBitmap(data, {
-    resizeWidth, resizeHeight,
-    resizeQuality: 'pixelated'
-  })
-
-  context.drawImage(image, 0, 0, resizeWidth, resizeHeight)
+  context.putImageData(data, 0, 0)
 }
 
 async function renderFrameProtocol(context: CanvasRenderingContext2D) {
@@ -325,7 +309,7 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
 
   const memory = new Uint8Array(await result.arrayBuffer())
 
-  await renderOrdered(context, width, height, memory)
+  renderOrdered(context, width, height, memory)
 }
 
 async function renderLastDisplay(context: CanvasRenderingContext2D) {
