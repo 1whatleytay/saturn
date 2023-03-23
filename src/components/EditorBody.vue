@@ -224,7 +224,7 @@ function handleDown(event: MouseEvent) {
   const { x, y } = editorCoordinates(event)
 
   mouseDown = true
-  dropCursor(x, y, event.detail)
+  dropCursor(x, y, event.detail, event.shiftKey)
 }
 
 let lastX = null as number | null

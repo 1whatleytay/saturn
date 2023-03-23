@@ -174,7 +174,7 @@ function handleDown(event: MouseEvent) {
   const { x, y } = editorCoordinates(event)
 
   mouseDown.value = true
-  dropCursor(x, y, event.detail)
+  dropCursor(x, y, event.detail, event.shiftKey)
 }
 
 const lineShift = 8
