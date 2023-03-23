@@ -541,6 +541,10 @@ export function useCursor(
         break
 
       case 'z': {
+        if (event.shiftKey) {
+          return // do nothing, ignore "redo"
+        }
+
         const frame = editor().undo()
 
         suggestions?.dismissSuggestions()
@@ -588,8 +592,18 @@ export function useCursor(
         break
 
       case 'Tab':
-        hitTab(event.shiftKey)
         event.preventDefault()
+
+        if (!event.shiftKey && suggestions && suggestions.flushSuggestions()) {
+          const suggestion = suggestions.mergeSuggestion()
+
+          if (suggestion) {
+            return applyMergeSuggestion(suggestion)
+          }
+        } else {
+          hitTab(event.shiftKey)
+        }
+
         break
 
       case 'Backspace':
