@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig, configureDisplay } from './mips'
 
-const settingsVersion = 2
+const settingsVersion = 3
 
 export interface BitmapSettings {
   displayWidth: number
