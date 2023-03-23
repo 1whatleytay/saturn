@@ -29,7 +29,7 @@ export interface CursorInterface {
   getSelection(): string | null
   dropSelection(): void
   pasteText(text: string): void
-  dropCursor(x: number, y: number, detail?: number): void
+  dropCursor(x: number, y: number, detail?: number, shift?: boolean): void
   dragTo(x: number, y: number): void
   cursorCoordinates(x: number, y: number): SelectionIndex
   lineStart(line: number): number
@@ -695,7 +695,7 @@ export function useCursor(
     return { line, index }
   }
 
-  function dropCursor(x: number, y: number, detail?: number) {
+  function dropCursor(x: number, y: number, detail?: number, shift?: boolean) {
     const index = cursorCoordinates(x, y)
 
     if (detail === 2) {
@@ -733,7 +733,16 @@ export function useCursor(
       putCursor(end, current)
       current.highlight = alignCursor(start)
     } else {
-      cursor().highlight = null
+      const value = cursor()
+
+      if (shift) {
+        if (!value.highlight) {
+          value.highlight = { line: value.line, index: value.index }
+        }
+      } else {
+        value.highlight = null
+      }
+
       editor().commit()
       suggestions?.dismissSuggestions()
 
