@@ -36,10 +36,33 @@
             @update:model-value="value => setRegister(register.id, value)"
             :checker="checker"
             :editable="!!consoleData.execution"
-            :hex="true"
+            :hex="settings.registers.format === RegisterFormat.Hexadecimal"
           />
         </div>
       </div>
+    </div>
+
+    <div class="w-full h-12" />
+
+    <div class="
+      absolute border border-neutral-800 bottom-0 right-0 bg-neutral-900
+      rounded text-neutral-300 text-xs mr-6 mb-6 overflow-hidden
+    ">
+      <button
+        class="px-3 py-1 transition-colors"
+        :class="buttonClasses(RegisterFormat.Hexadecimal)"
+        @click="() => settings.registers.format = RegisterFormat.Hexadecimal"
+      >
+        Hex
+      </button>
+
+      <button
+        class="px-3 py-1 transition-colors"
+        :class="buttonClasses(RegisterFormat.Decimal)"
+        @click="() => settings.registers.format = RegisterFormat.Decimal"
+      >
+        Dec
+      </button>
     </div>
   </div>
 </template>
@@ -53,6 +76,15 @@ import { Cog6ToothIcon, Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 import { RegisterFormat } from '../../utils/settings'
 import { Registers } from '../../utils/mips'
 import NumberField from './NumberField.vue'
+
+function buttonClasses(format: RegisterFormat) {
+  const use = settings.registers.format === format
+
+  return {
+    'hover:bg-slate-800 bg-neutral-800': use,
+    'hover:bg-slate-700': !use
+  }
+}
 
 const registers = [
   '$zero', '$at', '$v0', '$v1',
