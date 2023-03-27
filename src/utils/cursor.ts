@@ -3,7 +3,7 @@ import { computed, ComputedRef } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { SizeCalculator } from './query/text-size'
 import { consumeBackwards, consumeDirection, consumeForwards } from './query/alt-consume'
-import { hasActionKey } from './query/shortcut-key'
+import { hasActionKey, hasAltKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
 import { EditorSettings } from './settings'
 import { grabWhitespace } from './languages/language'
@@ -570,11 +570,11 @@ export function useCursor(
 
     switch (event.key) {
       case 'ArrowLeft':
-        moveLeft(event.altKey, event.shiftKey)
+        moveLeft(hasAltKey(event), event.shiftKey)
         break
 
       case 'ArrowRight':
-        moveRight(event.altKey, event.shiftKey)
+        moveRight(hasAltKey(event), event.shiftKey)
         break
 
       case 'ArrowDown':
@@ -624,9 +624,9 @@ export function useCursor(
           let nextPosition: SelectionIndex
 
           if (doDelete) {
-            nextPosition = editor().deleteForwards(value, event.altKey)
+            nextPosition = editor().deleteForwards(value, hasAltKey(event))
           } else {
-            nextPosition = editor().backspace(value, event.altKey, settings.tabSize)
+            nextPosition = editor().backspace(value, hasAltKey(event), settings.tabSize)
           }
 
           putCursor(nextPosition)
