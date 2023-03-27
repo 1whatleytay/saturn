@@ -74,11 +74,10 @@ export type DirtyHandler = (line: number, deleted: number, insert: string[]) => 
 export class Editor {
   current: Step | null = null
   operations: Step[] = []
+  redoOperations: Step[] = []
 
   timeout: number | null = null
   uncommitted: number = 0
-
-  lastLines: LineData | null = null
 
   public commit() {
     this.uncommitted = 0
@@ -161,6 +160,8 @@ export class Editor {
 
     body()
 
+    this.redoOperations = []
+
     this.onDirty(line, count, this.data.slice(line, line + insert))
   }
 
@@ -180,24 +181,41 @@ export class Editor {
     }
   }
 
-  public undo(): SelectionIndex | null {
-    const step = this.popStep()
+  // Returns the "reverse" step.
+  apply(frame: Frame): Frame {
+    const deleted = this.data.splice(frame.index, frame.replaced, ...frame.deleted)
+    this.onDirty(frame.index, frame.replaced, frame.deleted)
 
+    return {
+      index: frame.index,
+      deleted,
+      replaced: frame.deleted.length
+    }
+  }
+
+  undoWithReverse(step: Step | null, reverseQueue: Step[]): SelectionIndex | null {
     if (!step) {
       return null
     }
 
     const frame = step.frame
 
-    this.data.splice(frame.index, frame.replaced, ...frame.deleted)
-    this.onDirty(frame.index, frame.replaced, frame.deleted)
+    const reverse = this.apply(frame)
+
+    reverseQueue.push({
+      frame: reverse,
+      cursor: { line: this.cursor.line, index: this.cursor.index }
+    })
 
     return step.cursor
   }
 
-  public clear() {
-    this.current = null
-    this.operations = []
+  public undo(): SelectionIndex | null {
+    return this.undoWithReverse(this.popStep(), this.redoOperations)
+  }
+
+  public redo(): SelectionIndex | null {
+    return this.undoWithReverse(this.redoOperations.pop() ?? null, this.operations)
   }
 
   drop(range: SelectionRange) {

@@ -544,16 +544,18 @@ export function useCursor(
         break
 
       case 'z': {
-        if (event.shiftKey) {
-          return // do nothing, ignore "redo"
-        }
+        let position: SelectionIndex | null
 
-        const frame = editor().undo()
+        if (event.shiftKey) {
+          position = editor().redo()
+        } else {
+          position = editor().undo()
+        }
 
         suggestions?.dismissSuggestions()
 
-        if (frame) {
-          putCursor(frame)
+        if (position) {
+          putCursor(position)
           value.highlight = null
         }
 
