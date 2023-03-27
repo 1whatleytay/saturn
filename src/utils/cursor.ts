@@ -525,7 +525,7 @@ export function useCursor(
 
     const value = cursor()
 
-    switch (event.key) {
+    switch (event.key.toLowerCase()) {
       case 'a':
         const count = editor().lineCount()
 
