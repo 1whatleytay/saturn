@@ -26,5 +26,5 @@ export function hasActionKey(event: ActionMarkedEvent): boolean {
 }
 
 export function hasAltKey(event: AltMarkedEvent): boolean {
-  return event.altKey || (isMetaKey && event.ctrlKey)
+  return event.altKey || (!isMetaKey && event.ctrlKey)
 }
