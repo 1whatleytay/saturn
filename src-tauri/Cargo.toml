@@ -1,6 +1,6 @@
 [package]
 name = "saturn"
-version = "0.1.5"
+version = "0.1.6"
 description = "A modern MIPS IDE."
 authors = ["desgroup"]
 license = ""
