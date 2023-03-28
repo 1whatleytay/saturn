@@ -1,5 +1,9 @@
 import { HighlightsResult } from './highlights'
-import { findTokenIndex, MarkedSuggestion, SuggestionType } from './languages/suggestions'
+import {
+  findTokenIndex,
+  MarkedSuggestion,
+  SuggestionType,
+} from './languages/suggestions'
 import { StorageResult } from './storage'
 import { SelectionIndex } from './editor'
 import { Token } from './languages/language'
@@ -33,9 +37,12 @@ export function useGoto(
   highlights: HighlightsResult<GotoMessage>,
   storage: StorageResult
 ): GotoInterface {
-  function searchStorage(text: string, body: MarkedSuggestion[][]): SearchStorageResult | null {
+  function searchStorage(
+    text: string,
+    body: MarkedSuggestion[][]
+  ): SearchStorageResult | null {
     for (const [index, line] of body.entries()) {
-      const item = line.find(x => x.replace == text)
+      const item = line.find((x) => x.replace == text)
 
       if (item) {
         return { line: index, suggestion: item }
@@ -78,7 +85,7 @@ export function useGoto(
         line: line,
         index: tokenIndex,
         token,
-        match
+        match,
       }
     }
 
@@ -90,7 +97,7 @@ export function useGoto(
       label: match.suggestion.replace,
       line: match.line,
       index: match.suggestion.index,
-      type: match.suggestion.type
+      type: match.suggestion.type,
     }
 
     highlights.putHighlight(line, tokenIndex, tokens, message)
@@ -106,13 +113,13 @@ export function useGoto(
 
     return {
       line: cache.match.line,
-      index: cache.match.suggestion.index
+      index: cache.match.suggestion.index,
     }
   }
 
   return {
     dismiss,
     hover,
-    jump
+    jump,
   }
 }

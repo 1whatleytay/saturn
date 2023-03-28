@@ -14,7 +14,8 @@
       <div :style="{ height: `${topPadding}px` }" />
 
       <div
-        v-for="i in renderCount" :key="getIndex(i)"
+        v-for="i in renderCount"
+        :key="getIndex(i)"
         @click="toggleBreakpoint(getIndex(i))"
         class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto"
       >
@@ -27,8 +28,7 @@
       </div>
     </div>
 
-    <div class="w-16 pr-2 mr-2 shrink-0">
-    </div>
+    <div class="w-16 pr-2 mr-2 shrink-0"></div>
 
     <div
       ref="code"
@@ -89,7 +89,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
 
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
@@ -109,7 +117,9 @@ import {
   storage,
   tab,
   tabBody,
-  highlights, goto, gotoHighlights
+  highlights,
+  goto,
+  gotoHighlights,
 } from '../state/state'
 
 import Cursor from './Cursor.vue'
@@ -123,7 +133,7 @@ import { hasActionKey } from '../utils/query/shortcut-key'
 const lineHeight = 24 // h-6 -> 1.5rem -> 24px
 
 const state = reactive({
-  lineOffset: 0
+  lineOffset: 0,
 })
 
 let mouseDown = false
@@ -134,7 +144,7 @@ const {
   renderCount,
   topPadding,
   bottomPadding,
-  update
+  update,
 } = useVirtualize(lineHeight, () => tabBody.value.length)
 
 const computedRanges = computed(() => {
@@ -149,7 +159,8 @@ function lineStyling(i: number): Record<string, boolean> {
   return {
     'bg-breakpoint-neutral': breakpoint && !isStopped,
     'bg-breakpoint-stopped': isStopped,
-    'bg-yellow-500 bg-opacity-5': !breakpoint && !isStopped && !(tab()?.writable ?? true)
+    'bg-yellow-500 bg-opacity-5':
+      !breakpoint && !isStopped && !(tab()?.writable ?? true),
   }
 }
 
@@ -180,7 +191,12 @@ function updateBounds() {
   update(scroll.value.scrollTop, scroll.value.clientHeight)
 }
 
-watch(() => tabBody.value, () => { updateBounds() })
+watch(
+  () => tabBody.value,
+  () => {
+    updateBounds()
+  }
+)
 
 function handleScroll() {
   if (!scroll.value) {
@@ -191,11 +207,11 @@ function handleScroll() {
   state.lineOffset = scroll.value.offsetTop - scroll.value.scrollTop
 }
 
-function editorCoordinates(event: MouseEvent): { x: number, y: number } {
+function editorCoordinates(event: MouseEvent): { x: number; y: number } {
   if (code.value) {
     return {
       x: event.pageX - code.value.offsetLeft + (scroll.value?.scrollLeft ?? 0),
-      y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0)
+      y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0),
     }
   }
 
@@ -239,7 +255,7 @@ const handleMove = (event: MouseEvent) => {
 
     // goto should only happen if the user moves the mouse
     // (Cmd + C should not search goto, it's expensive)
-    if (checkGoto && lastX !== event.pageX || lastY !== event.pageY) {
+    if ((checkGoto && lastX !== event.pageX) || lastY !== event.pageY) {
       const { line, index } = cursorCoordinates(x, y)
 
       goto.hover(line, index)
@@ -329,8 +345,12 @@ function makeVisible(offset: number) {
   if (scroll.value) {
     if (offset < scroll.value.scrollTop) {
       scroll.value.scrollTop = offset
-    } else if (offset > scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace) {
-      scroll.value.scrollTop = offset - scroll.value.clientHeight + bottomCursorSpace
+    } else if (
+      offset >
+      scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace
+    ) {
+      scroll.value.scrollTop =
+        offset - scroll.value.clientHeight + bottomCursorSpace
     }
   }
 }
@@ -341,21 +361,30 @@ const updateAndShow = async (value: number) => {
   makeVisible(value)
 }
 
-watch(() => position.value.offsetX, () => updateAndShow(position.value.offsetY))
+watch(
+  () => position.value.offsetX,
+  () => updateAndShow(position.value.offsetY)
+)
 watch(() => position.value.offsetY, updateAndShow)
 
-watch(() => stoppedIndex.value, (index) => {
-  if (index) {
-    const start = lineStart(index)
+watch(
+  () => stoppedIndex.value,
+  (index) => {
+    if (index) {
+      const start = lineStart(index)
 
-    makeVisible(start)
+      makeVisible(start)
+    }
   }
-})
+)
 
-watch(() => find.state.show, async () => {
-  // Wait until resize occurs...
-  await nextTick()
+watch(
+  () => find.state.show,
+  async () => {
+    // Wait until resize occurs...
+    await nextTick()
 
-  handleScroll()
-})
+    handleScroll()
+  }
+)
 </script>

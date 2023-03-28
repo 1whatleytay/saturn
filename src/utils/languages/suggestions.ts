@@ -11,7 +11,7 @@ export enum SuggestionType {
   Directive,
   Label,
   Function, // Macro
-  Variable
+  Variable,
 }
 
 export interface Suggestion {
@@ -65,7 +65,10 @@ export class SuggestionsStorage {
 
   cacheMap = new Map<string, any>()
 
-  cache<T>(type: string, build: (values: IterableIterator<Suggestion>) => T): T {
+  cache<T>(
+    type: string,
+    build: (values: IterableIterator<Suggestion>) => T
+  ): T {
     const result = this.cacheMap.get(type)
 
     if (result !== undefined) {
@@ -79,22 +82,26 @@ export class SuggestionsStorage {
   }
 
   update(line: number, deleted: number, insert: MarkedSuggestion[][]) {
-    const input = insert.map(l => l.map(s => ({ id: this.id++, ...s })))
+    const input = insert.map((l) => l.map((s) => ({ id: this.id++, ...s })))
 
     const drop = this.body.splice(line, deleted, ...input)
 
     // l -> line, s -> suggestion
     let mutated = false
 
-    drop.forEach(l => l.forEach(s => {
-      mutated = true
-      this.map.delete(s.id)
-    }))
+    drop.forEach((l) =>
+      l.forEach((s) => {
+        mutated = true
+        this.map.delete(s.id)
+      })
+    )
 
-    input.forEach(l => l.forEach(s => {
-      mutated = true
-      this.map.set(s.id, s)
-    }))
+    input.forEach((l) =>
+      l.forEach((s) => {
+        mutated = true
+        this.map.set(s.id, s)
+      })
+    )
 
     if (mutated) {
       this.cacheMap = new Map()

@@ -24,8 +24,11 @@
 <script setup lang="ts">
 import { RangeSelection } from '../utils/cursor'
 
-const props = withDefaults(defineProps<{
-  range: RangeSelection
-  lineHeight?: number
-}>(), { lineHeight: 24 })
+const props = withDefaults(
+  defineProps<{
+    range: RangeSelection
+    lineHeight?: number
+  }>(),
+  { lineHeight: 24 }
+)
 </script>

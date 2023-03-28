@@ -2,7 +2,7 @@ import { appWindow } from '@tauri-apps/api/window'
 import { hasActionKey } from './query/shortcut-key'
 
 export function setupWindow() {
-  window.addEventListener('keydown', event => {
+  window.addEventListener('keydown', (event) => {
     // Prevent the Ctrl + R refresh.
     if (hasActionKey(event) && event.key === 'r') {
       event.preventDefault()

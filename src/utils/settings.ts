@@ -17,7 +17,7 @@ export interface EditorSettings {
 
 export enum RegisterFormat {
   Hexadecimal,
-  Decimal
+  Decimal,
 }
 
 export interface RegisterSettings {
@@ -35,18 +35,18 @@ function defaultSettings(): Settings {
   return {
     version: settingsVersion,
     editor: {
-      tabSize: 4
+      tabSize: 4,
     },
     bitmap: {
       displayWidth: 64,
       displayHeight: 64,
       unitWidth: 1,
       unitHeight: 1,
-      address: 0x10008000
+      address: 0x10008000,
     },
     registers: {
-      format: RegisterFormat.Hexadecimal
-    }
+      format: RegisterFormat.Hexadecimal,
+    },
   }
 }
 
@@ -75,29 +75,37 @@ export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
   return {
     width: Math.ceil(bitmap.displayWidth / bitmap.unitWidth),
     height: Math.ceil(bitmap.displayHeight / bitmap.unitHeight),
-    address: bitmap.address
+    address: bitmap.address,
   }
 }
 
 export function useSettings(): Settings {
   const state = reactive(fromStorage())
 
-  configureDisplay(displayConfig(state.bitmap)).then(() => { })
+  configureDisplay(displayConfig(state.bitmap)).then(() => {})
 
-  watch(() => state.bitmap, async bitmap => {
-    // Update tauri backend.
-    await configureDisplay(displayConfig(bitmap))
-  }, { deep: true })
+  watch(
+    () => state.bitmap,
+    async (bitmap) => {
+      // Update tauri backend.
+      await configureDisplay(displayConfig(bitmap))
+    },
+    { deep: true }
+  )
 
   let debounce = null as number | null
 
-  watch(() => state, settings => {
-    if (debounce) {
-      window.clearTimeout(debounce)
-    }
+  watch(
+    () => state,
+    (settings) => {
+      if (debounce) {
+        window.clearTimeout(debounce)
+      }
 
-    debounce = window.setTimeout(() => toStorage(settings), 1000)
-  }, { deep: true })
+      debounce = window.setTimeout(() => toStorage(settings), 1000)
+    },
+    { deep: true }
+  )
 
   return state
 }

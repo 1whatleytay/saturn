@@ -5,7 +5,7 @@ export enum DebugTab {
   Registers,
   Memory,
   Console,
-  Bitmap
+  Bitmap,
 }
 
 export enum ConsoleType {
@@ -16,7 +16,7 @@ export enum ConsoleType {
   Info,
   Secondary,
   Editing,
-  Submitted
+  Submitted,
 }
 
 function canConcat(value: ConsoleType): boolean {
@@ -58,8 +58,8 @@ export const consoleData = reactive({
   consoleMeta: new Map([
     [0, secondaryHighlight],
     [1, secondaryHighlight],
-    [2, editHighlight]
-  ])
+    [2, editHighlight],
+  ]),
 } as ConsoleData)
 
 export function openConsole() {
@@ -72,7 +72,8 @@ export function pushConsole(text: string, type: ConsoleType): number {
   const meta = consoleData.consoleMeta.get(count)
   const editLine = count ? consoleData.console[count - 1] : null
 
-  const concat = canConcat(type) && consoleData.consoleMeta.get(count - 2)?.type === type
+  const concat =
+    canConcat(type) && consoleData.consoleMeta.get(count - 2)?.type === type
   const startIndex = concat ? 1 : 0
 
   let overwrote = false
@@ -124,7 +125,7 @@ export function submitConsole(force: boolean = false): boolean {
   consoleData.consoleMeta.set(count, editHighlight)
 
   if (consoleData.execution) {
-    consoleData.execution.postInput(`${last}\n`).then(() => { })
+    consoleData.execution.postInput(`${last}\n`).then(() => {})
   }
 
   return true

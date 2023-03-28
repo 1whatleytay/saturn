@@ -7,11 +7,13 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 ![Saturn Early Development Screenshot](README.png)
 
 # Project Goals
- - **Performance and Stability** - A fast environment that can keep up with all your use cases.
- - **Easy-to-use Tools** - Quick and simple interfaces that provide what you need at a glance.
- - **In-Place Debugging** - Set breakpoints and read values in-line with your source.
+
+- **Performance and Stability** - A fast environment that can keep up with all your use cases.
+- **Easy-to-use Tools** - Quick and simple interfaces that provide what you need at a glance.
+- **In-Place Debugging** - Set breakpoints and read values in-line with your source.
 
 # Required Tasks
+
 - [x] Basic Editor
 - [x] Basic Interpreter
 - [x] Basic Debugger
@@ -27,6 +29,7 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - [x] File Loading
 
 # Important Tasks
+
 - [ ] Memory Editing and Copying
 - [x] Register Editing and Copying
 - [x] Finding Text (Cmd + F)

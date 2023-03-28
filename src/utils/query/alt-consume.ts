@@ -1,4 +1,4 @@
-const hardString = ':;<>,./?\'\"[]{}-=+()\`~*&^%$#@!'
+const hardString = ':;<>,./?\'"[]{}-=+()`~*&^%$#@!'
 
 const hardCharacters = new Set(hardString.split(''))
 
@@ -7,7 +7,9 @@ function isHard(character: string, hard: Set<string>): boolean {
 }
 
 export function consumeDirection(
-  line: string, index: number, direction: number,
+  line: string,
+  index: number,
+  direction: number,
   spaced: boolean = true,
   hard: Set<string> = hardCharacters
 ): number {
@@ -44,15 +46,28 @@ export function consumeDirection(
   return Math.max(1, direction * result)
 }
 
-export function consumeBackwards(line: string, index: number, hard: Set<string> = hardCharacters): number {
+export function consumeBackwards(
+  line: string,
+  index: number,
+  hard: Set<string> = hardCharacters
+): number {
   return consumeDirection(line, index, -1, true, hard)
 }
 
-export function consumeForwards(line: string, index: number, hard: Set<string> = hardCharacters): number {
+export function consumeForwards(
+  line: string,
+  index: number,
+  hard: Set<string> = hardCharacters
+): number {
   return consumeDirection(line, index, +1, true, hard)
 }
 
-export function consumeSpace(line: string, index: number, direction: number, max: number): number {
+export function consumeSpace(
+  line: string,
+  index: number,
+  direction: number,
+  max: number
+): number {
   const directionOffset = direction < 0 ? 1 : 0
   const cursor = index - directionOffset
 
@@ -66,7 +81,11 @@ export function consumeSpace(line: string, index: number, direction: number, max
   let result = 0
   const inbounds = () => cursor + result >= 0 && cursor + result < line.length
 
-  while (inbounds() && Math.abs(result) < max && line[cursor + result] === ' ') {
+  while (
+    inbounds() &&
+    Math.abs(result) < max &&
+    line[cursor + result] === ' '
+  ) {
     result += direction
   }
 

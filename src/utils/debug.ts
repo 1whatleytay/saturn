@@ -1,6 +1,18 @@
 import { collectLines } from './tabs'
-import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
-import { AssemblerResult, assembleText, ExecutionModeType, ExecutionResult, ExecutionState } from './mips'
+import {
+  consoleData,
+  ConsoleType,
+  DebugTab,
+  openConsole,
+  pushConsole,
+} from '../state/console-data'
+import {
+  AssemblerResult,
+  assembleText,
+  ExecutionModeType,
+  ExecutionResult,
+  ExecutionState,
+} from './mips'
 import { tab } from '../state/state'
 
 import { format } from 'date-fns'
@@ -14,8 +26,9 @@ export async function setBreakpoint(line: number, remove: boolean) {
   }
 
   if (remove) {
-    currentTab.breakpoints = currentTab.breakpoints
-      .filter(point => point !== line)
+    currentTab.breakpoints = currentTab.breakpoints.filter(
+      (point) => point !== line
+    )
   } else if (!currentTab.breakpoints.includes(line)) {
     currentTab.breakpoints.push(line)
   }
@@ -32,22 +45,28 @@ function postDebugInformation(result: ExecutionResult) {
 
   consoleData.mode = result.mode.type
   consoleData.registers = result.registers
-  
+
   switch (result.mode.type) {
     case ExecutionModeType.Finished: {
       const address = result.mode.pc.toString(16).padStart(8, '0')
 
       if (result.mode.code !== null) {
-        pushConsole(`Execution finished with code ${result.mode.code} at pc 0x${address}`, ConsoleType.Success)
+        pushConsole(
+          `Execution finished with code ${result.mode.code} at pc 0x${address}`,
+          ConsoleType.Success
+        )
       } else {
-        pushConsole(`Execution finished at pc 0x${address}`, ConsoleType.Success)
+        pushConsole(
+          `Execution finished at pc 0x${address}`,
+          ConsoleType.Success
+        )
       }
 
       closeExecution()
 
       break
     }
-    
+
     case ExecutionModeType.Invalid: {
       pushConsole(`Exception thrown: ${result.mode.message}`, ConsoleType.Error)
 
@@ -78,11 +97,17 @@ export function postBuildMessage(result: AssemblerResult): boolean {
 
       const marker = result.marker ? ` (line ${result.marker.line + 1})` : ''
       const trailing = result.body
-        ? `\n${result.body.split('\n').map(x => `> ${x}`).join('\n')}`
+        ? `\n${result.body
+            .split('\n')
+            .map((x) => `> ${x}`)
+            .join('\n')}`
         : ''
 
       openConsole()
-      pushConsole(`Build failed: ${result.message}${marker}${trailing}`, ConsoleType.Error)
+      pushConsole(
+        `Build failed: ${result.message}${marker}${trailing}`,
+        ConsoleType.Error
+      )
 
       return false
 
@@ -93,7 +118,10 @@ export function postBuildMessage(result: AssemblerResult): boolean {
       }
 
       openConsole()
-      pushConsole(`Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`, ConsoleType.Success)
+      pushConsole(
+        `Build succeeded at ${format(Date.now(), 'MMMM d, pp')}`,
+        ConsoleType.Success
+      )
 
       return true
   }
@@ -131,7 +159,9 @@ export async function resume() {
   consoleData.mode = ExecutionModeType.Running
 
   const result = await consoleData.execution.resume(
-    null, usedBreakpoints, result => postBuildMessage(result)
+    null,
+    usedBreakpoints,
+    (result) => postBuildMessage(result)
   )
 
   if (result) {
@@ -164,7 +194,7 @@ export async function step() {
     const group = breakpoints.pcToGroup.get(pc)
 
     if (group) {
-      const index = group.pcs.findIndex(x => x === pc)
+      const index = group.pcs.findIndex((x) => x === pc)
 
       if (index >= 0) {
         skip = group.pcs.length - index

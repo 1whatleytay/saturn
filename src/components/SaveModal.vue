@@ -1,11 +1,14 @@
 <template>
-  <div class="fixed z-40 w-screen h-screen bg-black bg-opacity-40 transition-opacity duration-500" :class="{ 'opacity-0 pointer-events-none': !dialog.state.tab }" />
+  <div
+    class="fixed z-40 w-screen h-screen bg-black bg-opacity-40 transition-opacity duration-500"
+    :class="{ 'opacity-0 pointer-events-none': !dialog.state.tab }"
+  />
 
   <div v-if="dialog.state.tab" class="fixed absolute z-50 top-12 w-full">
-    <div class="max-w-lg bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow">
-      <div>
-        Would you like to save changes made to this file?
-      </div>
+    <div
+      class="max-w-lg bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow"
+    >
+      <div>Would you like to save changes made to this file?</div>
 
       <div class="text-neutral-400 text-xs font-medium mt-1">
         You will lose your changes if you chose to not save them.
@@ -57,19 +60,27 @@ const props = defineProps<{
 
 function leftButton(id: string | null): HTMLButtonElement | null {
   switch (id) {
-    case 'save-modal-save': return dismissButton.value
-    case 'save-modal-discard': return saveButton.value
-    case 'save-modal-dismiss': return discardButton.value
-    default: return null
+    case 'save-modal-save':
+      return dismissButton.value
+    case 'save-modal-discard':
+      return saveButton.value
+    case 'save-modal-dismiss':
+      return discardButton.value
+    default:
+      return null
   }
 }
 
 function rightButton(id: string | null): HTMLButtonElement | null {
   switch (id) {
-    case 'save-modal-save': return discardButton.value
-    case 'save-modal-discard': return dismissButton.value
-    case 'save-modal-dismiss': return saveButton.value
-    default: return null
+    case 'save-modal-save':
+      return discardButton.value
+    case 'save-modal-discard':
+      return dismissButton.value
+    case 'save-modal-dismiss':
+      return saveButton.value
+    default:
+      return null
   }
 }
 
@@ -112,11 +123,14 @@ onUnmounted(() => {
   window.removeEventListener('keydown', listener)
 })
 
-watch(() => props.dialog.state.tab, async (value, old) => {
-  if (value && !old) {
-    await nextTick()
+watch(
+  () => props.dialog.state.tab,
+  async (value, old) => {
+    if (value && !old) {
+      await nextTick()
 
-    saveButton.value?.focus()
+      saveButton.value?.focus()
+    }
   }
-})
+)
 </script>

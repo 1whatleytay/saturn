@@ -4,7 +4,7 @@ export interface Virtualization {
   renderStart: ComputedRef<number>
   renderCount: ComputedRef<number>
   topPadding: ComputedRef<number>
-  bottomPadding: ComputedRef<number>,
+  bottomPadding: ComputedRef<number>
   getIndex: (index: number) => number
   update: (top: number, height: number) => void
 }
@@ -25,7 +25,7 @@ export function useVirtualize(
 ): Virtualization {
   const state = reactive({
     startIndex: 0,
-    endIndex: 0
+    endIndex: 0,
   })
 
   function inBounds(line: number) {
@@ -33,9 +33,13 @@ export function useVirtualize(
   }
 
   const renderStart = computed(() => inBounds(state.startIndex))
-  const renderCount = computed(() => inBounds(state.endIndex) - renderStart.value)
+  const renderCount = computed(
+    () => inBounds(state.endIndex) - renderStart.value
+  )
   const topPadding = computed(() => renderStart.value * lineHeight)
-  const remainingLines = computed(() => (count() - renderCount.value - renderStart.value))
+  const remainingLines = computed(
+    () => count() - renderCount.value - renderStart.value
+  )
   const bottomPadding = computed(() => remainingLines.value * lineHeight)
   function update(top: number, height: number) {
     const start = inBounds(Math.floor(top / lineHeight))
@@ -53,9 +57,11 @@ export function useVirtualize(
   }
 
   return {
-    renderStart, renderCount,
-    topPadding, bottomPadding,
-    getIndex: i => getIndex(i, renderStart.value),
-    update
+    renderStart,
+    renderCount,
+    topPadding,
+    bottomPadding,
+    getIndex: (i) => getIndex(i, renderStart.value),
+    update,
   }
 }

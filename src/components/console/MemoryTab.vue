@@ -1,8 +1,8 @@
 <template>
-  <div
-    class="text-sm flex flex-col grow overflow-clip content-start"
-  >
-    <div class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full">
+  <div class="text-sm flex flex-col grow overflow-clip content-start">
+    <div
+      class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full"
+    >
       <label for="address" class="text-xs font-bold px-4 py-2">Address</label>
       <input
         id="address"
@@ -12,11 +12,17 @@
       />
 
       <div class="flex px-2 space-x-1">
-        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(-1)">
+        <button
+          class="p-1 rounded hover:bg-neutral-700"
+          @click="moveAddress(-1)"
+        >
           <ArrowUpIcon class="w-4 h-4" />
         </button>
 
-        <button class="p-1 rounded hover:bg-neutral-700" @click="moveAddress(+1)">
+        <button
+          class="p-1 rounded hover:bg-neutral-700"
+          @click="moveAddress(+1)"
+        >
           <ArrowDownIcon class="w-4 h-4" />
         </button>
       </div>
@@ -47,8 +53,14 @@
         </div>
       </div>
 
-      <div v-for="(row, index) in table?.rows" :key="index" class="flex font-mono">
-        <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">{{ row.header }}</div>
+      <div
+        v-for="(row, index) in table?.rows"
+        :key="index"
+        class="flex font-mono"
+      >
+        <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
+          {{ row.header }}
+        </div>
 
         <div
           v-for="(item, index) in row.items"
@@ -81,14 +93,17 @@ const defaultAddress = 0x10010000
 const memory = reactive({
   address: addressString(defaultAddress),
   data: Array(256).fill(0),
-  mode: AddressingMode.Word
+  mode: AddressingMode.Word,
 })
 
 function addressingModeSize(mode: AddressingMode) {
   switch (mode) {
-    case AddressingMode.Byte: return 1
-    case AddressingMode.Half: return 2
-    case AddressingMode.Word: return 4
+    case AddressingMode.Byte:
+      return 1
+    case AddressingMode.Half:
+      return 2
+    case AddressingMode.Word:
+      return 4
   }
 }
 
@@ -97,7 +112,7 @@ function setMode(event: Event) {
 
   try {
     memory.mode = parseInt(input.value) as AddressingMode
-  } catch { }
+  } catch {}
 }
 
 function shift(bytes: number[]): string {
@@ -126,7 +141,6 @@ function addressString(value: number): string {
   return `0x${value.toString(16).padStart(8, '0')}`
 }
 
-
 function pageSize() {
   const unitSize = addressingModeSize(memory.mode)
 
@@ -141,7 +155,7 @@ function moveAddress(direction: number) {
 }
 
 interface MemoryRow {
-  header: string,
+  header: string
   items: string[]
 }
 
@@ -164,7 +178,7 @@ const table = computed((): MemoryTable | null => {
     if (!address) {
       result.push({
         header: '',
-        items: Array(targetColumns).fill('')
+        items: Array(targetColumns).fill(''),
       })
       continue
     }
@@ -177,7 +191,7 @@ const table = computed((): MemoryTable | null => {
 
     const element = {
       header: addressString(start),
-      items: []
+      items: [],
     } as MemoryRow
 
     for (let column = 0; column < targetColumns; column++) {
@@ -187,7 +201,7 @@ const table = computed((): MemoryTable | null => {
 
       const bytes = data.slice(index, index + unitSize)
       const paddingCount = unitSize - bytes.length
-      bytes.push(...Array(paddingCount).fill(0xCC))
+      bytes.push(...Array(paddingCount).fill(0xcc))
       element.items.push(shift(bytes))
 
       index += unitSize
@@ -204,7 +218,7 @@ const table = computed((): MemoryTable | null => {
 
   return {
     header,
-    rows: result
+    rows: result,
   }
 })
 
@@ -231,7 +245,7 @@ async function updateMemoryData() {
     return
   }
 
-  memory.data = data.map(x => x ?? 0xCC)
+  memory.data = data.map((x) => x ?? 0xcc)
 }
 
 const checkMemory = () => {

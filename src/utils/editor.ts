@@ -1,9 +1,13 @@
-import { consumeBackwards, consumeForwards, consumeSpace } from './query/alt-consume'
+import {
+  consumeBackwards,
+  consumeForwards,
+  consumeSpace,
+} from './query/alt-consume'
 import { grabWhitespace } from './languages/language'
 import { splitLines } from './split-lines'
 
 export interface SelectionIndex {
-  line: number,
+  line: number
   index: number
 }
 
@@ -22,12 +26,12 @@ export interface LineRange {
 type LineData = string[]
 
 interface Frame {
-  index: number,
-  deleted: string[],
+  index: number
+  deleted: string[]
   replaced: number
 }
 
-type Step = { frame: Frame, cursor: SelectionIndex }
+type Step = { frame: Frame; cursor: SelectionIndex }
 
 interface MergeResult {
   commit?: Frame
@@ -45,9 +49,11 @@ function merge(last: Frame, next: Frame): MergeResult {
   const nextEnd = next.index + next.deleted.length
 
   // Common Case
-  if (lastStart == nextStart
-    && last.deleted.length == next.deleted.length
-    && last.replaced == next.replaced) {
+  if (
+    lastStart == nextStart &&
+    last.deleted.length == next.deleted.length &&
+    last.replaced == next.replaced
+  ) {
     return { merged: last }
   }
 
@@ -57,7 +63,10 @@ function merge(last: Frame, next: Frame): MergeResult {
   }
 
   const leadingSize = Math.max(0, last.index - next.index)
-  const collidingSize = Math.max(0, Math.min(lastEnd, nextEnd) - Math.max(lastStart, nextStart))
+  const collidingSize = Math.max(
+    0,
+    Math.min(lastEnd, nextEnd) - Math.max(lastStart, nextStart)
+  )
   const leading = next.deleted.slice(0, leadingSize)
   const trailing = next.deleted.slice(leadingSize + collidingSize)
 
@@ -69,7 +78,11 @@ function merge(last: Frame, next: Frame): MergeResult {
   return { merged: { index: start, deleted, replaced } }
 }
 
-export type DirtyHandler = (line: number, deleted: number, insert: string[]) => void
+export type DirtyHandler = (
+  line: number,
+  deleted: number,
+  insert: string[]
+) => void
 
 export class Editor {
   current: Step | null = null
@@ -87,7 +100,8 @@ export class Editor {
 
       if (this.operations.length > this.backlog) {
         this.operations = this.operations.splice(
-          0, this.operations.length - this.backlog
+          0,
+          this.operations.length - this.backlog
         )
       }
 
@@ -136,7 +150,7 @@ export class Editor {
     } else {
       return {
         line: this.cursor.line,
-        index: this.cursor.index
+        index: this.cursor.index,
       }
     }
   }
@@ -147,7 +161,7 @@ export class Editor {
     // replace with self
     this.push({
       frame: { index: line, deleted: backup, replaced: insert ?? count },
-      cursor: this.mergedCursor()
+      cursor: this.mergedCursor(),
     })
   }
 
@@ -183,17 +197,24 @@ export class Editor {
 
   // Returns the "reverse" step.
   apply(frame: Frame): Frame {
-    const deleted = this.data.splice(frame.index, frame.replaced, ...frame.deleted)
+    const deleted = this.data.splice(
+      frame.index,
+      frame.replaced,
+      ...frame.deleted
+    )
     this.onDirty(frame.index, frame.replaced, frame.deleted)
 
     return {
       index: frame.index,
       deleted,
-      replaced: frame.deleted.length
+      replaced: frame.deleted.length,
     }
   }
 
-  undoWithReverse(step: Step | null, reverseQueue: Step[]): SelectionIndex | null {
+  undoWithReverse(
+    step: Step | null,
+    reverseQueue: Step[]
+  ): SelectionIndex | null {
     if (!step) {
       return null
     }
@@ -204,7 +225,7 @@ export class Editor {
 
     reverseQueue.push({
       frame: reverse,
-      cursor: { line: this.cursor.line, index: this.cursor.index }
+      cursor: { line: this.cursor.line, index: this.cursor.index },
     })
 
     return step.cursor
@@ -215,7 +236,10 @@ export class Editor {
   }
 
   public redo(): SelectionIndex | null {
-    return this.undoWithReverse(this.redoOperations.pop() ?? null, this.operations)
+    return this.undoWithReverse(
+      this.redoOperations.pop() ?? null,
+      this.operations
+    )
   }
 
   drop(range: SelectionRange) {
@@ -232,14 +256,24 @@ export class Editor {
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
 
-      this.mutate(range.startLine, range.endLine - range.startLine + 1, 1, () => {
-        this.data[range.startLine] = leading + trailing
-        this.data.splice(range.startLine + 1, range.endLine - range.startLine)
-      })
+      this.mutate(
+        range.startLine,
+        range.endLine - range.startLine + 1,
+        1,
+        () => {
+          this.data[range.startLine] = leading + trailing
+          this.data.splice(range.startLine + 1, range.endLine - range.startLine)
+        }
+      )
     }
   }
 
-  prefix(start: number, end: number, character: string, whitespace: boolean = false) {
+  prefix(
+    start: number,
+    end: number,
+    character: string,
+    whitespace: boolean = false
+  ) {
     const count = end - start + 1
 
     this.mutate(start, count, count, () => {
@@ -269,7 +303,8 @@ export class Editor {
         const line = start + index
         const text = this.data[line]
 
-        this.data[line] = text.substring(0, range.start) + text.substring(range.end)
+        this.data[line] =
+          text.substring(0, range.start) + text.substring(range.end)
       })
     })
   }
@@ -287,7 +322,7 @@ export class Editor {
     return { line: index.line, index: index.index + character.length }
   }
 
-// Technical Debt: insert vs paste (concern: speed for splitting by \n)
+  // Technical Debt: insert vs paste (concern: speed for splitting by \n)
   paste(index: SelectionIndex, text: string): SelectionIndex {
     const textLines = splitLines(text)
 
@@ -345,7 +380,10 @@ export class Editor {
     const endMatch = trailing.match(leadingSpacing)
 
     const spacing = match && match.length ? match[0] : ''
-    const noSpace = endMatch && endMatch.length ? trailing.substring(endMatch[0].length) : trailing
+    const noSpace =
+      endMatch && endMatch.length
+        ? trailing.substring(endMatch[0].length)
+        : trailing
 
     // Mutate
     this.mutate(index.line, 1, 2, () => {
@@ -356,7 +394,11 @@ export class Editor {
     return { line: index.line + 1, index: spacing.length }
   }
 
-  backspace(index: SelectionIndex, alt: boolean = false, space: number = 1): SelectionIndex {
+  backspace(
+    index: SelectionIndex,
+    alt: boolean = false,
+    space: number = 1
+  ): SelectionIndex {
     const line = this.data[index.line]
 
     if (index.index > 0) {
@@ -445,10 +487,14 @@ export class Editor {
   constructor(
     public data: LineData,
     public cursor: SelectionIndex,
-    public onDirty: DirtyHandler = () => { },
-    public writable?: (start: number, deleted: number, insert: number) => boolean, // end - not inclusive
+    public onDirty: DirtyHandler = () => {},
+    public writable?: (
+      start: number,
+      deleted: number,
+      insert: number
+    ) => boolean, // end - not inclusive
     public backlog: number = 50,
     public debounce: number = 800,
     public commitInterval: number = 30
-  ) { }
+  ) {}
 }

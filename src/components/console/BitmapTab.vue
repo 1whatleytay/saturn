@@ -5,8 +5,8 @@
     <button
       ref="wrapper"
       @click="focusSelf"
-      @keydown="e => handleKey(e, false)"
-      @keyup="e => handleKey(e, true)"
+      @keydown="(e) => handleKey(e, false)"
+      @keyup="(e) => handleKey(e, true)"
       class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 max-w-full"
       :style="{ width: `${correctedWidth}px` }"
       :class="{ 'mx-auto sm:mx-0': !state.small, 'mx-auto': state.small }"
@@ -31,36 +31,57 @@
         <div class="py-1">
           <label class="inline-block font-bold pr-4 w-32">Display Width</label>
 
-          <NumberField v-model="settings.bitmap.displayWidth" :clean-only="true" :checker="sizeCheck" classes="text-xs w-32" />
+          <NumberField
+            v-model="settings.bitmap.displayWidth"
+            :clean-only="true"
+            :checker="sizeCheck"
+            classes="text-xs w-32"
+          />
 
-          <span class="text-neutral-400 mx-3 text-xs font-bold">
-            Units
-          </span>
+          <span class="text-neutral-400 mx-3 text-xs font-bold"> Units </span>
 
-          <NumberField v-model="settings.bitmap.unitWidth" :clean-only="true" :checker="unitCheck" classes="text-xs w-20" />
+          <NumberField
+            v-model="settings.bitmap.unitWidth"
+            :clean-only="true"
+            :checker="unitCheck"
+            classes="text-xs w-20"
+          />
         </div>
 
         <div class="py-1">
           <label class="inline-block font-bold pr-4 w-32">Display Height</label>
 
-          <NumberField v-model="settings.bitmap.displayHeight" :clean-only="true" :checker="sizeCheck" classes="text-xs w-32" />
+          <NumberField
+            v-model="settings.bitmap.displayHeight"
+            :clean-only="true"
+            :checker="sizeCheck"
+            classes="text-xs w-32"
+          />
 
-          <span class="text-neutral-400 mx-3 text-xs font-bold">
-            Units
-          </span>
+          <span class="text-neutral-400 mx-3 text-xs font-bold"> Units </span>
 
-          <NumberField v-model="settings.bitmap.unitHeight" :clean-only="true" :checker="unitCheck" classes="text-xs w-20" />
+          <NumberField
+            v-model="settings.bitmap.unitHeight"
+            :clean-only="true"
+            :checker="unitCheck"
+            classes="text-xs w-20"
+          />
         </div>
 
         <div class="py-1">
           <label class="inline-block font-bold pr-4 w-32">Address</label>
-          <NumberField v-model="settings.bitmap.address" :hex="true" :checker="memoryCheck" classes="text-xs w-32" />
+          <NumberField
+            v-model="settings.bitmap.address"
+            :hex="true"
+            :checker="memoryCheck"
+            classes="text-xs w-32"
+          />
 
           <button
             class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 active:bg-slate-700"
             :class="{
               'bg-slate-800': settings.bitmap.address === gp,
-              'hover:bg-slate-800': settings.bitmap.address !== gp
+              'hover:bg-slate-800': settings.bitmap.address !== gp,
             }"
             @click="settings.bitmap.address = gp"
           >
@@ -75,13 +96,14 @@
         To connect the keyboard, click on the display.
       </div>
 
-      <div v-if="!state.useProtocol" class="text-gray-500 pt-4 flex items-center mt-auto">
+      <div
+        v-if="!state.useProtocol"
+        class="text-gray-500 pt-4 flex items-center mt-auto"
+      >
         <ExclamationCircleIcon class="w-6 h-6 mr-2" />
 
         <div>
-          <div>
-            Using fallback protocol. Performance may be affected.
-          </div>
+          <div>Using fallback protocol. Performance may be affected.</div>
 
           <div>
             Please file a bug at
@@ -89,7 +111,8 @@
               target="_blank"
               href="https://github.com/1whatleytay/saturn"
               class="underline hover:text-gray-300"
-            >https://github.com/1whatleytay/saturn</a>.
+              >https://github.com/1whatleytay/saturn</a
+            >.
           </div>
         </div>
       </div>
@@ -123,7 +146,7 @@ const correctedWidth = ref(config.value.width)
 const state = reactive({
   interval: null as number | null,
   small: false as boolean,
-  useProtocol: true
+  useProtocol: true,
 })
 
 function memoryCheck(value: number): string | null {
@@ -161,9 +184,12 @@ function mapKey(key: string): string | null {
     return lower
   } else {
     switch (key) {
-      case 'Enter': return '\n'
-      case 'Space': return ' '
-      default: return null
+      case 'Enter':
+        return '\n'
+      case 'Space':
+        return ' '
+      default:
+        return null
     }
   }
 }
@@ -174,7 +200,7 @@ async function handleKey(event: KeyboardEvent, up: boolean) {
   }
 
   const mapped = mapKey(event.key)
-  
+
   if (mapped !== null) {
     await consoleData.execution.postKey(mapped, up)
   }
@@ -187,7 +213,7 @@ function focusSelf() {
 let observer = null as ResizeObserver | null
 
 function fixWidth(height: number) {
-  const width = height / config.value.height * config.value.width
+  const width = (height / config.value.height) * config.value.width
 
   lastHeight = height
 
@@ -207,8 +233,8 @@ onMounted(() => {
   reloadDisplay()
   checkConnected()
 
-  observer = new ResizeObserver(entries => {
-    entries.forEach(entry => {
+  observer = new ResizeObserver((entries) => {
+    entries.forEach((entry) => {
       if (entry.target.clientHeight != lastHeight) {
         setTimeout(() => fixWidth(entry.target.clientHeight))
       }
@@ -251,7 +277,10 @@ function checkConnected() {
 
 watch(() => consoleData.execution, checkConnected)
 
-async function renderFrameFallback(context: CanvasRenderingContext2D, execution: ExecutionState) {
+async function renderFrameFallback(
+  context: CanvasRenderingContext2D,
+  execution: ExecutionState
+) {
   const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
 
   const { width, height } = config.value
@@ -263,8 +292,7 @@ async function renderFrameFallback(context: CanvasRenderingContext2D, execution:
     return
   }
 
-  const mappedMemory = memory
-    .map(byte => byte ?? 0)
+  const mappedMemory = memory.map((byte) => byte ?? 0)
 
   const data = context.createImageData(width, height)
 
@@ -283,7 +311,9 @@ const protocol = convertFileSrc('', 'display')
 
 function renderOrdered(
   context: CanvasRenderingContext2D,
-  width: number, height: number, memory: Uint8Array
+  width: number,
+  height: number,
+  memory: Uint8Array
 ) {
   const data = context.createImageData(width, height)
 
@@ -304,7 +334,7 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
       address: settings.bitmap.address.toString(),
     },
     mode: 'cors',
-    cache: 'no-cache'
+    cache: 'no-cache',
   })
 
   const memory = new Uint8Array(await result.arrayBuffer())
@@ -320,7 +350,12 @@ async function renderLastDisplay(context: CanvasRenderingContext2D) {
     return
   }
 
-  await renderOrdered(context, last.width, last.height, Uint8Array.from(last.data))
+  await renderOrdered(
+    context,
+    last.width,
+    last.height,
+    Uint8Array.from(last.data)
+  )
 }
 
 let inflight = false
@@ -356,7 +391,7 @@ async function reloadDisplay() {
     } else {
       await renderFrameFallback(context, execution)
     }
-  } catch (e) { }
+  } catch (e) {}
 
   inflight = false
 }

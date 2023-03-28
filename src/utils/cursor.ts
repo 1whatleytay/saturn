@@ -2,7 +2,11 @@ import { Editor, LineRange, SelectionIndex } from './editor'
 import { computed, ComputedRef } from 'vue'
 import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { SizeCalculator } from './query/text-size'
-import { consumeBackwards, consumeDirection, consumeForwards } from './query/alt-consume'
+import {
+  consumeBackwards,
+  consumeDirection,
+  consumeForwards,
+} from './query/alt-consume'
 import { hasActionKey, hasAltKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
 import { EditorSettings } from './settings'
@@ -54,7 +58,9 @@ export function useCursor(
 
     // No way to watch state here in cursor, so fall back for any forgetful times.
     if (text === undefined) {
-      console.error(`Cursor failed to reset: ${index.line} < ${editor().lineCount()}`)
+      console.error(
+        `Cursor failed to reset: ${index.line} < ${editor().lineCount()}`
+      )
       return { offsetX: 0, offsetY: 0 }
     }
 
@@ -63,7 +69,7 @@ export function useCursor(
 
     return {
       offsetX: width,
-      offsetY: lineHeight * index.line
+      offsetY: lineHeight * index.line,
     }
   }
 
@@ -96,10 +102,12 @@ export function useCursor(
 
       const line = editor().lineAt(range.startLine)
 
-      const ranges = [{
-        leading: line.substring(0, range.startIndex),
-        body: line.substring(range.startIndex, range.endIndex)
-      }]
+      const ranges = [
+        {
+          leading: line.substring(0, range.startIndex),
+          body: line.substring(range.startIndex, range.endIndex),
+        },
+      ]
 
       return { ranges, top: range.startLine * lineHeight }
     }
@@ -112,7 +120,7 @@ export function useCursor(
 
       result.push({
         leading: first.substring(0, range.startIndex),
-        body: first.substring(range.startIndex)
+        body: first.substring(range.startIndex),
       })
     }
 
@@ -127,7 +135,7 @@ export function useCursor(
     for (let a = intersectionStart; a < intersectionEnd; a++) {
       result.push({
         leading: '',
-        body: editor().lineAt(a)
+        body: editor().lineAt(a),
       })
     }
 
@@ -137,7 +145,7 @@ export function useCursor(
 
       result.push({
         leading: '',
-        body: last.substring(0, range.endIndex)
+        body: last.substring(0, range.endIndex),
       })
     }
 
@@ -151,13 +159,18 @@ export function useCursor(
       startLine: cursor().line,
       endLine: cursor().line,
       startIndex: suggestion.start,
-      endIndex: suggestion.start + suggestion.remove
+      endIndex: suggestion.start + suggestion.remove,
     })
 
-    putCursor(editor().paste({
-      line: cursor().line,
-      index: suggestion.start
-    }, suggestion.insert))
+    putCursor(
+      editor().paste(
+        {
+          line: cursor().line,
+          index: suggestion.start,
+        },
+        suggestion.insert
+      )
+    )
 
     editor().commit()
 
@@ -251,10 +264,7 @@ export function useCursor(
     }
   }
 
-  function putCursor(
-    index: SelectionIndex,
-    to: SelectionIndex = cursor()
-  ) {
+  function putCursor(index: SelectionIndex, to: SelectionIndex = cursor()) {
     const position = alignCursor(index)
 
     to.line = position.line
@@ -267,9 +277,7 @@ export function useCursor(
     bringCursorInline()
     const text = editor().lineAt(value.line)
 
-    const consume = alt
-      ? consumeBackwards(text, value.index)
-      : 1
+    const consume = alt ? consumeBackwards(text, value.index) : 1
 
     let line = value.line
     let move = value.index - consume
@@ -362,10 +370,13 @@ export function useCursor(
       }
 
       if (value.highlight && line == value.highlight.line) {
-        putCursor({
-          line: value.highlight.line,
-          index: value.highlight.index + alignment
-        }, value.highlight)
+        putCursor(
+          {
+            line: value.highlight.line,
+            index: value.highlight.index + alignment,
+          },
+          value.highlight
+        )
       }
     }
 
@@ -412,9 +423,9 @@ export function useCursor(
 
     const rest = text.substring(leading.length)
 
-    if (rest.startsWith("# ")) {
+    if (rest.startsWith('# ')) {
       return { start: leading.length, end: leading.length + 2 }
-    } else if (rest.startsWith("#")) {
+    } else if (rest.startsWith('#')) {
       return { start: leading.length, end: leading.length + 1 }
     }
 
@@ -479,15 +490,21 @@ export function useCursor(
       putCursor({ line: value.line + lineOffset, index: cursorIndex })
 
       if (value.highlight && highlightIndex) {
-        putCursor({
-          line: value.highlight.line, index: highlightIndex
-        }, value.highlight)
+        putCursor(
+          {
+            line: value.highlight.line,
+            index: highlightIndex,
+          },
+          value.highlight
+        )
       }
     } else {
       editor().prefix(start, end, '# ', true)
 
       // This should... maybe be correct cursor positioning
-      const { leading: cursorLeading } = grabWhitespace(editor().lineAt(value.line))
+      const { leading: cursorLeading } = grabWhitespace(
+        editor().lineAt(value.line)
+      )
       if (value.index >= cursorLeading.length) {
         putCursor({ line: value.line + lineOffset, index: value.index + 2 })
       } else {
@@ -495,12 +512,18 @@ export function useCursor(
       }
 
       if (value.highlight) {
-        const { leading: highlightLeading } = grabWhitespace(editor().lineAt(value.highlight.line))
+        const { leading: highlightLeading } = grabWhitespace(
+          editor().lineAt(value.highlight.line)
+        )
 
         if (value.highlight.index >= highlightLeading.length) {
-          putCursor({
-            line: value.highlight.line, index: value.highlight.index + 2
-          }, value.highlight)
+          putCursor(
+            {
+              line: value.highlight.line,
+              index: value.highlight.index + 2,
+            },
+            value.highlight
+          )
         }
       }
     }
@@ -628,7 +651,11 @@ export function useCursor(
           if (doDelete) {
             nextPosition = editor().deleteForwards(value, hasAltKey(event))
           } else {
-            nextPosition = editor().backspace(value, hasAltKey(event), settings.tabSize)
+            nextPosition = editor().backspace(
+              value,
+              hasAltKey(event),
+              settings.tabSize
+            )
           }
 
           putCursor(nextPosition)
@@ -642,7 +669,7 @@ export function useCursor(
         if (event.shiftKey) {
           putCursor({
             line: value.line,
-            index: editor().lineAt(value.line).length
+            index: editor().lineAt(value.line).length,
           })
 
           suggestions?.dismissSuggestions()
@@ -716,8 +743,14 @@ export function useCursor(
 
       const directional = backwardSpace !== forwardSpace
 
-      const backward = directional && backwardSpace ? 0 : consumeDirection(line, index.index, -1, false)
-      const forward = directional && forwardSpace ? 0 : consumeDirection(line, index.index, +1, false)
+      const backward =
+        directional && backwardSpace
+          ? 0
+          : consumeDirection(line, index.index, -1, false)
+      const forward =
+        directional && forwardSpace
+          ? 0
+          : consumeDirection(line, index.index, +1, false)
 
       const backwardIndex = { index: index.index - backward, line: index.line }
       const forwardIndex = { index: index.index + forward, line: index.line }
@@ -758,9 +791,11 @@ export function useCursor(
     makeSelection()
     putCursor(cursorCoordinates(x, y))
 
-    if (value.highlight
-      && value.highlight.line === value.line
-      && value.highlight.index === value.index) {
+    if (
+      value.highlight &&
+      value.highlight.line === value.line &&
+      value.highlight.index === value.index
+    ) {
       value.highlight = null
     }
   }
@@ -787,6 +822,6 @@ export function useCursor(
     dragTo,
     pasteText,
     handleKey,
-    applyMergeSuggestion
+    applyMergeSuggestion,
   }
 }

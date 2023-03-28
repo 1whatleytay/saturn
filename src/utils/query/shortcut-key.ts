@@ -4,8 +4,10 @@ const os = new UAParser(navigator.userAgent).getOS()
 
 function metaKeyPlatform(): boolean {
   switch (os.name) {
-    case 'Mac OS': return true
-    default: return false
+    case 'Mac OS':
+      return true
+    default:
+      return false
   }
 }
 

@@ -7,14 +7,10 @@ import { setupEvents } from './utils/events'
 import { setupShortcuts } from './utils/platform-shortcuts'
 import { setupWindow } from './utils/window'
 
-createApp(App)
-  .mount('#app')
+createApp(App).mount('#app')
 
 setupWindow()
 
-setupShortcuts()
-  .then(() => {})
+setupShortcuts().then(() => {})
 
-setupEvents()
-  .then(() => {})
-
+setupEvents().then(() => {})
