@@ -22,7 +22,7 @@ pub fn read_bytes(
 
     let end = address
         .checked_add(count)
-        .map_or(None, |value| value.checked_sub(1))
+        .and_then(|value| value.checked_sub(1))
         .unwrap_or(u32::MAX);
 
     let value: Vec<Option<u8>> = (address ..= end)

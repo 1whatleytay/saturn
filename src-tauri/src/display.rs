@@ -44,7 +44,7 @@ pub fn read_display(
 
         // Assuming little endian: 0xAARRGGBB -> [BB, GG, RR, AA] -> want [RR, GG, BB, AA]
         let start = (i as usize) * 4;
-        result[start + 0] = (pixel.wrapping_shr(16) & 0xFF) as u8;
+        result[start] = (pixel.wrapping_shr(16) & 0xFF) as u8;
         result[start + 1] = (pixel.wrapping_shr(8) & 0xFF) as u8;
         result[start + 2] = (pixel.wrapping_shr(0) & 0xFF) as u8;
         result[start + 3] = 255;

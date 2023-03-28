@@ -53,7 +53,7 @@ async fn grab_default_provider(
     }
 
     let provider = load_default_provider(app.path_resolver()).await
-        .map(|x| Arc::new(x));
+        .map(Arc::new);
 
     let mut container = state.lock().ok()?;
 
@@ -94,14 +94,14 @@ async fn download_file(
             return None
         };
 
-        if &expected != &result[..] {
+        if expected != result[..] {
             eprintln!(
                 "Failed to verify hashes, expected {} got {}",
                 sha256, hex::encode(&result[..])
             );
 
             return None
-        }
+        } else {}
     }
 
     Some((file, bytes))
@@ -109,10 +109,10 @@ async fn download_file(
 
 async fn download_files<F>(
     url: &str,
-    files: &Vec<String>,
-    handler: F,
+    files: &[String],
+    handler: &F,
     sha256: &Option<HashMap<String, String>>
-) -> Option<HashMap<String, Vec<u8>>> where F: Fn(usize) -> () {
+) -> Option<HashMap<String, Vec<u8>>> where F: Fn(usize) {
     let count = AtomicUsize::new(0);
 
     let client = ClientBuilder::new().build().ok()?;
@@ -139,13 +139,13 @@ async fn download_files<F>(
     Some(result.into_iter().collect())
 }
 
-async fn request_providers<F: Fn(usize) -> ()>(
-    providers: &Vec<String>, files: &Vec<String>, handler: F, sha256: &Option<HashMap<String, String>>
+async fn request_providers<F: Fn(usize)>(
+    providers: &Vec<String>, files: &[String], handler: F, sha256: &Option<HashMap<String, String>>
 ) -> Option<HashMap<String, Vec<u8>>> {
     for url in providers {
         // Storing all file content in memory can be really bad (sound-fonts can be huge).
         let result = download_files(
-            url, &files, |x| handler(x), sha256
+            url, files, &handler, sha256
         ).await;
 
         if let Some(files) = result {
@@ -165,7 +165,7 @@ pub async fn install_instruments(
         .map(|url| Arc::new(MidiDefaultProvider { providers: vec![url], hashes: None }));
 
     if provider.is_none() {
-        provider = grab_default_provider(&app).await;
+        provider = grab_default_provider(app).await;
     }
 
     let provider = provider?;

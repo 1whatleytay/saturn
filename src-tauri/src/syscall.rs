@@ -71,7 +71,7 @@ impl SyscallState {
         console: Box<dyn ConsoleHandler + Send>,
         midi: Box<dyn MidiHandler + Send>
     ) -> SyscallState {
-        return SyscallState {
+        SyscallState {
             cancel_token: CancellationToken::new(),
             input_buffer: Arc::new(ByteChannel::new()),
             sync_wake: Arc::new(Notify::new()),
@@ -136,7 +136,7 @@ impl SyscallDelegate {
         let mut syscall = self.state.lock().unwrap();
 
         if syscall.midi.installed(request.instrument) {
-            syscall.midi.play(&request, sync);
+            syscall.midi.play(request, sync);
 
             true
         } else {
@@ -303,7 +303,7 @@ impl SyscallDelegate {
                 ConsumeAndContinue
             }).await;
 
-            data.push('\0' as u8);
+            data.push(0); // null character
 
             assert!(data.len() <= count);
 
@@ -428,12 +428,12 @@ impl SyscallDelegate {
             return Completed
         };
 
-        for i in 0 .. bytes {
+        for (i, byte) in buffer[0 .. bytes].iter().enumerate() {
             let Some(next) = address.checked_add(i as u32) else {
                 return Exception(CpuTrap)
             };
 
-            let result = cpu.memory.set(next, buffer[i]);
+            let result = cpu.memory.set(next, *byte);
 
             if let Err(error) = result {
                 return Exception(error)
@@ -464,7 +464,7 @@ impl SyscallDelegate {
         let mut buffer = vec![0u8; size as usize];
 
         for i in 0 .. size {
-            let Some(next) = address.checked_add(i as u32) else {
+            let Some(next) = address.checked_add(i) else {
                 return Exception(CpuTrap)
             };
 
@@ -518,7 +518,7 @@ impl SyscallDelegate {
     }
 
     async fn midi_out(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let request = midi_request(&mut state.lock().unwrap().state().registers);
+        let request = midi_request(&state.lock().unwrap().state().registers);
 
         if self.play_installed(&request, false) {
             return Completed
@@ -557,7 +557,7 @@ impl SyscallDelegate {
     }
 
     async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let request = midi_request(&mut state.lock().unwrap().state().registers);
+        let request = midi_request(&state.lock().unwrap().state().registers);
 
         if self.play_installed(&request, true) {
             let notifier = self.state.lock().unwrap().sync_wake.clone();
@@ -701,7 +701,7 @@ impl SyscallDelegate {
             42 => self.wrap_cancel(self.random_int_ranged(state)).await,
             43 => self.wrap_cancel(self.random_float(state)).await,
             44 => self.wrap_cancel(self.random_double(state)).await,
-            _ => return Unknown(code)
+            _ => Unknown(code)
         }
     }
 

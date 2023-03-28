@@ -264,7 +264,7 @@ pub fn create_menu() -> Menu {
 
 pub fn handle_event(event: WindowMenuEvent<Wry>) {
     let catch_emit = |result: tauri::Result<()>| {
-        if let Err(_) = result {
+        if result.is_err() {
             eprintln!("Failed to emit event from {} menu option", event.menu_item_id());
         }
     };

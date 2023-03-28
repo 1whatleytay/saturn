@@ -45,19 +45,11 @@ pub enum ByteChannelConsumption {
 
 impl ByteChannelConsumption {
     fn do_consume(&self) -> bool {
-        match self {
-            ByteChannelConsumption::ConsumeAndContinue => true,
-            ByteChannelConsumption::ConsumeAndStop => true,
-            _ => false
-        }
+        matches!(self, ByteChannelConsumption::ConsumeAndContinue | ByteChannelConsumption::ConsumeAndStop)
     }
 
     fn do_stop(&self) -> bool {
-        match self {
-            ByteChannelConsumption::ConsumeAndStop => true,
-            ByteChannelConsumption::IgnoreAndStop => true,
-            _ => false
-        }
+        matches!(self, ByteChannelConsumption::ConsumeAndStop | ByteChannelConsumption::IgnoreAndStop)
     }
 }
 
