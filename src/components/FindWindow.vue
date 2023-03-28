@@ -22,17 +22,12 @@
         </button>
       </div>
 
-      <div class="text-neutral-600 text-sm">
-        {{ count }} matches
-      </div>
+      <div class="text-neutral-600 text-sm">{{ count }} matches</div>
 
-      <button class="
-        w-12 h-12 ml-auto
-        hover:bg-slate-800
-        text-slate-300
-        shrink-0
-        flex items-center justify-center
-      " @click="close()">
+      <button
+        class="w-12 h-12 ml-auto hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
+        @click="close()"
+      >
         <XMarkIcon class="w-4 h-4" />
       </button>
     </div>
@@ -61,9 +56,7 @@ function jumpToNext() {
 }
 
 const count = computed(() => {
-  return find.state.matches
-    .map(x => x.length)
-    .reduce((a, b) => a + b, 0)
+  return find.state.matches.map((x) => x.length).reduce((a, b) => a + b, 0)
 })
 
 const findInput = ref(null as HTMLInputElement | null)
@@ -98,22 +91,31 @@ onUnmounted(() => {
   window.removeEventListener('keydown', listenEscape)
 })
 
-watch(() => find.state.show, (value, old) => {
-  if (value && !old) {
-    queueFocus()
+watch(
+  () => find.state.show,
+  (value, old) => {
+    if (value && !old) {
+      queueFocus()
+    }
   }
-})
+)
 
-watch(() => find.state.focus, value => {
-  if (value) {
-    queueFocus()
-    find.state.focus = false
+watch(
+  () => find.state.focus,
+  (value) => {
+    if (value) {
+      queueFocus()
+      find.state.focus = false
+    }
   }
-})
+)
 
-watch(() => findInput.value, () => {
-  if (needsFocus) {
-    queueFocus()
+watch(
+  () => findInput.value,
+  () => {
+    if (needsFocus) {
+      queueFocus()
+    }
   }
-})
+)
 </script>

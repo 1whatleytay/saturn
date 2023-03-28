@@ -4,19 +4,17 @@
     :style="{
       top: `${props.lineHeight * props.highlight.line}px`,
       left: `${props.highlight.offset}px`,
-      width: `${props.highlight.size}px`
+      width: `${props.highlight.size}px`,
     }"
   >
-    <div v-if="props.highlight.message" class="
-      mt-6 py-2 px-4 w-auto
-      bg-neutral-700 rounded
-      shadow-xl
-      absolute z-30
-      text-gray-300 font-medium font-sans
-      flex items-center
-    ">
+    <div
+      v-if="props.highlight.message"
+      class="mt-6 py-2 px-4 w-auto bg-neutral-700 rounded shadow-xl absolute z-30 text-gray-300 font-medium font-sans flex items-center"
+    >
       Jump to
-      <span class="text-gray-200 font-bold font-mono">{{ props.highlight.message.label }}</span>
+      <span class="text-gray-200 font-bold font-mono">{{
+        props.highlight.message.label
+      }}</span>
       (line {{ props.highlight.message.line + 1 }})
 
       <div
@@ -34,10 +32,16 @@
 import { Highlights } from '../utils/highlights'
 import { UnwrapRef } from 'vue'
 import { GotoMessage } from '../utils/goto'
-import { suggestionLetter, suggestionStyle } from '../utils/query/suggestion-styles'
+import {
+  suggestionLetter,
+  suggestionStyle,
+} from '../utils/query/suggestion-styles'
 
-const props = withDefaults(defineProps<{
-  highlight: Highlights<UnwrapRef<GotoMessage>>,
-  lineHeight?: number
-}>(), { lineHeight: 24 })
+const props = withDefaults(
+  defineProps<{
+    highlight: Highlights<UnwrapRef<GotoMessage>>
+    lineHeight?: number
+  }>(),
+  { lineHeight: 24 }
+)
 </script>

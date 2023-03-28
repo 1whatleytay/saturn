@@ -31,7 +31,11 @@ export type FindResult = FindInterface & {
 
 export type WidthQuery = (text: string) => number
 
-function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[] {
+function findPin(
+  line: string,
+  pin: string,
+  widthQuery: WidthQuery
+): FindMatch[] {
   if (!pin.length) {
     return []
   }
@@ -57,7 +61,7 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
     result.push({
       index,
       offset: lastOffset,
-      size
+      size,
     })
 
     lastOffset += size
@@ -69,7 +73,10 @@ function findPin(line: string, pin: string, widthQuery: WidthQuery): FindMatch[]
   return result
 }
 
-export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResult {
+export function useFind(
+  lines: () => string[],
+  widthQuery: WidthQuery
+): FindResult {
   const state = reactive({
     show: false,
     focus: false,
@@ -77,14 +84,15 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
     matches: [],
     lastMatch: null,
     paused: false, // true when item is last in list
-    debounce: null
+    debounce: null,
   } as FindState & { debounce: number | null })
 
   const lower = computed(() => state.text.toLowerCase())
 
   function matchesFor(lines: string[]): FindMatch[][] {
-    return lines
-      .map(value => findPin(value.toLowerCase(), lower.value, widthQuery))
+    return lines.map((value) =>
+      findPin(value.toLowerCase(), lower.value, widthQuery)
+    )
   }
 
   function dirty(line: number, deleted: number, lines: string[]) {
@@ -103,7 +111,11 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
     }
   }
 
-  function findNextIndex(matches: FindMatch[], index: number, exclude: FindMatch | null): number | null {
+  function findNextIndex(
+    matches: FindMatch[],
+    index: number,
+    exclude: FindMatch | null
+  ): number | null {
     let start = 0
     let end = matches.length
 
@@ -174,30 +186,36 @@ export function useFind(lines: () => string[], widthQuery: WidthQuery): FindResu
   }
 
   // Intentionally avoiding using computed.
-  watch(() => state.show, value => {
-    if (value) {
-      findAll()
-    } else {
-      state.matches = []
+  watch(
+    () => state.show,
+    (value) => {
+      if (value) {
+        findAll()
+      } else {
+        state.matches = []
+      }
     }
-  })
+  )
 
   // Not deep, which is good!
   watch(() => lines(), findAll)
-  watch(() => state.text, () => {
-    state.lastMatch = null
-    state.paused = true
+  watch(
+    () => state.text,
+    () => {
+      state.lastMatch = null
+      state.paused = true
 
-    if (state.debounce) {
-      window.clearTimeout(state.debounce)
+      if (state.debounce) {
+        window.clearTimeout(state.debounce)
+      }
+
+      state.debounce = window.setTimeout(findAll, 200)
     }
-
-    state.debounce = window.setTimeout(findAll, 200)
-  })
+  )
 
   return {
     state,
     dirty,
-    nextItem
+    nextItem,
   }
 }

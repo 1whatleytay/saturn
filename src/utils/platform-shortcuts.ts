@@ -3,13 +3,13 @@ import { hasActionKey } from './query/shortcut-key'
 import { emit } from '@tauri-apps/api/event'
 
 interface Accelerator {
-  command: boolean,
-  shift: boolean,
+  command: boolean
+  shift: boolean
   key: string
 }
 
 interface Shortcut {
-  event: string,
+  event: string
   accelerator: Accelerator
 }
 
@@ -22,7 +22,7 @@ export async function setupShortcuts() {
 
   const keys = new Map<string, Shortcut[]>()
 
-  shortcuts.forEach(shortcut => {
+  shortcuts.forEach((shortcut) => {
     if (!shortcut.accelerator) {
       return
     }
@@ -37,10 +37,12 @@ export async function setupShortcuts() {
     list.push(shortcut)
   })
 
-  window.addEventListener('keydown', async event => {
-    const shortcut = keys.get(event.key.toUpperCase())?.find(shortcut => {
-      return shortcut.accelerator.command == hasActionKey(event)
-        && shortcut.accelerator.shift == event.shiftKey
+  window.addEventListener('keydown', async (event) => {
+    const shortcut = keys.get(event.key.toUpperCase())?.find((shortcut) => {
+      return (
+        shortcut.accelerator.command == hasActionKey(event) &&
+        shortcut.accelerator.shift == event.shiftKey
+      )
     })
 
     if (!shortcut) {

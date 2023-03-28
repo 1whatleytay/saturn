@@ -6,7 +6,7 @@ export interface SaveModalState {
 }
 
 export interface SaveModalResult {
-  state: SaveModalState,
+  state: SaveModalState
 
   present(tab: EditorTab): void
 
@@ -20,7 +20,7 @@ export function useSaveModal(
   close: (tab: EditorTab) => void
 ): SaveModalResult {
   const state = reactive({
-    tab: null
+    tab: null,
   } as SaveModalState)
 
   function present(tab: EditorTab) {
@@ -56,6 +56,6 @@ export function useSaveModal(
     present,
     selectSave,
     selectDiscard,
-    selectDismiss
+    selectDismiss,
   }
 }

@@ -1,7 +1,12 @@
 import { computed, ComputedRef, reactive, watch } from 'vue'
 
 import { v4 as uuid } from 'uuid'
-import { AssemblyExecutionProfile, disassembleElf, ElfExecutionProfile, ExecutionProfile } from './mips'
+import {
+  AssemblyExecutionProfile,
+  disassembleElf,
+  ElfExecutionProfile,
+  ExecutionProfile,
+} from './mips'
 import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
@@ -20,8 +25,9 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
 
   // Took out technical debt here and the methods in EditorBody for selection.
   const highlightBeforeLine = cursor.highlight.line < cursor.line
-  const highlightBeforeIndex = cursor.highlight.line === cursor.line
-    && cursor.highlight.index < cursor.index
+  const highlightBeforeIndex =
+    cursor.highlight.line === cursor.line &&
+    cursor.highlight.index < cursor.index
 
   if (highlightBeforeLine || highlightBeforeIndex) {
     // assert cursor.highlight.line <= cursor.line
@@ -29,7 +35,7 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
       startLine: cursor.highlight.line,
       startIndex: cursor.highlight.index,
       endLine: cursor.line,
-      endIndex: cursor.index
+      endIndex: cursor.index,
     }
   } else {
     // assert cursor.highlight.line >= cursor.line
@@ -37,7 +43,7 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
       startLine: cursor.line,
       startIndex: cursor.index,
       endLine: cursor.highlight.line,
-      endIndex: cursor.highlight.index
+      endIndex: cursor.highlight.index,
     }
   }
 }
@@ -110,7 +116,7 @@ interface TabsRestoreState {
 export function useTabs(): TabsResult {
   const editor = reactive({
     tabs: [],
-    selected: null
+    selected: null,
   } as Tabs)
 
   function pushEmpty() {
@@ -168,7 +174,7 @@ export function useTabs(): TabsResult {
     pushEmpty()
 
     if (editor.tabs.length) {
-      const hasSelected = editor.tabs.some(x => x.uuid === state.selected)
+      const hasSelected = editor.tabs.some((x) => x.uuid === state.selected)
       editor.selected = hasSelected ? state.selected : editor.tabs[0].uuid
     }
   }
@@ -200,7 +206,7 @@ export function useTabs(): TabsResult {
     const state = {
       version: tabsVersion,
       selected: editor.selected,
-      tabs: []
+      tabs: [],
     } as TabsRestoreState
 
     const map = new Map<string, string>()
@@ -213,7 +219,7 @@ export function useTabs(): TabsResult {
         breakpoints: tab.breakpoints,
         writable: tab.writable,
         marked: tab.marked,
-        profile: tab.profile
+        profile: tab.profile,
       } as RestoreTab
 
       if (!tab.path) {
@@ -232,13 +238,13 @@ export function useTabs(): TabsResult {
     localStorage.setItem(restoreKey, JSON.stringify(state))
   }
 
-  restore().then(() => { })
+  restore().then(() => {})
   window.setInterval(backup, 30000)
   watch(() => editor.tabs.length, backup)
 
   const tab = computed(() => {
     if (editor.selected) {
-      return editor.tabs.find(tab => tab.uuid === editor.selected) ?? null
+      return editor.tabs.find((tab) => tab.uuid === editor.selected) ?? null
     }
 
     return null
@@ -247,13 +253,13 @@ export function useTabs(): TabsResult {
   const tabBody = computed(() => tab.value?.lines ?? ['Nothing yet.'])
 
   async function discardTab(uuid: string) {
-    const index = editor.tabs.findIndex(tab => tab.uuid === uuid)
+    const index = editor.tabs.findIndex((tab) => tab.uuid === uuid)
 
     if (index === undefined) {
       return
     }
 
-    editor.tabs = editor.tabs.filter(tab => tab.uuid !== uuid)
+    editor.tabs = editor.tabs.filter((tab) => tab.uuid !== uuid)
 
     if (editor.selected === uuid) {
       if (editor.tabs.length <= 0) {
@@ -271,12 +277,12 @@ export function useTabs(): TabsResult {
   }
 
   const saveModal = useSaveModal(
-    tab => saveTab(tab, PromptType.PromptWhenNeeded),
-    tab => discardTab(tab.uuid)
+    (tab) => saveTab(tab, PromptType.PromptWhenNeeded),
+    (tab) => discardTab(tab.uuid)
   )
 
   function closeTab(uuid: string): boolean {
-    const tab = editor.tabs.find(tab => tab.uuid === uuid)
+    const tab = editor.tabs.find((tab) => tab.uuid === uuid)
 
     if (tab === undefined) {
       return true
@@ -293,7 +299,7 @@ export function useTabs(): TabsResult {
     }
   }
 
-  function defaultAssemblyProfile(): AssemblyExecutionProfile  {
+  function defaultAssemblyProfile(): AssemblyExecutionProfile {
     return { kind: 'asm' }
   }
 
@@ -314,12 +320,12 @@ export function useTabs(): TabsResult {
       cursor: {
         line: 0,
         index: 0,
-        highlight: null
+        highlight: null,
       },
       path,
       writable,
       marked: false,
-      profile
+      profile,
     })
 
     editor.selected = id
@@ -330,11 +336,13 @@ export function useTabs(): TabsResult {
 
     const bytes = new Uint8Array(elf)
     let binary = ''
-    bytes.forEach(byte => binary += String.fromCharCode(byte))
+    bytes.forEach((byte) => (binary += String.fromCharCode(byte)))
 
     const lines = value.error ? [value.error] : value.lines
     const profile = {
-      kind: 'elf', elf: window.btoa(binary), breakpoints: value.breakpoints
+      kind: 'elf',
+      elf: window.btoa(binary),
+      breakpoints: value.breakpoints,
     } as ElfExecutionProfile
 
     createTab(named, lines, null, profile, false)
@@ -347,6 +355,6 @@ export function useTabs(): TabsResult {
     closeTab,
     createTab,
     loadElf,
-    saveModal
+    saveModal,
   }
 }

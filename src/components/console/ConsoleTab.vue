@@ -54,10 +54,22 @@
 </template>
 
 <script setup lang="ts">
-import { consoleData, ConsoleType, submitConsole } from '../../state/console-data'
+import {
+  consoleData,
+  ConsoleType,
+  submitConsole,
+} from '../../state/console-data'
 
 import { useVirtualize } from '../../utils/virtualization'
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
 import { useCursor } from '../../utils/cursor'
 import { Editor } from '../../utils/editor'
 import { CursorState } from '../../utils/tabs'
@@ -79,36 +91,41 @@ const {
   topPadding,
   bottomPadding,
   getIndex,
-  update
+  update,
 } = useVirtualize(lineHeight, () => consoleData.console.length)
 
 const cursor = reactive({
-  line: 0, index: 0, highlight: null
+  line: 0,
+  index: 0,
+  highlight: null,
 } as CursorState)
 
 function makeEditor(): Editor {
   const writable = (start: number, deleted: number, insert: number) => {
-    return start === consoleData.console.length - 1
-      && deleted === 1
-      && insert === 1
+    return (
+      start === consoleData.console.length - 1 && deleted === 1 && insert === 1
+    )
   }
 
   return new Editor(consoleData.console, cursor, () => {}, writable)
 }
 
 const state = reactive({
-  editor: makeEditor()
+  editor: makeEditor(),
 })
 
-watch(() => consoleData.console, () => {
-  // reset cursor
-  cursor.line = 0
-  cursor.index = 0
-  cursor.highlight = null
+watch(
+  () => consoleData.console,
+  () => {
+    // reset cursor
+    cursor.line = 0
+    cursor.index = 0
+    cursor.highlight = null
 
-  updateBounds()
-  state.editor = makeEditor()
-})
+    updateBounds()
+    state.editor = makeEditor()
+  }
+)
 
 const {
   position,
@@ -118,7 +135,7 @@ const {
   getSelection,
   pasteText,
   dropSelection,
-  dragTo
+  dragTo,
 } = useCursor(
   () => state.editor,
   () => cursor,
@@ -127,17 +144,14 @@ const {
   16
 )
 
-const focusKeys = new Set([
-  'Enter',
-  'Delete',
-  'Backspace',
-  'Tab'
-])
+const focusKeys = new Set(['Enter', 'Delete', 'Backspace', 'Tab'])
 
 async function handleKeyIntercept(event: KeyboardEvent) {
   function needsFocus(event: KeyboardEvent) {
-    return (event.key.length === 1 || focusKeys.has(event.key))
-      && !hasActionKey(event)
+    return (
+      (event.key.length === 1 || focusKeys.has(event.key)) &&
+      !hasActionKey(event)
+    )
   }
 
   const count = consoleData.console.length
@@ -179,13 +193,13 @@ function handleDown(event: MouseEvent) {
 
 const lineShift = 8
 
-function editorCoordinates(event: MouseEvent): { x: number, y: number } {
+function editorCoordinates(event: MouseEvent): { x: number; y: number } {
   if (scroll.value) {
     const rect = scroll.value.getBoundingClientRect()
 
     return {
       x: event.pageX - rect.left + (scroll.value?.scrollLeft ?? 0) - lineShift,
-      y: event.pageY - rect.top + (scroll.value?.scrollTop ?? 0)
+      y: event.pageY - rect.top + (scroll.value?.scrollTop ?? 0),
     }
   }
 
@@ -256,8 +270,12 @@ function makeVisible(offset: number) {
   if (scroll.value) {
     if (offset < scroll.value.scrollTop) {
       scroll.value.scrollTop = offset
-    } else if (offset > scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace) {
-      scroll.value.scrollTop = offset - scroll.value.clientHeight + bottomCursorSpace
+    } else if (
+      offset >
+      scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace
+    ) {
+      scroll.value.scrollTop =
+        offset - scroll.value.clientHeight + bottomCursorSpace
     }
   }
 }
@@ -268,18 +286,24 @@ const updateAndShow = async (value: number) => {
   makeVisible(value)
 }
 
-watch(() => position.value.offsetX, () => updateAndShow(position.value.offsetY))
+watch(
+  () => position.value.offsetX,
+  () => updateAndShow(position.value.offsetY)
+)
 watch(() => position.value.offsetY, updateAndShow)
 
-watch(() => consoleData.console.length, async (value, old) => {
-  if (old - 1 === cursor.line) {
-    cursor.line = value - 1
+watch(
+  () => consoleData.console.length,
+  async (value, old) => {
+    if (old - 1 === cursor.line) {
+      cursor.line = value - 1
+    }
+
+    await nextTick()
+
+    makeVisible(value * lineHeight)
   }
-
-  await nextTick()
-
-  makeVisible(value * lineHeight)
-})
+)
 
 function updateBounds() {
   if (!scroll.value) {
@@ -294,15 +318,24 @@ onMounted(updateBounds)
 
 function stylingFor(type: ConsoleType): string {
   switch (type) {
-    case ConsoleType.Stdout: return 'text-teal-100 border-teal-700'
-    case ConsoleType.Stderr: return 'text-red-200 border-red-700'
-    case ConsoleType.Success: return 'text-green-400 border-green-700'
-    case ConsoleType.Error: return 'text-red-400 border-red-700'
-    case ConsoleType.Info: return 'text-orange-300 border-orange-700'
-    case ConsoleType.Secondary: return 'text-gray-500 border-gray-700'
-    case ConsoleType.Editing: return 'text-lime-400 border-green-700'
-    case ConsoleType.Submitted: return 'text-lime-500 font-black border-green-700'
-    default: return 'text-orange-500'
+    case ConsoleType.Stdout:
+      return 'text-teal-100 border-teal-700'
+    case ConsoleType.Stderr:
+      return 'text-red-200 border-red-700'
+    case ConsoleType.Success:
+      return 'text-green-400 border-green-700'
+    case ConsoleType.Error:
+      return 'text-red-400 border-red-700'
+    case ConsoleType.Info:
+      return 'text-orange-300 border-orange-700'
+    case ConsoleType.Secondary:
+      return 'text-gray-500 border-gray-700'
+    case ConsoleType.Editing:
+      return 'text-lime-400 border-green-700'
+    case ConsoleType.Submitted:
+      return 'text-lime-500 font-black border-green-700'
+    default:
+      return 'text-orange-500'
   }
 }
 

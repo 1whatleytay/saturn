@@ -13,7 +13,7 @@
         :class="{ 'bg-opacity-50': match === find.state.lastMatch }"
         :style="{
           left: `${match.offset}px`,
-          width: `${match.size}px`
+          width: `${match.size}px`,
         }"
       />
     </div>
@@ -25,14 +25,17 @@ import { FindMatch } from '../utils/find'
 import { find } from '../state/state'
 import { computed } from 'vue'
 
-const props = withDefaults(defineProps<{
-  count: number,
-  start: number,
-  lineHeight?: number
-}>(), { lineHeight: 24 })
+const props = withDefaults(
+  defineProps<{
+    count: number
+    start: number
+    lineHeight?: number
+  }>(),
+  { lineHeight: 24 }
+)
 
 const findIndices = computed(() => {
-  const pairs = [] as { height: number, matches: FindMatch[] }[]
+  const pairs = [] as { height: number; matches: FindMatch[] }[]
 
   for (let a = 0; a < props.count; a++) {
     const line = a + props.start
@@ -48,7 +51,7 @@ const findIndices = computed(() => {
 
     pairs.push({
       height: props.lineHeight * line,
-      matches
+      matches,
     })
   }
 

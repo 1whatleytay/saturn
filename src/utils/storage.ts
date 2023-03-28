@@ -34,17 +34,21 @@ export function useStorage(
     editor: createEditor(),
     language: createLanguage(),
     highlights: [] as Token[][],
-    debounce: null as number | null
+    debounce: null as number | null,
   } as StorageState)
 
   // Not reactive.
   let suggestions = new SuggestionsStorage()
 
   function highlight(line: number, deleted: number, lines: string[]) {
-    const result = lines.map(part => storage.language.highlight(part))
+    const result = lines.map((part) => storage.language.highlight(part))
 
-    storage.highlights.splice(line, deleted, ...result.map(x => x.tokens))
-    suggestions.update(line, deleted, result.map(x => x.suggestions))
+    storage.highlights.splice(line, deleted, ...result.map((x) => x.tokens))
+    suggestions.update(
+      line,
+      deleted,
+      result.map((x) => x.suggestions)
+    )
   }
 
   async function checkSyntax() {
@@ -53,7 +57,12 @@ export function useStorage(
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]
 
-      error.setHighlight(result.marker.line, tokens, result.marker.offset, result.message)
+      error.setHighlight(
+        result.marker.line,
+        tokens,
+        result.marker.offset,
+        result.message
+      )
     } else {
       error.dismissHighlight()
     }
@@ -84,7 +93,6 @@ export function useStorage(
       const bp = breakpoints[a]
 
       if (bp < line + Math.min(deleted, replaced)) {
-
       } else if (deleted > replaced && bp < line + deleted) {
         breakpoints.splice(a, 1)
         a -= 1
@@ -123,7 +131,7 @@ export function useStorage(
       current?.lines ?? ['Nothing yet.'],
       current?.cursor ?? { line: 0, index: 0 },
       handleDirty,
-      (current?.writable ?? false) ? undefined : () => false // weird
+      current?.writable ?? false ? undefined : () => false // weird
     )
   }
 
@@ -153,11 +161,16 @@ export function useStorage(
   }
 
   highlightAll(tab())
-  watch(() => tab(), tab => { highlightAll(tab) })
+  watch(
+    () => tab(),
+    (tab) => {
+      highlightAll(tab)
+    }
+  )
 
   return {
     editor,
     storage,
-    suggestionsStorage: () => suggestions
+    suggestionsStorage: () => suggestions,
   } as StorageResult
 }

@@ -1,4 +1,8 @@
-import { MarkedSuggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
+import {
+  MarkedSuggestion,
+  SuggestionMatch,
+  SuggestionsStorage,
+} from './suggestions'
 
 export enum TokenType {
   Comment,
@@ -11,7 +15,7 @@ export enum TokenType {
   Numeric,
   Symbol,
   Text,
-  Nothing
+  Nothing,
 }
 
 export interface Token {
@@ -33,23 +37,35 @@ export const style = {
   numeric: 'text-teal-300',
   symbol: 'text-white',
   text: 'text-lime-300',
-  nothing: 'text-white'
+  nothing: 'text-white',
 }
 
 function mapStyle(type: TokenType): string {
   switch (type) {
-    case TokenType.Comment: return style.comment
-    case TokenType.Hard: return style.hard
-    case TokenType.Label: return style.label
-    case TokenType.Directive: return style.directive
-    case TokenType.Parameter: return style.parameter
-    case TokenType.Instruction: return style.instruction
-    case TokenType.Register: return style.register
-    case TokenType.Numeric: return style.numeric
-    case TokenType.Symbol: return style.symbol
-    case TokenType.Text: return style.text
-    case TokenType.Nothing: return style.nothing
-    default: return style.nothing
+    case TokenType.Comment:
+      return style.comment
+    case TokenType.Hard:
+      return style.hard
+    case TokenType.Label:
+      return style.label
+    case TokenType.Directive:
+      return style.directive
+    case TokenType.Parameter:
+      return style.parameter
+    case TokenType.Instruction:
+      return style.instruction
+    case TokenType.Register:
+      return style.register
+    case TokenType.Numeric:
+      return style.numeric
+    case TokenType.Symbol:
+      return style.symbol
+    case TokenType.Text:
+      return style.text
+    case TokenType.Nothing:
+      return style.nothing
+    default:
+      return style.nothing
   }
 }
 
@@ -76,13 +92,16 @@ export interface Language {
 }
 
 // For Tokens
-export function grabWhitespace(text: string): { leading: string, trailing: string } {
+export function grabWhitespace(text: string): {
+  leading: string
+  trailing: string
+} {
   const leadingMatches = text.match(/^\s*/)
   const trailingMatches = text.match(/\s*$/)
 
   return {
     leading: leadingMatches && leadingMatches.length ? leadingMatches[0] : '',
-    trailing: trailingMatches && trailingMatches.length ? trailingMatches[0] : ''
+    trailing:
+      trailingMatches && trailingMatches.length ? trailingMatches[0] : '',
   }
 }
-

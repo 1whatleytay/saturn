@@ -1,5 +1,9 @@
 import { grabWhitespace, Language, Token } from './languages/language'
-import { findToken, SuggestionMatch, SuggestionsStorage } from './languages/suggestions'
+import {
+  findToken,
+  SuggestionMatch,
+  SuggestionsStorage,
+} from './languages/suggestions'
 import { reactive } from 'vue'
 
 export interface MergeSuggestion {
@@ -36,10 +40,10 @@ export function useSuggestions(
     token: null as Token | null,
     results: [] as SuggestionMatch[],
     debounce: null as {
-      interval: number | null,
-      token: Token,
+      interval: number | null
+      token: Token
       end: number
-    } | null
+    } | null,
   })
 
   function makeSuggestions(token: Token) {
@@ -82,11 +86,11 @@ export function useSuggestions(
     suggestions.debounce = {
       interval: initial
         ? window.setTimeout(() => {
-          makeSuggestions(token)
-        }, debounceTimeout)
+            makeSuggestions(token)
+          }, debounceTimeout)
         : null,
       token,
-      end: now + forceTimeout
+      end: now + forceTimeout,
     }
   }
 
@@ -131,7 +135,7 @@ export function useSuggestions(
     return {
       start: token.start,
       remove: token.text.length,
-      insert: leading + suggestion.replace + trailing
+      insert: leading + suggestion.replace + trailing,
     }
   }
 
@@ -158,6 +162,6 @@ export function useSuggestions(
     dismissSuggestions,
     mergeSuggestion,
     hasSuggestions,
-    flushSuggestions
+    flushSuggestions,
   }
 }

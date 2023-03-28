@@ -3,19 +3,19 @@
 @tailwind utilities;
 
 html {
-    @apply overflow-hidden;
-    @apply h-full;
+  @apply overflow-hidden;
+  @apply h-full;
 }
 
 body {
-    @apply h-full;
+  @apply h-full;
 
-    @apply overflow-auto;
+  @apply overflow-auto;
 
-    @apply bg-neutral-900;
-    @apply text-slate-100;
+  @apply bg-neutral-900;
+  @apply text-slate-100;
 }
 
 #app {
-    @apply h-full;
+  @apply h-full;
 }

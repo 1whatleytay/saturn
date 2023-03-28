@@ -1,18 +1,6 @@
 <template>
   <button
-    class="
-      hover:bg-neutral-800
-      text-slate-300
-      flex items-center
-      transition-[border-color]
-      duration-200
-      space-x-4
-      h-10
-      px-6
-      text-xs
-      font-medium
-      border-b-2
-    "
+    class="hover:bg-neutral-800 text-slate-300 flex items-center transition-[border-color] duration-200 space-x-4 h-10 px-6 text-xs font-medium border-b-2"
     :class="{
       'border-orange-400 bg-neutral-800': props.selected,
       'border-transparent': !props.selected,
@@ -29,9 +17,12 @@
     >
       <span
         class="w-1.5 h-1.5 block rounded-full bg-white mx-auto"
-        :class="{ 'block group-hover:hidden': marked, 'hidden': !marked }"
+        :class="{ 'block group-hover:hidden': marked, hidden: !marked }"
       />
-      <XMarkIcon class="w-3 h-3" :class="{ 'hidden group-hover:block': marked }" />
+      <XMarkIcon
+        class="w-3 h-3"
+        :class="{ 'hidden group-hover:block': marked }"
+      />
     </button>
   </button>
 </template>
@@ -39,16 +30,19 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/20/solid'
 
-const props = withDefaults(defineProps<{
-  title: string,
-  selected?: boolean,
-  deletable?: boolean,
-  marked?: boolean
-}>(), {
-  selected: false,
-  deletable: false,
-  marked: false
-})
+const props = withDefaults(
+  defineProps<{
+    title: string
+    selected?: boolean
+    deletable?: boolean
+    marked?: boolean
+  }>(),
+  {
+    selected: false,
+    deletable: false,
+    marked: false,
+  }
+)
 
 const emit = defineEmits(['delete'])
 </script>

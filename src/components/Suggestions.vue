@@ -1,16 +1,8 @@
 <template>
   <div
     v-if="suggestions.state.results.length"
-    class="
-      w-80 h-40
-      text-sm font-mono
-      overflow-clip
-      rounded-lg
-      mt-6 p-2
-      overflow-y-clip
-      bg-neutral-900 border border-neutral-800
-      absolute mx-[-0.08rem] z-20
-    " :style="{
+    class="w-80 h-40 text-sm font-mono overflow-clip rounded-lg mt-6 p-2 overflow-y-clip bg-neutral-900 border border-neutral-800 absolute mx-[-0.08rem] z-20"
+    :style="{
       left: `${position.offsetX}px`,
       top: `${position.offsetY}px`,
     }"
@@ -37,7 +29,12 @@
             </span>
 
             <span class="font-bold">
-              {{ suggestion.replace.substring(suggestion.range.start, suggestion.range.end + 1) }}
+              {{
+                suggestion.replace.substring(
+                  suggestion.range.start,
+                  suggestion.range.end + 1
+                )
+              }}
             </span>
 
             <span>
@@ -51,9 +48,12 @@
         </span>
 
         <div class="ml-auto flex items-center">
-           <span v-if="suggestion.name" class="text-neutral-500 mr-2 text-xs max-w-[12rem] shrink truncate">
-             {{ suggestion.name }}
-           </span>
+          <span
+            v-if="suggestion.name"
+            class="text-neutral-500 mr-2 text-xs max-w-[12rem] shrink truncate"
+          >
+            {{ suggestion.name }}
+          </span>
 
           <div
             class="rounded w-4 h-4 text-black flex items-center justify-center text-xs shrink-0"
@@ -70,11 +70,17 @@
 <script setup lang="ts">
 import { applyMergeSuggestion, position, suggestions } from '../state/state'
 import { ref, watch } from 'vue'
-import { suggestionLetter, suggestionStyle } from '../utils/query/suggestion-styles'
+import {
+  suggestionLetter,
+  suggestionStyle,
+} from '../utils/query/suggestion-styles'
 
-const props = withDefaults(defineProps<{
-  lineHeight?: number
-}>(), { lineHeight: 24 })
+const props = withDefaults(
+  defineProps<{
+    lineHeight?: number
+  }>(),
+  { lineHeight: 24 }
+)
 
 const suggestionsScroll = ref(0)
 
@@ -95,7 +101,10 @@ function scrollSuggestionsTo(point: number) {
   let result = Math.max(point, 0)
 
   if (suggestionsPane.value && suggestionsParent.value) {
-    const bottom = suggestionsPane.value.clientHeight - suggestionsParent.value.clientHeight + 16
+    const bottom =
+      suggestionsPane.value.clientHeight -
+      suggestionsParent.value.clientHeight +
+      16
 
     if (bottom >= 0) {
       result = Math.min(result, bottom)
@@ -109,26 +118,32 @@ function scrollSuggestions(event: WheelEvent) {
   scrollSuggestionsTo(suggestionsScroll.value + event.deltaY)
 }
 
-watch(() => suggestions.state.results, () => {
-  scrollSuggestionsTo(0)
-})
-
-watch(() => suggestions.state.index, value => {
-  const top = value * props.lineHeight
-  const bottom = top + props.lineHeight
-
-  if (!suggestionsParent.value) {
-    return
+watch(
+  () => suggestions.state.results,
+  () => {
+    scrollSuggestionsTo(0)
   }
+)
 
-  const parentHeight = suggestionsParent.value.clientHeight
-  const start = suggestionsScroll.value
-  const end = start + parentHeight
+watch(
+  () => suggestions.state.index,
+  (value) => {
+    const top = value * props.lineHeight
+    const bottom = top + props.lineHeight
 
-  if (top < start) {
-    scrollSuggestionsTo(top)
-  } else if (bottom > end) {
-    scrollSuggestionsTo(bottom - parentHeight + 16)
+    if (!suggestionsParent.value) {
+      return
+    }
+
+    const parentHeight = suggestionsParent.value.clientHeight
+    const start = suggestionsScroll.value
+    const end = start + parentHeight
+
+    if (top < start) {
+      scrollSuggestionsTo(top)
+    } else if (bottom > end) {
+      scrollSuggestionsTo(bottom - parentHeight + 16)
+    }
   }
-})
+)
 </script>

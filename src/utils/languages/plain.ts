@@ -9,10 +9,10 @@ export class PlainHighlighter implements Language {
           start: 0,
           text: line,
           type: TokenType.Nothing,
-          color: style.nothing
-        }
+          color: style.nothing,
+        },
       ],
-      suggestions: []
+      suggestions: [],
     }
   }
 

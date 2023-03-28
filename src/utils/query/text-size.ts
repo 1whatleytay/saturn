@@ -1,12 +1,12 @@
 export class SizeCalculator {
   element: HTMLElement
 
-  calculate(text: string): { width: number, height: number } {
+  calculate(text: string): { width: number; height: number } {
     this.element.textContent = text
 
     return {
       width: this.element.clientWidth,
-      height: this.element.clientHeight
+      height: this.element.clientHeight,
     }
   }
 
@@ -42,7 +42,9 @@ export class SizeCalculator {
       }
     } while (start + 1 < end)
 
-    const offset = Math.round((position + this.push - startOffset) / leadingSize)
+    const offset = Math.round(
+      (position + this.push - startOffset) / leadingSize
+    )
 
     return start + Math.min(offset, 1)
   }
@@ -56,5 +58,11 @@ export class SizeCalculator {
   }
 }
 
-export const regular = new SizeCalculator('h-6 text-sm font-mono absolute top-0 -z-10 whitespace-pre', 0)
-export const tiny = new SizeCalculator('h-4 text-xs font-mono absolute top-0 -z-10 whitespace-pre', 0)
+export const regular = new SizeCalculator(
+  'h-6 text-sm font-mono absolute top-0 -z-10 whitespace-pre',
+  0
+)
+export const tiny = new SizeCalculator(
+  'h-4 text-xs font-mono absolute top-0 -z-10 whitespace-pre',
+  0
+)

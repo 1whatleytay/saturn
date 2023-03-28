@@ -2,8 +2,10 @@ import { Suggestion, SuggestionMatch, SuggestionType } from '../suggestions'
 import Fuse from 'fuse.js'
 import FuseResult = Fuse.FuseResult
 
-export function toSuggestionMatches(results: FuseResult<Suggestion>[]): SuggestionMatch[] {
-  return results.map(x => {
+export function toSuggestionMatches(
+  results: FuseResult<Suggestion>[]
+): SuggestionMatch[] {
+  return results.map((x) => {
     let range = undefined
 
     if (x.matches && x.matches.length > 0) {
@@ -13,19 +15,21 @@ export function toSuggestionMatches(results: FuseResult<Suggestion>[]): Suggesti
 
       range = {
         start: first[0],
-        end: first[1]
+        end: first[1],
       }
     }
 
     return {
       ...x.item,
-      range
+      range,
     } as SuggestionMatch
   })
 }
 
-export function mergeResults(... input: FuseResult<Suggestion>[][]): FuseResult<Suggestion>[] {
-  const values = input.map(x => x.reverse()) // we want to pop
+export function mergeResults(
+  ...input: FuseResult<Suggestion>[][]
+): FuseResult<Suggestion>[] {
+  const values = input.map((x) => x.reverse()) // we want to pop
 
   const result = [] as FuseResult<Suggestion>[]
 
@@ -37,7 +41,11 @@ export function mergeResults(... input: FuseResult<Suggestion>[][]): FuseResult<
         continue
       }
 
-      if (!next || (next[next.length - 1].score ?? 0) > (value[value.length - 1].score ?? 0)) {
+      if (
+        !next ||
+        (next[next.length - 1].score ?? 0) >
+          (value[value.length - 1].score ?? 0)
+      ) {
         next = value
       }
     }
@@ -51,14 +59,38 @@ export function mergeResults(... input: FuseResult<Suggestion>[][]): FuseResult<
 }
 
 export const registersSet = new Set([
-  '$zero', '$at', '$v0', '$v1',
-  '$a0', '$a1', '$a2', '$a3',
-  '$t0', '$t1', '$t2', '$t3',
-  '$t4', '$t5', '$t6', '$t7',
-  '$s0', '$s1', '$s2', '$s3',
-  '$s4', '$s5', '$s6', '$s7',
-  '$t8', '$t9', '$k0', '$k1',
-  '$gp', '$sp', '$fp', '$ra',
+  '$zero',
+  '$at',
+  '$v0',
+  '$v1',
+  '$a0',
+  '$a1',
+  '$a2',
+  '$a3',
+  '$t0',
+  '$t1',
+  '$t2',
+  '$t3',
+  '$t4',
+  '$t5',
+  '$t6',
+  '$t7',
+  '$s0',
+  '$s1',
+  '$s2',
+  '$s3',
+  '$s4',
+  '$s5',
+  '$s6',
+  '$s7',
+  '$t8',
+  '$t9',
+  '$k0',
+  '$k1',
+  '$gp',
+  '$sp',
+  '$fp',
+  '$ra',
 ])
 
 const instructionParts = [
@@ -147,7 +179,7 @@ const instructionParts = [
   { name: 'Branch', replace: 'b' },
   { name: 'Subtract Immediate', replace: 'subi' },
   { name: 'Subtract Immediate Unsigned', replace: 'subiu' },
-].map(x => ({ ...x, type: SuggestionType.Instruction })) as Suggestion[]
+].map((x) => ({ ...x, type: SuggestionType.Instruction })) as Suggestion[]
 
 const registerParts = [
   { name: 'Zero Register', replace: '$zero' },
@@ -182,7 +214,7 @@ const registerParts = [
   { name: 'Stack Pointer', replace: '$sp' },
   { name: 'Frame Pointer', replace: '$fp' },
   { name: 'Return Address', replace: '$ra' },
-].map(x => ({ ...x, type: SuggestionType.Register })) as Suggestion[]
+].map((x) => ({ ...x, type: SuggestionType.Register })) as Suggestion[]
 
 const directiveParts = [
   { name: 'Ascii Text', replace: '.ascii' },
@@ -202,12 +234,12 @@ const directiveParts = [
   { name: 'Define Token', replace: '.eqv' },
   { name: 'Define Macro', replace: '.macro' },
   { name: 'End Macro', replace: '.end_macro' },
-].map(x => ({ ...x, type: SuggestionType.Directive })) as Suggestion[]
+].map((x) => ({ ...x, type: SuggestionType.Directive })) as Suggestion[]
 
 export const fuseOptions = {
   keys: ['replace'],
   includeScore: true,
-  includeMatches: true
+  includeMatches: true,
 }
 
 export const instructions = new Fuse(instructionParts, fuseOptions)

@@ -6,7 +6,7 @@
       spellcheck="false"
       :class="[
         state.error !== null ? 'ring-2 ring-red-500' : '',
-        props.classes
+        props.classes,
       ]"
       v-model="state.value"
       @change="clean"
@@ -14,15 +14,10 @@
       @keydown.enter="clean"
     />
 
-    <span v-if="state.error" class="
-      absolute top-6 hidden group-hover:block
-      py-2 px-4 w-auto
-      bg-neutral-900 rounded
-      shadow-xl
-      absolute z-30
-      w-80
-      text-red-400 font-medium font-sans
-      hidden group-hover:block">
+    <span
+      v-if="state.error"
+      class="absolute top-6 hidden group-hover:block py-2 px-4 w-auto bg-neutral-900 rounded shadow-xl absolute z-30 w-80 text-red-400 font-medium font-sans hidden group-hover:block"
+    >
       {{ state.error }}
     </span>
   </span>
@@ -31,19 +26,22 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 
-const props = withDefaults(defineProps<{
-  modelValue: number,
-  hex?: boolean,
-  classes?: string
-  checker?: (value: number) => string | null,
-  editable?: boolean,
-  cleanOnly?: boolean
-}>(), {
-  hex: false,
-  classes: '',
-  editable: true,
-  cleanOnly: true
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: number
+    hex?: boolean
+    classes?: string
+    checker?: (value: number) => string | null
+    editable?: boolean
+    cleanOnly?: boolean
+  }>(),
+  {
+    hex: false,
+    classes: '',
+    editable: true,
+    cleanOnly: true,
+  }
+)
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -67,21 +65,27 @@ function clean() {
   state.value = formatHex(state.expected, props.hex)
 }
 
-watch(() => props.modelValue, value => {
-  if (value !== state.expected) {
-    state.expected = value
-    state.value = formatHex(props.modelValue, props.hex)
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (value !== state.expected) {
+      state.expected = value
+      state.value = formatHex(props.modelValue, props.hex)
+    }
   }
-})
+)
 
-watch(() => props.hex, value => {
-  state.value = formatHex(props.modelValue, value)
-})
+watch(
+  () => props.hex,
+  (value) => {
+    state.value = formatHex(props.modelValue, value)
+  }
+)
 
 function parse(leading: string): number | null {
   let result: number
 
-  const hasSign = leading.length && leading[0] === '+' || leading[0] === '-'
+  const hasSign = (leading.length && leading[0] === '+') || leading[0] === '-'
   const text = hasSign ? leading.substring(1) : leading
   const negative = hasSign && leading[0] === '-'
 
@@ -120,33 +124,36 @@ function formatHex(value: number, hex: boolean): string {
   }
 }
 
-watch(() => state.value, value => {
-  const result = parse(value)
+watch(
+  () => state.value,
+  (value) => {
+    const result = parse(value)
 
-  if (result !== null) {
-    if (props.checker) {
-      state.error = props.checker(result)
-    } else {
-      state.error = null
-    }
-
-    if (state.error === null) {
-      state.expected = result
-
-      if (debounce) {
-        window.clearTimeout(debounce)
-      }
-
-      if (!props.cleanOnly) {
-        emit('update:modelValue', result)
+    if (result !== null) {
+      if (props.checker) {
+        state.error = props.checker(result)
       } else {
-        debounce = window.setTimeout(() => {
-          emit('update:modelValue', result)
-        }, 500)
+        state.error = null
       }
+
+      if (state.error === null) {
+        state.expected = result
+
+        if (debounce) {
+          window.clearTimeout(debounce)
+        }
+
+        if (!props.cleanOnly) {
+          emit('update:modelValue', result)
+        } else {
+          debounce = window.setTimeout(() => {
+            emit('update:modelValue', result)
+          }, 500)
+        }
+      }
+    } else {
+      state.error = 'This field only accepts numerical values'
     }
-  } else {
-    state.error = 'This field only accepts numerical values'
   }
-})
+)
 </script>

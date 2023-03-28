@@ -2,10 +2,25 @@ import { listen } from '@tauri-apps/api/event'
 
 import { collectLines, EditorTab } from './tabs'
 import { resume, step, pause, stop, build, postBuildMessage } from './debug'
-import { openInputFile, openElf, selectSaveAssembly, writeFile, readInputFile, SelectedFile } from './query/select-file'
+import {
+  openInputFile,
+  openElf,
+  selectSaveAssembly,
+  writeFile,
+  readInputFile,
+  SelectedFile,
+} from './query/select-file'
 import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary } from './mips'
-import { find, suggestions, tabsState, createTab, closeTab, loadElf, tab } from '../state/state'
+import {
+  find,
+  suggestions,
+  tabsState,
+  createTab,
+  closeTab,
+  loadElf,
+  tab,
+} from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
@@ -14,7 +29,7 @@ import { splitLines } from './split-lines'
 export enum PromptType {
   NeverPrompt,
   PromptWhenNeeded,
-  ForcePrompt
+  ForcePrompt,
 }
 
 interface ConsoleEvent {
@@ -25,7 +40,7 @@ interface ConsoleEvent {
 export async function openTab(file: SelectedFile<string | Uint8Array>) {
   const { name, path, data } = file
 
-  const existing = tabsState.tabs.find(tab => tab.path === path)
+  const existing = tabsState.tabs.find((tab) => tab.path === path)
 
   if (existing) {
     tabsState.selected = existing.uuid
@@ -45,7 +60,10 @@ export async function openTab(file: SelectedFile<string | Uint8Array>) {
   }
 }
 
-export async function saveTab(current: EditorTab, type: PromptType = PromptType.PromptWhenNeeded): Promise<boolean> {
+export async function saveTab(
+  current: EditorTab,
+  type: PromptType = PromptType.PromptWhenNeeded
+): Promise<boolean> {
   if (type === PromptType.NeverPrompt && !current.path) {
     return true
   }
@@ -72,7 +90,9 @@ export async function saveTab(current: EditorTab, type: PromptType = PromptType.
   return true
 }
 
-export async function saveCurrentTab(prompt: PromptType = PromptType.PromptWhenNeeded) {
+export async function saveCurrentTab(
+  prompt: PromptType = PromptType.PromptWhenNeeded
+) {
   const current = tab()
 
   if (current) {
@@ -81,15 +101,18 @@ export async function saveCurrentTab(prompt: PromptType = PromptType.PromptWhenN
 }
 
 interface PrintPayload {
-  text: string,
+  text: string
   error: boolean
 }
 
 export async function setupEvents() {
-  await listen('print', event => {
+  await listen('print', (event) => {
     let payload = event.payload as PrintPayload
 
-    pushConsole(payload.text, payload.error ? ConsoleType.Stderr : ConsoleType.Stdout)
+    pushConsole(
+      payload.text,
+      payload.error ? ConsoleType.Stderr : ConsoleType.Stdout
+    )
   })
 
   await listen('new-tab', () => {
@@ -176,14 +199,17 @@ export async function setupEvents() {
     consoleData.showConsole = !consoleData.showConsole
   })
 
-  await listen('play-midi', async event => {
+  await listen('play-midi', async (event) => {
     await playNote(event.payload as MidiNote)
   })
 
   let events = new Map<string, number>() // uuid to number
-  watch(() => consoleData.console, () => events = new Map())
+  watch(
+    () => consoleData.console,
+    () => (events = new Map())
+  )
 
-  await listen('post-console-event', event => {
+  await listen('post-console-event', (event) => {
     const payload = event.payload as ConsoleEvent
 
     const push = () => pushConsole(payload.message, ConsoleType.Info)
@@ -201,7 +227,7 @@ export async function setupEvents() {
     }
   })
 
-  await appWindow.onFileDropEvent(async event => {
+  await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {
       for (const item of event.payload.paths) {
         const file = await readInputFile(item)
@@ -215,8 +241,8 @@ export async function setupEvents() {
     }
   })
 
-  await appWindow.onCloseRequested(async event => {
-    const ids = tabsState.tabs.map(x => x.uuid)
+  await appWindow.onCloseRequested(async (event) => {
+    const ids = tabsState.tabs.map((x) => x.uuid)
 
     for (const id of ids) {
       if (!closeTab(id)) {

@@ -22,7 +22,7 @@ export const {
   createTab,
   closeTab,
   loadElf,
-  saveModal
+  saveModal,
 } = useTabs()
 
 export const find = useFind(() => tabBody.value, widthQuery)
@@ -37,16 +37,13 @@ function onDirty(line: number, deleted: number, insert: string[]) {
 
 const storageResult = useStorage(highlights, tab, onDirty)
 
-export const {
-  editor,
-  storage,
-  suggestionsStorage
-} = storageResult
+export const { editor, storage, suggestionsStorage } = storageResult
 
 export const goto = useGoto(gotoHighlights, storageResult)
 
 export const suggestions = useSuggestions(
-  () => storage.language, suggestionsStorage
+  () => storage.language,
+  suggestionsStorage
 )
 
 function showSuggestionsAt(cursor: SelectionIndex) {
@@ -69,7 +66,7 @@ export const {
   dragTo,
   cursorCoordinates,
   handleKey,
-  applyMergeSuggestion
+  applyMergeSuggestion,
 } = useCursor(
   () => editor.value,
   () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },

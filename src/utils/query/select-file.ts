@@ -28,12 +28,14 @@ export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
   const result = await lock(async () => {
     return await open({
       title: 'Select ELF',
-      filters: [{
-        name: 'ELF',
-        extensions: ['elf']
-      }],
+      filters: [
+        {
+          name: 'ELF',
+          extensions: ['elf'],
+        },
+      ],
       multiple: false,
-      directory: false
+      directory: false,
     })
   })
 
@@ -47,7 +49,9 @@ export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
   return { name, path: result, data }
 }
 
-export async function readInputFile(path: string): Promise<SelectedFile<string | Uint8Array> | null> {
+export async function readInputFile(
+  path: string
+): Promise<SelectedFile<string | Uint8Array> | null> {
   const name = await basename(path)
   const extension = await extname(path).catch(() => null)
 
@@ -67,12 +71,14 @@ export async function readInputFile(path: string): Promise<SelectedFile<string |
 }
 
 // Would be magic if this could also open ELF files.
-export async function openInputFile(): Promise<SelectedFile<string | Uint8Array> | null> {
+export async function openInputFile(): Promise<SelectedFile<
+  string | Uint8Array
+> | null> {
   const result = await lock(async () => {
     return await open({
       title: 'Select File',
       multiple: false,
-      directory: false
+      directory: false,
     })
   })
 
@@ -90,9 +96,9 @@ export async function selectSaveAssembly(): Promise<SelectedFile<undefined> | nu
       filters: [
         {
           name: 'Assembly',
-          extensions: ['asm', 's']
-        }
-      ]
+          extensions: ['asm', 's'],
+        },
+      ],
     })
   })
 
@@ -109,7 +115,9 @@ export async function writeFile(path: string, content: string) {
   await writeTextFile(path, content)
 }
 
-export async function readFile(path: string): Promise<SelectedFile<string | null>> {
+export async function readFile(
+  path: string
+): Promise<SelectedFile<string | null>> {
   const name = await basename(path)
   let data: string | null
 

@@ -3,33 +3,41 @@ import { MarkedSuggestion, SuggestionType } from '../suggestions'
 
 enum ItemSuggestionMarker {
   Macro,
-  Eqv
+  Eqv,
 }
 
 function toSuggestionType(marker: ItemSuggestionMarker): SuggestionType {
   switch (marker) {
-    case ItemSuggestionMarker.Eqv: return SuggestionType.Variable
-    case ItemSuggestionMarker.Macro: return SuggestionType.Function
+    case ItemSuggestionMarker.Eqv:
+      return SuggestionType.Variable
+    case ItemSuggestionMarker.Macro:
+      return SuggestionType.Function
   }
 }
 
 function toSuggestionName(marker: ItemSuggestionMarker): string {
   switch (marker) {
-    case ItemSuggestionMarker.Eqv: return 'Eqv'
-    case ItemSuggestionMarker.Macro: return 'Macro'
+    case ItemSuggestionMarker.Eqv:
+      return 'Eqv'
+    case ItemSuggestionMarker.Macro:
+      return 'Macro'
   }
 }
 
 interface Item {
-  type: TokenType,
-  known: boolean,
+  type: TokenType
+  known: boolean
   next: number
   marker?: ItemSuggestionMarker
   body?: string // for suggestions
 }
 
 // Port of https://github.com/1whatleytay/titan/blob/main/src/assembler/lexer.rs
-function takeCount(input: string, index: number, take: (c: string) => boolean): number {
+function takeCount(
+  input: string,
+  index: number,
+  take: (c: string) => boolean
+): number {
   let size = 0
 
   for (let k = index; k < input.length; k++) {
@@ -45,33 +53,148 @@ function takeCount(input: string, index: number, take: (c: string) => boolean): 
 }
 
 const allHard = new Set([
-  ':', ';', ',', '{', '}', '+', '-',
-  '=', '/', '@', '#', '$', '%', '^', '&',
-  '|', '*', '(', ')', '!', '?', '<', '>',
-  '~', '[', ']', '\\', '\"', '\''
+  ':',
+  ';',
+  ',',
+  '{',
+  '}',
+  '+',
+  '-',
+  '=',
+  '/',
+  '@',
+  '#',
+  '$',
+  '%',
+  '^',
+  '&',
+  '|',
+  '*',
+  '(',
+  ')',
+  '!',
+  '?',
+  '<',
+  '>',
+  '~',
+  '[',
+  ']',
+  '\\',
+  '"',
+  "'",
 ])
 
 const knownDirectives = new Set([
-  'ascii', 'asciiz', 'align', 'space',
-  'byte', 'half', 'word', 'float',
-  'double', 'text', 'data', 'ktext',
-  'kdata', 'extern', 'eqv', 'macro',
-  'end_macro'
+  'ascii',
+  'asciiz',
+  'align',
+  'space',
+  'byte',
+  'half',
+  'word',
+  'float',
+  'double',
+  'text',
+  'data',
+  'ktext',
+  'kdata',
+  'extern',
+  'eqv',
+  'macro',
+  'end_macro',
 ])
 
 const knownInstructions = new Set([
-  'sll', 'srl', 'sra', 'sllv', 'srlv', 'srav', 'jr', 'jalr',
-  'mfhi', 'mthi', 'mflo', 'mtlo', 'mult', 'multu', 'div', 'divu',
-  'add', 'addu', 'sub', 'subu', 'and', 'or', 'xor', 'nor',
-  'sltu', 'slt', 'bltz', 'bgez', 'bltzal', 'bgezal', 'j', 'jal',
-  'beq', 'bne', 'blez', 'bgtz', 'addi', 'addiu', 'slti', 'sltiu',
-  'andi', 'ori', 'xori', 'lui', 'llo', 'lhi', 'trap', 'syscall',
-  'lb', 'lh', 'lw', 'lbu', 'lhu', 'sb', 'sh', 'sw',
-  'madd', 'maddu', 'mul', 'msub', 'msubu', 'abs', 'blt', 'bgt',
-  'ble', 'bge', 'neg', 'negu', 'not', 'li', 'la', 'move',
-  'sge', 'sgt', 'b', 'subi', 'subiu', 'nop', 'bltu', 'bleu',
-  'bgtu', 'bgeu', 'sle', 'sgeu', 'sgtu', 'sleu', 'sne', 'seq',
-  'beqz', 'bnez'
+  'sll',
+  'srl',
+  'sra',
+  'sllv',
+  'srlv',
+  'srav',
+  'jr',
+  'jalr',
+  'mfhi',
+  'mthi',
+  'mflo',
+  'mtlo',
+  'mult',
+  'multu',
+  'div',
+  'divu',
+  'add',
+  'addu',
+  'sub',
+  'subu',
+  'and',
+  'or',
+  'xor',
+  'nor',
+  'sltu',
+  'slt',
+  'bltz',
+  'bgez',
+  'bltzal',
+  'bgezal',
+  'j',
+  'jal',
+  'beq',
+  'bne',
+  'blez',
+  'bgtz',
+  'addi',
+  'addiu',
+  'slti',
+  'sltiu',
+  'andi',
+  'ori',
+  'xori',
+  'lui',
+  'llo',
+  'lhi',
+  'trap',
+  'syscall',
+  'lb',
+  'lh',
+  'lw',
+  'lbu',
+  'lhu',
+  'sb',
+  'sh',
+  'sw',
+  'madd',
+  'maddu',
+  'mul',
+  'msub',
+  'msubu',
+  'abs',
+  'blt',
+  'bgt',
+  'ble',
+  'bge',
+  'neg',
+  'negu',
+  'not',
+  'li',
+  'la',
+  'move',
+  'sge',
+  'sgt',
+  'b',
+  'subi',
+  'subiu',
+  'nop',
+  'bltu',
+  'bleu',
+  'bgtu',
+  'bgeu',
+  'sle',
+  'sgeu',
+  'sgtu',
+  'sleu',
+  'sne',
+  'seq',
+  'beqz',
+  'bnez',
 ])
 
 function isWhitespace(c: string): boolean {
@@ -79,11 +202,11 @@ function isWhitespace(c: string): boolean {
 }
 
 function takeName(input: string, index: number): number {
-  return takeCount(input, index, c => !allHard.has(c) && !isWhitespace(c))
+  return takeCount(input, index, (c) => !allHard.has(c) && !isWhitespace(c))
 }
 
 function takeSpace(input: string, index: number): number {
-  return takeCount(input, index, c => isWhitespace(c))
+  return takeCount(input, index, (c) => isWhitespace(c))
 }
 
 function takeSome(input: string, index: number): number {
@@ -94,7 +217,7 @@ function takeSome(input: string, index: number): number {
   const some = (c: string) => allHard.has(c) || isWhitespace(c)
   const isHard = some(input[index])
 
-  return takeCount(input, index + 1, c => some(c) == isHard) + 1
+  return takeCount(input, index + 1, (c) => some(c) == isHard) + 1
 }
 
 function takeStringBody(input: string, index: number, quote: string): number {
@@ -124,7 +247,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
     return {
       type: TokenType.Nothing,
       known: false,
-      next: start
+      next: start,
     }
   }
 
@@ -132,12 +255,12 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
   switch (first) {
     case '#': {
-      const count = takeCount(line, start + 1, c => c != '\n')
+      const count = takeCount(line, start + 1, (c) => c != '\n')
 
       return {
         type: TokenType.Comment,
         known: false,
-        next: start + 1 + count
+        next: start + 1 + count,
       }
     }
 
@@ -160,9 +283,11 @@ function readItem(line: string, index: number, initial: boolean): Item {
 
       return {
         type: TokenType.Directive,
-        known: knownDirectives.has(line.substring(start + 1, start + 1 + count)),
+        known: knownDirectives.has(
+          line.substring(start + 1, start + 1 + count)
+        ),
         next: start + 1 + count,
-        marker
+        marker,
       }
     }
 
@@ -172,7 +297,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
       return {
         type: TokenType.Parameter,
         known: false,
-        next: start + 1 + count
+        next: start + 1 + count,
       }
     }
 
@@ -182,7 +307,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
       return {
         type: TokenType.Register,
         known: false,
-        next: start + 1 + count
+        next: start + 1 + count,
       }
     }
 
@@ -195,17 +320,17 @@ function readItem(line: string, index: number, initial: boolean): Item {
       return {
         type: TokenType.Hard,
         known: false,
-        next: start + 1
+        next: start + 1,
       }
 
-    case '\'':
-    case '\"': {
+    case "'":
+    case '"': {
       const count = takeStringBody(line, start + 1, first)
 
       return {
         type: TokenType.Text,
         known: false,
-        next: Math.min(start + 1 + count + 1, line.length)
+        next: Math.min(start + 1 + count + 1, line.length),
       }
     }
 
@@ -217,7 +342,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
         return {
           type: TokenType.Numeric,
           known: false,
-          next: start + count
+          next: start + count,
         }
       } else {
         // Check for color for labels
@@ -230,7 +355,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
             type: TokenType.Label,
             known: false,
             next: nextUp + 1, // including colon
-            body
+            body,
           }
         }
 
@@ -239,7 +364,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
           return {
             type: TokenType.Instruction,
             known: knownInstructions.has(line.substring(start, start + count)),
-            next: start + count
+            next: start + count,
           }
         }
 
@@ -247,7 +372,7 @@ function readItem(line: string, index: number, initial: boolean): Item {
           type: TokenType.Symbol,
           known: false,
           next: start + count,
-          body
+          body,
         }
       }
     }
@@ -277,14 +402,14 @@ export function lex(line: string): HighlightResult {
           replace: item.body,
           name: 'Label',
           type: SuggestionType.Label,
-          index: index + takeSpace(line, index) // start of the line body
+          index: index + takeSpace(line, index), // start of the line body
         })
       } else if (marker !== undefined) {
         suggestions.push({
           replace: item.body,
           type: toSuggestionType(marker),
           name: toSuggestionName(marker),
-          index: index + takeSpace(line, index)
+          index: index + takeSpace(line, index),
         })
       }
     }
@@ -296,7 +421,7 @@ export function lex(line: string): HighlightResult {
         start: index,
         text: line.substring(index, index + some),
         type: TokenType.Nothing,
-        color: getStyle(TokenType.Nothing)
+        color: getStyle(TokenType.Nothing),
       })
 
       index += some
@@ -305,7 +430,7 @@ export function lex(line: string): HighlightResult {
         start: index,
         text: line.substring(index, item.next),
         type: item.type,
-        color: getStyle(item.type, item.known)
+        color: getStyle(item.type, item.known),
       })
 
       index = item.next
