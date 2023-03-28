@@ -1,55 +1,61 @@
 use std::cmp::min;
 use std::sync::Mutex;
-use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TrySendError::Full;
+use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
 
 struct ByteChannelReceiver {
     receiver: mpsc::Receiver<Vec<u8>>,
-    peek: Option<(usize, Vec<u8>)>
+    peek: Option<(usize, Vec<u8>)>,
 }
 
 impl ByteChannelReceiver {
     fn new(receiver: mpsc::Receiver<Vec<u8>>) -> ByteChannelReceiver {
         ByteChannelReceiver {
             receiver,
-            peek: None
+            peek: None,
         }
     }
 }
 
 struct ByteChannelSender {
     sender: mpsc::Sender<Vec<u8>>,
-    cache: Vec<Vec<u8>>
+    cache: Vec<Vec<u8>>,
 }
 
 impl ByteChannelSender {
     fn new(sender: mpsc::Sender<Vec<u8>>) -> ByteChannelSender {
         ByteChannelSender {
             sender,
-            cache: vec![]
+            cache: vec![],
         }
     }
 }
 
 pub struct ByteChannel {
     sender: Mutex<ByteChannelSender>,
-    receiver: AsyncMutex<ByteChannelReceiver>
+    receiver: AsyncMutex<ByteChannelReceiver>,
 }
 
 pub enum ByteChannelConsumption {
     ConsumeAndContinue,
     ConsumeAndStop,
-    IgnoreAndStop
+    IgnoreAndStop,
 }
 
 impl ByteChannelConsumption {
     fn do_consume(&self) -> bool {
-        matches!(self, ByteChannelConsumption::ConsumeAndContinue | ByteChannelConsumption::ConsumeAndStop)
+        matches!(
+            self,
+            ByteChannelConsumption::ConsumeAndContinue | ByteChannelConsumption::ConsumeAndStop
+        )
     }
 
     fn do_stop(&self) -> bool {
-        matches!(self, ByteChannelConsumption::ConsumeAndStop | ByteChannelConsumption::IgnoreAndStop)
+        matches!(
+            self,
+            ByteChannelConsumption::ConsumeAndStop | ByteChannelConsumption::IgnoreAndStop
+        )
     }
 }
 
@@ -60,7 +66,7 @@ impl ByteChannel {
 
         ByteChannel {
             sender: Mutex::new(ByteChannelSender::new(sender)),
-            receiver: AsyncMutex::new(ByteChannelReceiver::new(receiver))
+            receiver: AsyncMutex::new(ByteChannelReceiver::new(receiver)),
         }
     }
 
@@ -83,16 +89,15 @@ impl ByteChannel {
     }
 
     async fn take(
-        &self, state: &mut AsyncMutexGuard<'_, ByteChannelReceiver>
+        &self,
+        state: &mut AsyncMutexGuard<'_, ByteChannelReceiver>,
     ) -> Option<(usize, Vec<u8>)> {
         if let Some(value) = state.peek.take() {
             Some(value)
         } else {
             let result = state.receiver.recv().await;
 
-            result
-                .or_else(|| self.pop_cache())
-                .map(|x| (0, x))
+            result.or_else(|| self.pop_cache()).map(|x| (0, x))
         }
     }
 
@@ -108,7 +113,7 @@ impl ByteChannel {
             let bytes = min(needs, value.len() - index);
 
             let end = index + bytes;
-            output.extend_from_slice(&value[index .. end]);
+            output.extend_from_slice(&value[index..end]);
 
             if end < value.len() {
                 state.peek = Some((end, value))
@@ -119,7 +124,8 @@ impl ByteChannel {
     }
 
     pub async fn read_until<F: FnMut(u8) -> ByteChannelConsumption>(
-        &self, mut f: F
+        &self,
+        mut f: F,
     ) -> Option<Vec<u8>> {
         let mut output = vec![];
         let mut full = false;
@@ -140,11 +146,11 @@ impl ByteChannel {
 
                 if consume.do_stop() {
                     full = true;
-                    break
+                    break;
                 }
             }
 
-            output.extend_from_slice(&value[index .. end]);
+            output.extend_from_slice(&value[index..end]);
 
             if end < value.len() {
                 state.peek = Some((end, value))
@@ -154,4 +160,3 @@ impl ByteChannel {
         Some(output)
     }
 }
-

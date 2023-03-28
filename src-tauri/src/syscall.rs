@@ -1,3 +1,12 @@
+use crate::channels::ByteChannel;
+use crate::channels::ByteChannelConsumption::{ConsumeAndContinue, ConsumeAndStop, IgnoreAndStop};
+use crate::keyboard::KeyboardHandler;
+use crate::syscall::SyscallResult::{
+    Aborted, Completed, Exception, Failure, Terminated, Unimplemented, Unknown,
+};
+use rand::Rng;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::future::Future;
@@ -5,43 +14,36 @@ use std::io::{Read, Write};
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
-use rand_chacha::rand_core::SeedableRng;
 use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
-use titan::cpu::Memory;
 use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::state::Registers;
-use titan::debug::Debugger;
+use titan::cpu::Memory;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
+use titan::debug::Debugger;
 use tokio::select;
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
-use crate::channels::ByteChannel;
-use crate::channels::ByteChannelConsumption::{ConsumeAndContinue, ConsumeAndStop, IgnoreAndStop};
-use crate::keyboard::KeyboardHandler;
-use crate::syscall::SyscallResult::{Aborted, Completed, Exception, Failure, Terminated, Unimplemented, Unknown};
 
 type MemoryType = SectionMemory<KeyboardHandler>;
 type DebuggerType = Debugger<MemoryType>;
 
 pub struct MidiRequest {
-    pub pitch: u32, // 0 - 127
-    pub duration: u32, // in ms
+    pub pitch: u32,      // 0 - 127
+    pub duration: u32,   // in ms
     pub instrument: u32, // 0 - 127
-    pub volume: u32, // 0 - 127
+    pub volume: u32,     // 0 - 127
 }
 
 pub enum SyscallResult {
-    Completed, // Syscall completed successfully.
-    Failure(String), // Failed to complete with message.
-    Terminated(u32), // User asked process to be terminated!
-    Aborted, // User paused/stopped/asked the program to stop ASAP.
+    Completed,          // Syscall completed successfully.
+    Failure(String),    // Failed to complete with message.
+    Terminated(u32),    // User asked process to be terminated!
+    Aborted,            // User paused/stopped/asked the program to stop ASAP.
     Unimplemented(u32), // User executed a recognized syscall that is not implemented yet.
-    Unknown(u32), // User executed a totally unknown syscall.
-    Exception(Error), // Some Memory/CPU error should be reported.
+    Unknown(u32),       // User executed a totally unknown syscall.
+    Exception(Error),   // Some Memory/CPU error should be reported.
 }
 
 pub trait ConsoleHandler {
@@ -63,13 +65,13 @@ pub struct SyscallState {
     midi: Box<dyn MidiHandler + Send>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
-    file_map: HashMap<u32, File>
+    file_map: HashMap<u32, File>,
 }
 
 impl SyscallState {
     pub fn new(
         console: Box<dyn ConsoleHandler + Send>,
-        midi: Box<dyn MidiHandler + Send>
+        midi: Box<dyn MidiHandler + Send>,
     ) -> SyscallState {
         SyscallState {
             cancel_token: CancellationToken::new(),
@@ -80,7 +82,7 @@ impl SyscallState {
             midi,
             generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
             next_file: 3,
-            file_map: HashMap::new()
+            file_map: HashMap::new(),
         }
     }
 
@@ -94,7 +96,7 @@ impl SyscallState {
 }
 
 pub struct SyscallDelegate {
-    pub state: Arc<Mutex<SyscallState>>
+    pub state: Arc<Mutex<SyscallState>>,
 }
 
 fn reg(state: &Mutex<DebuggerType>, index: usize) -> u32 {
@@ -159,18 +161,22 @@ impl SyscallDelegate {
         Unimplemented(3)
     }
 
-    fn grab_string<Mem: Memory>(mut address: u32, memory: &Mem, max: Option<usize>) -> Result<String, Error> {
+    fn grab_string<Mem: Memory>(
+        mut address: u32,
+        memory: &Mem,
+        max: Option<usize>,
+    ) -> Result<String, Error> {
         let mut buffer = String::new();
 
         loop {
             if max.map(|max| buffer.len() >= max).unwrap_or(false) {
-                break
+                break;
             }
 
             let byte = memory.get(address)?;
 
             if byte == 0 {
-                break
+                break;
             }
 
             buffer.push(byte as char);
@@ -215,43 +221,49 @@ impl SyscallDelegate {
             match c {
                 '+' => Some(true),
                 '-' => Some(false),
-                _ => None
+                _ => None,
             }
         }
 
-        let result = buffer.read_until(|b| {
-            // No regards to utf8.
-            let c = b as char;
+        let result = buffer
+            .read_until(|b| {
+                // No regards to utf8.
+                let c = b as char;
 
-            if positive.is_none() {
-                if c.is_whitespace() {
-                    return ConsumeAndContinue // just consume leading whitespace
+                if positive.is_none() {
+                    if c.is_whitespace() {
+                        return ConsumeAndContinue; // just consume leading whitespace
+                    }
+
+                    let position = sign(c);
+
+                    positive = position.or(Some(true));
+
+                    if position.is_some() {
+                        return ConsumeAndContinue;
+                    }
                 }
 
-                let position = sign(c);
+                if let Some(digit) = c.to_digit(10) {
+                    value *= 10;
+                    value += digit as i64;
 
-                positive = position.or(Some(true));
-
-                if position.is_some() {
-                    return ConsumeAndContinue
+                    ConsumeAndContinue
+                } else {
+                    IgnoreAndStop
                 }
-            }
-
-            if let Some(digit) = c.to_digit(10) {
-                value *= 10;
-                value += digit as i64;
-
-                ConsumeAndContinue
-            } else {
-                IgnoreAndStop
-            }
-        }).await;
+            })
+            .await;
 
         if result.is_none() {
-            return Aborted
+            return Aborted;
         }
 
-        let sign_value = if positive.unwrap_or(true) { 1i64 } else { -1i64 };
+        let sign_value = if positive.unwrap_or(true) {
+            1i64
+        } else {
+            -1i64
+        };
 
         let final_value = sign_value * value;
 
@@ -279,7 +291,7 @@ impl SyscallDelegate {
         let count = count as usize;
 
         if count < 1 {
-            return Completed
+            return Completed;
         }
 
         let data = {
@@ -287,21 +299,24 @@ impl SyscallDelegate {
 
             let mut data: Vec<u8> = vec![];
 
-            input_buffer.read_until(|b| {
-                let c = b as char;
+            input_buffer
+                .read_until(|b| {
+                    let c = b as char;
 
-                if data.len() >= count - 1 { // buffer is full or done
-                    return IgnoreAndStop
-                }
+                    if data.len() >= count - 1 {
+                        // buffer is full or done
+                        return IgnoreAndStop;
+                    }
 
-                if c == '\n' {
-                    return ConsumeAndStop
-                }
+                    if c == '\n' {
+                        return ConsumeAndStop;
+                    }
 
-                data.push(b);
+                    data.push(b);
 
-                ConsumeAndContinue
-            }).await;
+                    ConsumeAndContinue
+                })
+                .await;
 
             data.push(0); // null character
 
@@ -317,7 +332,7 @@ impl SyscallDelegate {
             let result = memory.set(address.wrapping_add(i as u32), b);
 
             if let Err(error) = result {
-                return Exception(error)
+                return Exception(error);
             }
         }
 
@@ -361,7 +376,7 @@ impl SyscallDelegate {
         };
 
         if result.len() != 1 {
-            return Aborted
+            return Aborted;
         }
 
         state.lock().unwrap().state().registers.line[V0_REG] = result[0] as u32;
@@ -384,7 +399,12 @@ impl SyscallDelegate {
             0 => File::open(filename),
             1 => File::create(filename),
             9 => OpenOptions::new().append(true).open(filename),
-            _ => return Failure(format!("Invalid flags {} for opening file {}", flags, filename))
+            _ => {
+                return Failure(format!(
+                    "Invalid flags {} for opening file {}",
+                    flags, filename
+                ))
+            }
         };
 
         let Ok(file) = file else {
@@ -428,7 +448,7 @@ impl SyscallDelegate {
             return Completed
         };
 
-        for (i, byte) in buffer[0 .. bytes].iter().enumerate() {
+        for (i, byte) in buffer[0..bytes].iter().enumerate() {
             let Some(next) = address.checked_add(i as u32) else {
                 return Exception(CpuTrap)
             };
@@ -436,7 +456,7 @@ impl SyscallDelegate {
             let result = cpu.memory.set(next, *byte);
 
             if let Err(error) = result {
-                return Exception(error)
+                return Exception(error);
             }
         }
 
@@ -463,7 +483,7 @@ impl SyscallDelegate {
 
         let mut buffer = vec![0u8; size as usize];
 
-        for i in 0 .. size {
+        for i in 0..size {
             let Some(next) = address.checked_add(i) else {
                 return Exception(CpuTrap)
             };
@@ -510,10 +530,8 @@ impl SyscallDelegate {
                 debugger_state.registers.line[A1_REG] = millis.wrapping_shr(32) as u32;
 
                 Completed
-            },
-            Err(_) => {
-                Failure("System clock failed to get current time.".into())
             }
+            Err(_) => Failure("System clock failed to get current time.".into()),
         }
     }
 
@@ -521,7 +539,7 @@ impl SyscallDelegate {
         let request = midi_request(&state.lock().unwrap().state().registers);
 
         if self.play_installed(&request, false) {
-            return Completed
+            return Completed;
         }
 
         let state_clone = self.state.clone();
@@ -563,7 +581,7 @@ impl SyscallDelegate {
             let notifier = self.state.lock().unwrap().sync_wake.clone();
             notifier.notified().await;
 
-            return Completed
+            return Completed;
         }
 
         let install = self.state.lock().unwrap().midi.install(request.instrument);
@@ -606,7 +624,9 @@ impl SyscallDelegate {
         let id = debugger.state().registers.line[A0_REG]; // $a0
         let seed = debugger.state().registers.line[A1_REG]; // $a1
 
-        syscall.generators.insert(id, ChaCha8Rng::seed_from_u64(seed as u64));
+        syscall
+            .generators
+            .insert(id, ChaCha8Rng::seed_from_u64(seed as u64));
 
         Completed
     }
@@ -644,7 +664,7 @@ impl SyscallDelegate {
             return Self::fail_generator(id)
         };
 
-        let value: u32 = generator.gen_range(0 .. max);
+        let value: u32 = generator.gen_range(0..max);
 
         debugger.state().registers.line[A0_REG] = value;
 
@@ -701,29 +721,34 @@ impl SyscallDelegate {
             42 => self.wrap_cancel(self.random_int_ranged(state)).await,
             43 => self.wrap_cancel(self.random_float(state)).await,
             44 => self.wrap_cancel(self.random_double(state)).await,
-            _ => Unknown(code)
+            _ => Unknown(code),
         }
     }
 
     async fn handle_frame(
-        &self, debugger: &Mutex<DebuggerType>, frame: DebugFrame
+        &self,
+        debugger: &Mutex<DebuggerType>,
+        frame: DebugFrame,
     ) -> (Option<DebugFrame>, Option<SyscallResult>) {
         match frame.mode {
-             Invalid(CpuSyscall) => {
-                 // $v0
-                 let code = debugger.lock().unwrap().state().registers.line[V0_REG];
-                 let result = self.dispatch(debugger, code).await;
+            Invalid(CpuSyscall) => {
+                // $v0
+                let code = debugger.lock().unwrap().state().registers.line[V0_REG];
+                let result = self.dispatch(debugger, code).await;
 
-                 (match result {
-                     Completed => {
-                         debugger.lock().unwrap().invalid_handled();
+                (
+                    match result {
+                        Completed => {
+                            debugger.lock().unwrap().invalid_handled();
 
-                         None
-                     },
-                     _ => Some(frame)
-                 }, Some(result))
+                            None
+                        }
+                        _ => Some(frame),
+                    },
+                    Some(result),
+                )
             }
-            _ => (Some(frame), None)
+            _ => (Some(frame), None),
         }
     }
 
@@ -733,19 +758,22 @@ impl SyscallDelegate {
             let (frame, result) = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
-                return (frame, result)
+                return (frame, result);
             }
 
             // Need to re-check.
             let frame = debugger.lock().unwrap().frame();
 
             if frame.mode != Recovered {
-                return (frame, None)
+                return (frame, None);
             }
         }
     }
 
-    pub async fn cycle(&self, debugger: &Mutex<DebuggerType>) -> (DebugFrame, Option<SyscallResult>) {
+    pub async fn cycle(
+        &self,
+        debugger: &Mutex<DebuggerType>,
+    ) -> (DebugFrame, Option<SyscallResult>) {
         let frame = {
             let mut pointer = debugger.lock().unwrap();
 
@@ -758,6 +786,9 @@ impl SyscallDelegate {
             (None, None)
         };
 
-        (frame.unwrap_or_else(|| debugger.lock().unwrap().frame()), result)
+        (
+            frame.unwrap_or_else(|| debugger.lock().unwrap().frame()),
+            result,
+        )
     }
 }

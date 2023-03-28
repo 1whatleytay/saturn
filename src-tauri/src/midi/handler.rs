@@ -1,13 +1,13 @@
+use crate::midi::install_instruments;
+use crate::midi::instruments::to_instrument;
+use crate::syscall::{MidiHandler, MidiRequest};
+use serde::Serialize;
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use serde::Serialize;
-use tauri::{AppHandle, Manager, Wry};
 use tauri::api::path::app_local_data_dir;
-use crate::midi::install_instruments;
-use crate::midi::instruments::to_instrument;
-use crate::syscall::{MidiHandler, MidiRequest};
+use tauri::{AppHandle, Manager, Wry};
 
 #[derive(Clone, Serialize)]
 struct MidiNote {
@@ -16,12 +16,12 @@ struct MidiNote {
     name: String,
     note: u64,
     duration: f64,
-    volume: u64
+    volume: u64,
 }
 
 pub struct ForwardMidi {
     app: AppHandle<Wry>,
-    installed: HashSet<u32>
+    installed: HashSet<u32>,
 }
 
 impl ForwardMidi {
@@ -31,7 +31,9 @@ impl ForwardMidi {
 
         let handle = root.lock().unwrap().app.clone();
 
-        let result = install_instruments(None, instruments, &handle).await.is_some();
+        let result = install_instruments(None, instruments, &handle)
+            .await
+            .is_some();
 
         if result {
             root.lock().unwrap().installed.insert(instrument);
@@ -45,17 +47,24 @@ impl MidiHandler for Arc<Mutex<ForwardMidi>> {
     fn play(&mut self, request: &MidiRequest, sync: bool) {
         let Some(name) = to_instrument(request.instrument as usize) else { return };
 
-        self.lock().unwrap().app.emit_all("play-midi", MidiNote {
-            sync,
-            name: name.into(),
-            instrument: request.instrument as u64,
-            note: request.pitch as u64,
-            duration: request.duration as f64 / 1000f64,
-            volume: request.volume as u64
-        }).ok();
+        self.lock()
+            .unwrap()
+            .app
+            .emit_all(
+                "play-midi",
+                MidiNote {
+                    sync,
+                    name: name.into(),
+                    instrument: request.instrument as u64,
+                    note: request.pitch as u64,
+                    duration: request.duration as f64 / 1000f64,
+                    volume: request.volume as u64,
+                },
+            )
+            .ok();
     }
 
-    fn install(&mut self, instrument: u32) -> Pin<Box<dyn Future<Output=bool> + Send>> {
+    fn install(&mut self, instrument: u32) -> Pin<Box<dyn Future<Output = bool> + Send>> {
         let clone = self.clone();
 
         Box::into_pin(Box::new(async move {
@@ -67,7 +76,7 @@ impl MidiHandler for Arc<Mutex<ForwardMidi>> {
         let mut lock = self.lock().unwrap();
 
         if lock.installed.contains(&instrument) {
-            return true
+            return true;
         }
 
         let Some(name) = to_instrument(instrument as usize) else { return false };
@@ -89,5 +98,8 @@ impl MidiHandler for Arc<Mutex<ForwardMidi>> {
 }
 
 pub fn forward_midi(app: AppHandle<Wry>) -> Box<dyn MidiHandler + Send> {
-    Box::new(Arc::new(Mutex::new(ForwardMidi { app, installed: HashSet::new() })))
+    Box::new(Arc::new(Mutex::new(ForwardMidi {
+        app,
+        installed: HashSet::new(),
+    })))
 }
