@@ -68,15 +68,6 @@ fn wake_sync(state: tauri::State<'_, DebuggerBody>) {
     pointer.delegate.lock().unwrap().sync_wake.notify_one();
 }
 
-#[tauri::command]
-fn is_debug() -> bool {
-    #[cfg(debug_assertions)]
-    { true }
-
-    #[cfg(not(debug_assertions))]
-    { false }
-}
-
 fn main() {
     let menu = create_menu();
 
@@ -116,8 +107,7 @@ fn main() {
             configure_display, // bitmap
             last_display, // bitmap
             midi_install,
-            wake_sync,
-            is_debug
+            wake_sync
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)
