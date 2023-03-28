@@ -1,5 +1,4 @@
 import { appWindow } from '@tauri-apps/api/window'
-import { invoke } from '@tauri-apps/api'
 import { hasActionKey } from './query/shortcut-key'
 
 export function setupWindow() {
@@ -15,18 +14,9 @@ export function setupWindow() {
     event.preventDefault()
   }
 
-  window.addEventListener('contextmenu', handler)
-
-  // Why this convoluted?
-  //  - I want to have the context menu available on --debug and vite builds.
-  //  - import.meta.env.DEV is false on --debug builds.
-  //  - #[cfg(debug_assertions)] seems like the best way find if the debug flag is set.
-  invoke('is_debug')
-    .then(result => {
-      if (result) {
-        window.removeEventListener('contextmenu', handler)
-      }
-    })
+  if (!import.meta.env.TAURI_DEBUG) {
+    window.addEventListener('contextmenu', handler)
+  }
 }
 
 // Restricting tauri calls to certain files.
