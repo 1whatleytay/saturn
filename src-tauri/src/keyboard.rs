@@ -35,7 +35,7 @@ impl KeyboardState {
             self.last = Some(value)
         }
 
-        return self.last
+        self.last
     }
 
     pub fn new() -> KeyboardState {

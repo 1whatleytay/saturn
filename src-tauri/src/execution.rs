@@ -58,7 +58,7 @@ pub struct ResumeResult {
 }
 
 impl ResumeResult {
-    fn from_frame(frame: DebugFrame, finished_pcs: &Vec<u32>, result: Option<SyscallResult>) -> ResumeResult {
+    fn from_frame(frame: DebugFrame, finished_pcs: &[u32], result: Option<SyscallResult>) -> ResumeResult {
         let mode = match result {
             Some(SyscallResult::Failure(message)) => ResumeMode::Invalid { message },
             Some(SyscallResult::Terminated(code)) => ResumeMode::Finished {

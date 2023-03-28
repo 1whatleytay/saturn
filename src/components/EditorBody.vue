@@ -238,7 +238,7 @@ const handleMove = (event: MouseEvent) => {
     const { x, y } = editorCoordinates(event)
 
     // goto should only happen if the user moves the mouse
-    // (Cmd + C should not search goto, its expensive)
+    // (Cmd + C should not search goto, it's expensive)
     if (checkGoto && lastX !== event.pageX || lastY !== event.pageY) {
       const { line, index } = cursorCoordinates(x, y)
 

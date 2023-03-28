@@ -72,7 +72,7 @@ import { computed, watch } from 'vue'
 import { consoleData } from '../../state/console-data'
 import { settings } from '../../state/state'
 
-import { Cog6ToothIcon, Square3Stack3DIcon } from '@heroicons/vue/24/outline'
+import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 import { RegisterFormat } from '../../utils/settings'
 import { Registers } from '../../utils/mips'
 import NumberField from './NumberField.vue'

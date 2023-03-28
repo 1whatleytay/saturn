@@ -9,7 +9,6 @@ declare module 'midicube' {
     onprogress?: (state: any, progress: any) => void
   }
 
-  function loadPlugin(success: () => void)
   function loadPlugin(config: PluginConfig)
 
   function setVolume(low: number, high: number)

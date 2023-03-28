@@ -1,4 +1,4 @@
-import { MarkedSuggestion, Suggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
+import { MarkedSuggestion, SuggestionMatch, SuggestionsStorage } from './suggestions'
 
 export enum TokenType {
   Comment,
