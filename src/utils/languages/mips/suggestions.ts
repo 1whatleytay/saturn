@@ -126,6 +126,8 @@ const instructionParts = [
   { name: 'Set <= Unsigned', replace: 'sleu' },
   { name: 'Set >= Unsigned', replace: 'sgeu' },
   { name: 'Set > Unsigned', replace: 'sgtu' },
+  { name: 'Set Equal', replace: 'seq' },
+  { name: 'Set Not Equal', replace: 'sne' },
   { name: 'Branch < 0', replace: 'bltz' },
   { name: 'Branch >= 0', replace: 'bgez' },
   { name: 'Branch < 0 and Link', replace: 'bltzal' },
