@@ -1,15 +1,15 @@
-use std::collections::HashSet;
-use std::sync::{Arc, Mutex};
-use titan::debug::Debugger;
+use crate::display::{read_display, FlushDisplayBody};
 use crate::state::{DebuggerBody, MemoryType};
 use crate::syscall::{SyscallDelegate, SyscallResult, SyscallState};
 use serde::Serialize;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 use titan::cpu::state::Registers;
 use titan::debug::debugger::{DebugFrame, DebuggerMode};
-use crate::display::{FlushDisplayBody, read_display};
+use titan::debug::Debugger;
 
 #[derive(Serialize)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ResumeMode {
     Running,
     Invalid { message: String },
@@ -24,10 +24,10 @@ impl From<DebuggerMode> for ResumeMode {
             DebuggerMode::Running => ResumeMode::Running,
             DebuggerMode::Recovered => ResumeMode::Breakpoint,
             DebuggerMode::Invalid(error) => ResumeMode::Invalid {
-                message: format!("{}", error)
+                message: format!("{}", error),
             },
             DebuggerMode::Paused => ResumeMode::Paused,
-            DebuggerMode::Breakpoint => ResumeMode::Breakpoint
+            DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
         }
     }
 }
@@ -46,7 +46,7 @@ impl From<Registers> for RegistersResult {
             pc: value.pc,
             line: value.line,
             lo: value.lo,
-            hi: value.hi
+            hi: value.hi,
         }
     }
 }
@@ -54,11 +54,15 @@ impl From<Registers> for RegistersResult {
 #[derive(Serialize)]
 pub struct ResumeResult {
     mode: ResumeMode,
-    registers: RegistersResult
+    registers: RegistersResult,
 }
 
 impl ResumeResult {
-    fn from_frame(frame: DebugFrame, finished_pcs: &[u32], result: Option<SyscallResult>) -> ResumeResult {
+    fn from_frame(
+        frame: DebugFrame,
+        finished_pcs: &[u32],
+        result: Option<SyscallResult>,
+    ) -> ResumeResult {
         let mode = match result {
             Some(SyscallResult::Failure(message)) => ResumeMode::Invalid { message },
             Some(SyscallResult::Terminated(code)) => ResumeMode::Finished {
@@ -86,17 +90,25 @@ impl ResumeResult {
 
         ResumeResult {
             mode,
-            registers: frame.registers.into()
+            registers: frame.registers.into(),
         }
     }
 }
 
-type CloneResult = (Arc<Mutex<Debugger<MemoryType>>>, Arc<Mutex<SyscallState>>, Vec<u32>);
+type CloneResult = (
+    Arc<Mutex<Debugger<MemoryType>>>,
+    Arc<Mutex<SyscallState>>,
+    Vec<u32>,
+);
 
 fn lock_and_clone(state: tauri::State<'_, DebuggerBody>) -> Option<CloneResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    Some((pointer.debugger.clone(), pointer.delegate.clone(), pointer.finished_pcs.clone()))
+    Some((
+        pointer.debugger.clone(),
+        pointer.delegate.clone(),
+        pointer.finished_pcs.clone(),
+    ))
 }
 
 fn flush_display(memory: &mut MemoryType, state: tauri::State<'_, FlushDisplayBody>) {
@@ -110,11 +122,9 @@ pub async fn resume(
     count: Option<u32>,
     breakpoints: Option<Vec<u32>>,
     state: tauri::State<'_, DebuggerBody>,
-    display: tauri::State<'_, FlushDisplayBody>
+    display: tauri::State<'_, FlushDisplayBody>,
 ) -> Result<ResumeResult, ()> {
-    let (
-        debugger, state, finished_pcs
-    ) = lock_and_clone(state).ok_or(())?;
+    let (debugger, state, finished_pcs) = lock_and_clone(state).ok_or(())?;
 
     let debugger_clone = debugger.clone();
 
@@ -131,14 +141,14 @@ pub async fn resume(
 
     let (frame, result) = {
         if let Some(count) = count {
-            for _ in 0 .. count - 1 {
+            for _ in 0..count - 1 {
                 delegate.cycle(&debugger).await;
             }
 
             if count > 0 {
                 delegate.cycle(&debugger).await
             } else {
-                return Err(())
+                return Err(());
             }
         } else {
             delegate.run(&debugger).await
@@ -151,10 +161,7 @@ pub async fn resume(
 }
 
 #[tauri::command]
-pub fn pause(
-    state: tauri::State<'_, DebuggerBody>,
-    display: tauri::State<'_, FlushDisplayBody>
-) {
+pub fn pause(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
     pointer.debugger.lock().unwrap().pause();
@@ -164,10 +171,7 @@ pub fn pause(
 }
 
 #[tauri::command]
-pub fn stop(
-    state: tauri::State<'_, DebuggerBody>,
-    display: tauri::State<'_, FlushDisplayBody>
-) {
+pub fn stop(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
     let debugger = &mut *state.lock().unwrap();
 
     if let Some(pointer) = debugger {

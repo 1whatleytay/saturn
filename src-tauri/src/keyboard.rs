@@ -10,11 +10,11 @@ pub const KEYBOARD_SELECTOR: u32 = KEYBOARD_ADDRESS >> 16;
 pub struct KeyboardState {
     last: Option<char>,
     keys: Vec<char>,
-    holding: [bool; 128]
+    holding: [bool; 128],
 }
 
 pub struct KeyboardHandler {
-    pub state: Arc<Mutex<KeyboardState>>
+    pub state: Arc<Mutex<KeyboardState>>,
 }
 
 impl KeyboardState {
@@ -42,7 +42,7 @@ impl KeyboardState {
         KeyboardState {
             last: None,
             keys: vec![],
-            holding: [false; 128]
+            holding: [false; 128],
         }
     }
 }
@@ -50,15 +50,15 @@ impl KeyboardState {
 impl KeyboardHandler {
     pub fn new() -> KeyboardHandler {
         KeyboardHandler {
-            state: Arc::new(Mutex::new(KeyboardState::new()))
+            state: Arc::new(Mutex::new(KeyboardState::new())),
         }
     }
 }
 
 impl ListenResponder for KeyboardHandler {
     fn read(&self, address: u32) -> error::Result<u8> {
-        let keyboard_handled = KEYBOARD_ADDRESS .. KEYBOARD_ADDRESS + 8;
-        let keyboard_holding = KEYBOARD_HOLDING .. KEYBOARD_HOLDING + 128;
+        let keyboard_handled = KEYBOARD_ADDRESS..KEYBOARD_ADDRESS + 8;
+        let keyboard_holding = KEYBOARD_HOLDING..KEYBOARD_HOLDING + 128;
 
         if keyboard_handled.contains(&address) {
             let offset = address - KEYBOARD_ADDRESS;
@@ -66,9 +66,15 @@ impl ListenResponder for KeyboardHandler {
             let mut state = self.state.lock().unwrap();
 
             Ok(match offset {
-                0 => if state.keys.is_empty() { 0 } else { 1 },
+                0 => {
+                    if state.keys.is_empty() {
+                        0
+                    } else {
+                        1
+                    }
+                }
                 4 => state.pop_key().map(|c| c as u8).unwrap_or(0),
-                _ => 0
+                _ => 0,
             })
         } else if keyboard_holding.contains(&address) {
             let offset = address - KEYBOARD_HOLDING;

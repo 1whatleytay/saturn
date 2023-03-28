@@ -1,29 +1,21 @@
-use std::str::FromStr;
 use serde::Serialize;
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Wry};
+use std::str::FromStr;
 #[cfg(target_os = "macos")]
 use tauri::AboutMetadata;
+use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Wry};
 
 #[derive(Serialize)]
 pub struct Accelerator {
     command: bool,
     shift: bool,
-    key: String
+    key: String,
 }
 
 impl Accelerator {
     fn combo(&self) -> String {
-        let command_leading = if self.command {
-            "CmdOrCtrl+"
-        } else {
-            ""
-        };
+        let command_leading = if self.command { "CmdOrCtrl+" } else { "" };
 
-        let shift_leading = if self.shift {
-            "Shift+"
-        } else {
-            ""
-        };
+        let shift_leading = if self.shift { "Shift+" } else { "" };
 
         format!("{}{}{}", command_leading, shift_leading, self.key)
     }
@@ -32,7 +24,7 @@ impl Accelerator {
         Accelerator {
             command: true,
             shift: false,
-            key: key.into()
+            key: key.into(),
         }
     }
 }
@@ -73,7 +65,8 @@ impl ToString for MenuOptions {
             MenuOptions::Pause => "pause",
             MenuOptions::Stop => "stop",
             MenuOptions::ToggleConsole => "toggle-console",
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -97,7 +90,7 @@ impl FromStr for MenuOptions {
             "pause" => MenuOptions::Pause,
             "stop" => MenuOptions::Stop,
             "toggle-console" => MenuOptions::ToggleConsole,
-            _ => return Err(())
+            _ => return Err(()),
         })
     }
 }
@@ -129,7 +122,11 @@ impl MenuOptions {
             MenuOptions::OpenFile => Accelerator::command("O"),
             MenuOptions::CloseTab => Accelerator::command("W"),
             MenuOptions::Save => Accelerator::command("S"),
-            MenuOptions::SaveAs => Accelerator { command: true, shift: true, key: "S".into() },
+            MenuOptions::SaveAs => Accelerator {
+                command: true,
+                shift: true,
+                key: "S".into(),
+            },
             MenuOptions::Find => Accelerator::command("F"),
             MenuOptions::Build => Accelerator::command("B"),
             MenuOptions::Run => Accelerator::command("K"),
@@ -137,7 +134,7 @@ impl MenuOptions {
             MenuOptions::Pause => Accelerator::command("J"),
             MenuOptions::Stop => Accelerator::command("P"),
             MenuOptions::ToggleConsole => Accelerator::command("T"),
-            _ => return None
+            _ => return None,
         })
     }
 
@@ -155,7 +152,7 @@ impl MenuOptions {
 #[derive(Serialize)]
 pub struct MenuOptionsData {
     event: String,
-    accelerator: Accelerator
+    accelerator: Accelerator,
 }
 
 impl TryFrom<MenuOptions> for MenuOptionsData {
@@ -164,7 +161,7 @@ impl TryFrom<MenuOptions> for MenuOptionsData {
     fn try_from(value: MenuOptions) -> Result<Self, Self::Error> {
         Ok(MenuOptionsData {
             event: value.to_string(),
-            accelerator: value.accelerator().ok_or(())?
+            accelerator: value.accelerator().ok_or(())?,
         })
     }
 }
@@ -187,9 +184,10 @@ pub fn get_platform_emulated_shortcuts() -> Vec<MenuOptionsData> {
         MenuOptions::Pause.try_into(),
         MenuOptions::Stop.try_into(),
         MenuOptions::ToggleConsole.try_into(),
-    ].into_iter()
-        .filter_map(|x| x.ok())
-        .collect();
+    ]
+    .into_iter()
+    .filter_map(|x| x.ok())
+    .collect();
 
     #[cfg(not(target_os = "windows"))]
     return vec![];
@@ -207,56 +205,66 @@ pub fn create_menu() -> Menu {
     {
         let meta = AboutMetadata::default();
 
-        menu = menu.add_submenu(Submenu::new("Saturn", Menu::new()
-            .add_native_item(MenuItem::About("Saturn".into(), meta))
-            .add_native_item(MenuItem::Separator)
-            .add_native_item(MenuItem::Hide)
-            .add_native_item(MenuItem::HideOthers)
-            .add_native_item(MenuItem::ShowAll)
-            .add_native_item(MenuItem::Separator)
-            .add_native_item(MenuItem::Quit),
+        menu = menu.add_submenu(Submenu::new(
+            "Saturn",
+            Menu::new()
+                .add_native_item(MenuItem::About("Saturn".into(), meta))
+                .add_native_item(MenuItem::Separator)
+                .add_native_item(MenuItem::Hide)
+                .add_native_item(MenuItem::HideOthers)
+                .add_native_item(MenuItem::ShowAll)
+                .add_native_item(MenuItem::Separator)
+                .add_native_item(MenuItem::Quit),
         ));
     }
 
-    menu = menu.add_submenu(Submenu::new("File", Menu::new()
-        .add_item(MenuOptions::NewTab.make_item())
-        .add_item(MenuOptions::OpenFile.make_item())
-        .add_item(MenuOptions::CloseTab.make_item())
-        .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Save.make_item())
-        .add_item(MenuOptions::SaveAs.make_item())
-        .add_native_item(MenuItem::Separator)
-        // .add_item(MenuOptions::Export.make_item())
-        .add_item(MenuOptions::Assemble.make_item())
-        .add_item(MenuOptions::Disassemble.make_item())
+    menu = menu.add_submenu(Submenu::new(
+        "File",
+        Menu::new()
+            .add_item(MenuOptions::NewTab.make_item())
+            .add_item(MenuOptions::OpenFile.make_item())
+            .add_item(MenuOptions::CloseTab.make_item())
+            .add_native_item(MenuItem::Separator)
+            .add_item(MenuOptions::Save.make_item())
+            .add_item(MenuOptions::SaveAs.make_item())
+            .add_native_item(MenuItem::Separator)
+            // .add_item(MenuOptions::Export.make_item())
+            .add_item(MenuOptions::Assemble.make_item())
+            .add_item(MenuOptions::Disassemble.make_item()),
     ));
 
     // windows unsupported for some of these, hopefully this wont cause a crash
-    menu = menu.add_submenu(Submenu::new("Edit", Menu::new()
-        .add_native_item(MenuItem::Cut)
-        .add_native_item(MenuItem::Copy)
-        .add_native_item(MenuItem::Paste)
-        .add_native_item(MenuItem::Separator)
-        .add_native_item(MenuItem::Undo)
-        .add_native_item(MenuItem::Redo)
-        .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Find.make_item())
-        .add_native_item(MenuItem::SelectAll)
+    menu = menu.add_submenu(Submenu::new(
+        "Edit",
+        Menu::new()
+            .add_native_item(MenuItem::Cut)
+            .add_native_item(MenuItem::Copy)
+            .add_native_item(MenuItem::Paste)
+            .add_native_item(MenuItem::Separator)
+            .add_native_item(MenuItem::Undo)
+            .add_native_item(MenuItem::Redo)
+            .add_native_item(MenuItem::Separator)
+            .add_item(MenuOptions::Find.make_item())
+            .add_native_item(MenuItem::SelectAll),
     ));
 
-    menu = menu.add_submenu(Submenu::new("Build", Menu::new()
-        .add_item(MenuOptions::Build.make_item())
-        .add_item(MenuOptions::Run.make_item())
-        .add_native_item(MenuItem::Separator)
-        .add_item(MenuOptions::Step.make_item())
-        .add_item(MenuOptions::Pause.make_item())
-        .add_item(MenuOptions::Stop.make_item())
+    menu = menu.add_submenu(Submenu::new(
+        "Build",
+        Menu::new()
+            .add_item(MenuOptions::Build.make_item())
+            .add_item(MenuOptions::Run.make_item())
+            .add_native_item(MenuItem::Separator)
+            .add_item(MenuOptions::Step.make_item())
+            .add_item(MenuOptions::Pause.make_item())
+            .add_item(MenuOptions::Stop.make_item()),
     ));
 
-    menu = menu.add_submenu(Submenu::new("Window", Menu::new()
-        .add_native_item(MenuItem::Minimize)
-        .add_item(MenuOptions::ToggleConsole.make_item())
-        .add_native_item(MenuItem::CloseWindow)
+    menu = menu.add_submenu(Submenu::new(
+        "Window",
+        Menu::new()
+            .add_native_item(MenuItem::Minimize)
+            .add_item(MenuOptions::ToggleConsole.make_item())
+            .add_native_item(MenuItem::CloseWindow),
     ));
 
     menu
@@ -265,13 +273,14 @@ pub fn create_menu() -> Menu {
 pub fn handle_event(event: WindowMenuEvent<Wry>) {
     let catch_emit = |result: tauri::Result<()>| {
         if result.is_err() {
-            eprintln!("Failed to emit event from {} menu option", event.menu_item_id());
+            eprintln!(
+                "Failed to emit event from {} menu option",
+                event.menu_item_id()
+            );
         }
     };
 
-    let emit_normal = |name: &str| {
-        catch_emit(event.window().emit(name, ()))
-    };
+    let emit_normal = |name: &str| catch_emit(event.window().emit(name, ()));
 
     let Ok(item) = MenuOptions::from_str(event.menu_item_id()) else {
         return eprintln!("Unknown menu ID: {}", event.menu_item_id())

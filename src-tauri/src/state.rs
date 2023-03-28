@@ -1,11 +1,11 @@
+use crate::keyboard::{KeyboardHandler, KeyboardState, KEYBOARD_SELECTOR};
+use crate::syscall::{ConsoleHandler, MidiHandler, SyscallState};
 use std::sync::{Arc, Mutex, MutexGuard};
 use titan::assembler::binary::Binary;
-use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::SectionMemory;
+use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::State;
 use titan::debug::Debugger;
-use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
-use crate::syscall::{ConsoleHandler, MidiHandler, SyscallState};
 
 pub type MemoryType = SectionMemory<KeyboardHandler>;
 
@@ -13,7 +13,7 @@ pub struct DebuggerState {
     pub debugger: Arc<Mutex<Debugger<MemoryType>>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
     pub delegate: Arc<Mutex<SyscallState>>,
-    pub finished_pcs: Vec<u32>
+    pub finished_pcs: Vec<u32>,
 }
 
 pub type DebuggerBody = Mutex<Option<DebuggerState>>;
@@ -36,7 +36,7 @@ pub fn swap(
     memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
 
     // Mark heap as "Writable"
-    for selector in 0x1000 .. 0x8000 {
+    for selector in 0x1000..0x8000 {
         memory.mount_writable(selector, 0xCC);
     }
 
@@ -48,7 +48,7 @@ pub fn swap(
         debugger: wrapped,
         keyboard,
         delegate,
-        finished_pcs
+        finished_pcs,
     });
 }
 
@@ -56,7 +56,10 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
     let mut memory = SectionMemory::new();
 
     for region in binary.regions {
-        let region = Region { start: region.address, data: region.data };
+        let region = Region {
+            start: region.address,
+            data: region.data,
+        };
 
         memory.mount(region);
     }
@@ -66,7 +69,7 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
 
     let heap = Region {
         start: heap_end - heap_size,
-        data: vec![0; heap_size as usize]
+        data: vec![0; heap_size as usize],
     };
 
     memory.mount(heap);
@@ -80,7 +83,10 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
 
 pub fn setup_state(state: &mut State<MemoryType>) {
     let max_screen = 0x8000;
-    let screen = Region { start: 0x10008000, data: vec![0; max_screen] };
+    let screen = Region {
+        start: 0x10008000,
+        data: vec![0; max_screen],
+    };
 
     state.memory.mount(screen);
 
