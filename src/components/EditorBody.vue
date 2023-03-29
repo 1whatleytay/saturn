@@ -1,4 +1,18 @@
 <template>
+  <input
+    type="text"
+    autocomplete="off"
+    ref="input"
+    spellcheck="false"
+    :value="''"
+    tabindex="0"
+    class="opacity-0 pointer-events-none fixed top-0 left-0 peer z-50"
+    @keydown="handleKey"
+    @copy.prevent="handleCopy"
+    @cut.prevent="handleCut"
+    @paste.prevent="handlePaste"
+  />
+
   <div
     ref="scroll"
     class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
@@ -35,20 +49,6 @@
       class="flex-grow cursor-text text-sm relative outline-none whitespace-pre"
       @mousedown.prevent="handleDown"
     >
-      <input
-        type="text"
-        autocomplete="off"
-        ref="input"
-        spellcheck="false"
-        :value="''"
-        tabindex="0"
-        class="opacity-0 pointer-events-none fixed top-0 left-0 peer"
-        @keydown="handleKey"
-        @copy.prevent="handleCopy"
-        @cut.prevent="handleCut"
-        @paste.prevent="handlePaste"
-      />
-
       <div :style="{ height: `${topPadding}px` }" />
 
       <div

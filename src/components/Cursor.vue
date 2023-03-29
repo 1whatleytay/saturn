@@ -1,7 +1,7 @@
 <template>
   <!-- Cursor Indicator -->
   <div
-    class="w-0.5 bg-orange-400 hidden peer-focus:block absolute"
+    class="w-0.5 bg-orange-400 absolute"
     :style="{
       left: `${props.position.offsetX}px`,
       top: `${props.position.offsetY}px`,
