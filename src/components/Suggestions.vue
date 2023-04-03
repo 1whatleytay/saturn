@@ -16,7 +16,7 @@
     >
       <div
         v-for="(suggestion, index) in suggestions.state.results"
-        :key="suggestion.replace"
+        :key="index"
         class="w-full h-6 rounded px-2 flex items-center cursor-pointer transition-colors duration-150"
         :class="{ 'bg-neutral-700': index === suggestions.state.index }"
         @click.stop="suggestions.state.index = index"
