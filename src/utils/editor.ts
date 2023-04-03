@@ -99,7 +99,7 @@ export class Editor {
       this.operations.push(this.current)
 
       if (this.operations.length > this.backlog) {
-        this.operations = this.operations.splice(
+        this.operations.splice(
           0,
           this.operations.length - this.backlog
         )
