@@ -5,7 +5,7 @@
     <div
       class="h-10 flex items-center items-start bg-neutral-900 w-full fixed z-20 top-0"
     >
-      <div class="flex flex-grow items-center overflow-x-auto items-start">
+      <div class="flex flex-grow items-center overflow-x-auto no-scrollbar items-start">
         <Tab
           v-for="tab in tabsState.tabs"
           :ref="(component) => refTab(tab.uuid, component)"
