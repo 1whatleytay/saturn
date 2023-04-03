@@ -493,7 +493,7 @@ export class Editor {
       deleted: number,
       insert: number
     ) => boolean, // end - not inclusive
-    public backlog: number = 50,
+    public backlog: number = 100,
     public debounce: number = 800,
     public commitInterval: number = 30
   ) {}
