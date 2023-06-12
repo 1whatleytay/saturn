@@ -96,7 +96,7 @@ impl ResumeResult {
 }
 
 type CloneResult = (
-    Arc<Mutex<Debugger<MemoryType>>>,
+    Arc<Debugger<MemoryType>>,
     Arc<Mutex<SyscallState>>,
     Vec<u32>,
 );
@@ -126,13 +126,13 @@ pub async fn resume(
 ) -> Result<ResumeResult, ()> {
     let (debugger, state, finished_pcs) = lock_and_clone(state).ok_or(())?;
 
-    let debugger_clone = debugger.clone();
-
     if let Some(breakpoints) = breakpoints {
         let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
-        debugger.lock().unwrap().set_breakpoints(breakpoints_set);
+        debugger.set_breakpoints(breakpoints_set);
     }
+
+    let debugger_clone = debugger.clone();
 
     // Ensure the cancel token hasn't been set previously.
     state.lock().unwrap().renew();
@@ -155,7 +155,9 @@ pub async fn resume(
         }
     };
 
-    flush_display(debugger_clone.lock().unwrap().memory(), display);
+    debugger_clone.with_memory(|memory| {
+        flush_display(memory, display);
+    });
 
     Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
 }
@@ -164,10 +166,12 @@ pub async fn resume(
 pub fn pause(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    pointer.debugger.lock().unwrap().pause();
+    pointer.debugger.pause();
     pointer.delegate.lock().unwrap().cancel();
 
-    flush_display(pointer.debugger.lock().unwrap().memory(), display);
+    pointer.debugger.with_memory(|memory| {
+        flush_display(memory, display);
+    });
 }
 
 #[tauri::command]
@@ -175,10 +179,12 @@ pub fn stop(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, Flu
     let debugger = &mut *state.lock().unwrap();
 
     if let Some(pointer) = debugger {
-        pointer.debugger.lock().unwrap().pause();
+        pointer.debugger.pause();
         pointer.delegate.lock().unwrap().cancel();
 
-        flush_display(pointer.debugger.lock().unwrap().memory(), display);
+        pointer.debugger.with_memory(|memory| {
+            flush_display(memory, display);
+        });
     }
 
     *debugger = None;

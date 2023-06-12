@@ -99,8 +99,8 @@ pub struct SyscallDelegate {
     pub state: Arc<Mutex<SyscallState>>,
 }
 
-fn reg(state: &Mutex<DebuggerType>, index: usize) -> u32 {
-    state.lock().unwrap().state().registers.line[index]
+fn reg(debugger: &DebuggerType, index: usize) -> u32 {
+    debugger.with_state(|s| s.registers.line[index])
 }
 
 const V0_REG: usize = 2;
@@ -109,9 +109,10 @@ const A1_REG: usize = 5;
 const A2_REG: usize = 6;
 const A3_REG: usize = 7;
 
-fn a0(state: &Mutex<DebuggerType>) -> u32 {
+fn a0(state: &DebuggerType) -> u32 {
     reg(state, A0_REG)
 }
+
 fn midi_request(registers: &Registers) -> MidiRequest {
     MidiRequest {
         pitch: registers.line[A0_REG],
@@ -146,18 +147,18 @@ impl SyscallDelegate {
         }
     }
 
-    async fn print_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_integer(&self, state: &DebuggerType) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_float(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(2)
     }
 
-    async fn print_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_double(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(3)
     }
 
@@ -191,12 +192,15 @@ impl SyscallDelegate {
         Ok(buffer)
     }
 
-    async fn print_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_string(&self, debugger: &DebuggerType) -> SyscallResult {
         let buffer = {
-            let mut lock = state.lock().unwrap();
-            let address = lock.state().registers.line[A0_REG];
+            let address = a0(debugger);
 
-            match Self::grab_string(address, lock.memory(), Some(1000)) {
+            let result = debugger.with_memory(
+                |m| Self::grab_string(address, m, Some(1000))
+            );
+
+            match result {
                 Ok(buffer) => buffer,
                 Err(error) => return Exception(error),
             }
@@ -211,7 +215,7 @@ impl SyscallDelegate {
         self.state.lock().unwrap().input_buffer.clone()
     }
 
-    async fn read_integer(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn read_integer(&self, debugger: &DebuggerType) -> SyscallResult {
         let buffer = self.lock_input();
 
         let mut positive = Option::<bool>::None;
@@ -267,26 +271,23 @@ impl SyscallDelegate {
 
         let final_value = sign_value * value;
 
-        state.lock().unwrap().state().registers.line[V0_REG] = final_value as u32;
+        debugger.with_state(|s| s.registers.line[V0_REG] = final_value as u32);
 
         Completed
     }
 
-    async fn read_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn read_float(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(6)
     }
 
-    async fn read_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn read_double(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(7)
     }
 
-    async fn read_string(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let (address, count) = {
-            let mut lock = state.lock().unwrap();
-            let registers = &mut lock.state().registers;
-
-            (registers.line[A0_REG], registers.line[A1_REG])
-        };
+    async fn read_string(&self, debugger: &DebuggerType) -> SyscallResult {
+        let (address, count) = debugger.with_state(|s| {
+            (s.registers.line[A0_REG], s.registers.line[A1_REG])
+        });
 
         let count = count as usize;
 
@@ -325,48 +326,45 @@ impl SyscallDelegate {
             data
         };
 
-        let mut debugger = state.lock().unwrap();
-        let memory = debugger.memory();
+        debugger.with_memory(|memory| {
+            for (i, b) in data.into_iter().enumerate() {
+                let result = memory.set(address.wrapping_add(i as u32), b);
 
-        for (i, b) in data.into_iter().enumerate() {
-            let result = memory.set(address.wrapping_add(i as u32), b);
-
-            if let Err(error) = result {
-                return Exception(error);
+                if let Err(error) = result {
+                    Exception(error);
+                }
             }
-        }
 
-        Completed
+            Completed
+        })
     }
 
-    async fn alloc_heap(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let mut debugger = state.lock().unwrap();
-        let registers = &mut debugger.state().registers;
-        let count = registers.line[A0_REG];
+    async fn alloc_heap(&self, debugger: &DebuggerType) -> SyscallResult {
+        let count = a0(debugger);
 
         // Primitive Heap Alloc, assuming 0x20000000 is safe heap.
         let mut syscall = self.state.lock().unwrap();
         let pointer = syscall.heap_start;
         syscall.heap_start += count;
 
-        registers.line[V0_REG] = pointer;
+        debugger.with_state(|s| s.registers.line[V0_REG] = pointer);
 
         Completed
     }
 
-    async fn terminate(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn terminate(&self, _: &DebuggerType) -> SyscallResult {
         Terminated(0)
     }
 
-    async fn print_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let character = state.lock().unwrap().state().registers.line[A0_REG] as u8 as char;
+    async fn print_character(&self, debugger: &DebuggerType) -> SyscallResult {
+        let character = a0(debugger) as u8 as char;
 
         self.send_print(&character.to_string()).await;
 
         Completed
     }
 
-    async fn read_character(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn read_character(&self, debugger: &DebuggerType) -> SyscallResult {
         let buffer = self.lock_input();
 
         let result = buffer.read(1).await;
@@ -379,18 +377,24 @@ impl SyscallDelegate {
             return Aborted;
         }
 
-        state.lock().unwrap().state().registers.line[V0_REG] = result[0] as u32;
+        debugger.with_state(|s| s.registers.line[V0_REG] = result[0] as u32);
 
         Completed
     }
 
-    async fn open_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let mut debugger = state.lock().unwrap();
-        let address = debugger.state().registers.line[A0_REG];
-        let flags = debugger.state().registers.line[A1_REG];
+    async fn open_file(&self, debugger: &DebuggerType) -> SyscallResult {
+        let (address, flags) = debugger.with_state(|s| {
+            (s.registers.line[A0_REG], s.registers.line[A1_REG])
+        });
+
         // Mode/$a2 is ignored.
 
-        let filename = match Self::grab_string(address, debugger.memory(), Some(400)) {
+
+        let result = debugger.with_memory(|memory| {
+            Self::grab_string(address, memory, Some(400))
+        });
+
+        let filename = match result {
             Ok(buffer) => buffer,
             Err(error) => return Exception(error),
         };
@@ -408,7 +412,7 @@ impl SyscallDelegate {
         };
 
         let Ok(file) = file else {
-            debugger.state().registers.line[V0_REG] = (-1i32) as u32;
+            debugger.with_state(|s| s.registers.line[V0_REG] = (-1i32) as u32);
 
             return Completed
         };
@@ -420,30 +424,43 @@ impl SyscallDelegate {
         syscall.next_file += 1;
         syscall.file_map.insert(descriptor, file);
 
-        debugger.state().registers.line[V0_REG] = descriptor;
+        debugger.with_state(|s| s.registers.line[V0_REG] = descriptor);
 
         Completed
     }
 
-    async fn read_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let mut debugger = state.lock().unwrap();
-        let cpu = debugger.state();
+    fn file_parameters(debugger: &DebuggerType) -> (u32, u32, u32) {
+        debugger.with_state(|s| {
+            (s.registers.line[A0_REG], s.registers.line[A1_REG], s.registers.line[A2_REG])
+        })
+    }
 
-        let descriptor = cpu.registers.line[A0_REG];
-        let address = cpu.registers.line[A1_REG];
-        let size = cpu.registers.line[A2_REG];
+    // Duplicate Code Abstraction
+    fn get_file<'a>(syscall: &'a mut SyscallState, descriptor: u32, debugger: &DebuggerType) -> Option<&'a mut File> {
+        let result = syscall.file_map.get_mut(&descriptor);
+
+        if result.is_none() {
+            // descriptor does not exist
+            debugger.with_state(|s| s.registers.line[V0_REG] = -1i32 as u32)
+        }
+
+        result
+    }
+
+    async fn read_file(&self, debugger: &DebuggerType) -> SyscallResult {
+        let (descriptor, address, size) = Self::file_parameters(debugger);
 
         let mut syscall = self.state.lock().unwrap();
 
-        let Some(file) = syscall.file_map.get_mut(&descriptor) else {
-            cpu.registers.line[V0_REG] = -1i32 as u32; // descriptor does not exist
-
+        let Some(file) = Self::get_file(&mut syscall, descriptor, debugger) else {
             return Completed
         };
 
         let mut buffer = vec![0u8; size as usize];
+
         let Ok(bytes) = file.read(buffer.as_mut_slice()) else {
-            cpu.registers.line[V0_REG] = -2i32 as u32; // file is not opened for read
+            // file is not opened for read
+            debugger.with_state(|s| s.registers.line[V0_REG] = -2i32 as u32);
 
             return Completed
         };
@@ -453,31 +470,24 @@ impl SyscallDelegate {
                 return Exception(CpuTrap)
             };
 
-            let result = cpu.memory.set(next, *byte);
+            let result = debugger.with_memory(|m| m.set(next, *byte));
 
             if let Err(error) = result {
                 return Exception(error);
             }
         }
 
-        cpu.registers.line[V0_REG] = bytes as u32;
+        debugger.with_state(|s| s.registers.line[V0_REG] = bytes as u32);
 
         Completed
     }
 
-    async fn write_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let mut debugger = state.lock().unwrap();
-        let cpu = debugger.state();
-
-        let descriptor = cpu.registers.line[A0_REG];
-        let address = cpu.registers.line[A1_REG];
-        let size = cpu.registers.line[A2_REG];
+    async fn write_file(&self, debugger: &DebuggerType) -> SyscallResult {
+        let (descriptor, address, size) = Self::file_parameters(debugger);
 
         let mut syscall = self.state.lock().unwrap();
 
-        let Some(file) = syscall.file_map.get_mut(&descriptor) else {
-            cpu.registers.line[V0_REG] = -1i32 as u32; // descriptor does not exist
-
+        let Some(file) = Self::get_file(&mut syscall, descriptor, debugger) else {
             return Completed
         };
 
@@ -488,24 +498,25 @@ impl SyscallDelegate {
                 return Exception(CpuTrap)
             };
 
-            match cpu.memory.get(next) {
+            match debugger.with_memory(|m| m.get(next)) {
                 Ok(byte) => buffer[i as usize] = byte,
                 Err(error) => return Exception(error),
             }
         }
 
         let Ok(bytes) = file.write(buffer.as_slice()) else {
-            cpu.registers.line[V0_REG] = -2i32 as u32; // file was not opened for writing
+            // file was not opened for writing
+            debugger.with_state(|s| s.registers.line[V0_REG] = -2i32 as u32);
 
             return Completed
         };
 
-        cpu.registers.line[V0_REG] = bytes as u32;
+        debugger.with_state(|s| s.registers.line[V0_REG] = bytes as u32);
 
         Completed
     }
 
-    async fn close_file(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn close_file(&self, state: &DebuggerType) -> SyscallResult {
         let descriptor = a0(state);
 
         let mut syscall = self.state.lock().unwrap();
@@ -514,20 +525,19 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn terminate_valued(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn terminate_valued(&self, debugger: &DebuggerType) -> SyscallResult {
         Terminated(a0(debugger))
     }
 
-    async fn system_time(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn system_time(&self, debugger: &DebuggerType) -> SyscallResult {
         match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(time) => {
                 let millis = time.as_millis() as u64;
 
-                let mut debugger = state.lock().unwrap();
-                let debugger_state = debugger.state();
-
-                debugger_state.registers.line[A0_REG] = (millis & 0xFFFFFFFF) as u32;
-                debugger_state.registers.line[A1_REG] = millis.wrapping_shr(32) as u32;
+                debugger.with_state(|debugger_state| {
+                    debugger_state.registers.line[A0_REG] = (millis & 0xFFFFFFFF) as u32;
+                    debugger_state.registers.line[A1_REG] = millis.wrapping_shr(32) as u32;
+                });
 
                 Completed
             }
@@ -535,8 +545,8 @@ impl SyscallDelegate {
         }
     }
 
-    async fn midi_out(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let request = midi_request(&state.lock().unwrap().state().registers);
+    async fn midi_out(&self, debugger: &DebuggerType) -> SyscallResult {
+        let request = debugger.with_state(|s| midi_request(&s.registers));
 
         if self.play_installed(&request, false) {
             return Completed;
@@ -565,7 +575,7 @@ impl SyscallDelegate {
         tokio::time::sleep(duration).await
     }
 
-    async fn sleep(&self, debugger: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn sleep(&self, debugger: &DebuggerType) -> SyscallResult {
         // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
         let time = a0(debugger) as u64;
 
@@ -574,8 +584,8 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn midi_out_sync(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
-        let request = midi_request(&state.lock().unwrap().state().registers);
+    async fn midi_out_sync(&self, debugger: &DebuggerType) -> SyscallResult {
+        let request = debugger.with_state(|s| midi_request(&s.registers));
 
         if self.play_installed(&request, true) {
             let notifier = self.state.lock().unwrap().sync_wake.clone();
@@ -596,33 +606,33 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn print_hexadecimal(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_hexadecimal(&self, state: &DebuggerType) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{:x}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_binary(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_binary(&self, state: &DebuggerType) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{:b}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_unsigned(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn print_unsigned(&self, state: &DebuggerType) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value)).await;
 
         Completed
     }
 
-    async fn set_seed(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn set_seed(&self, debugger: &DebuggerType) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
-        let mut debugger = state.lock().unwrap();
 
-        let id = debugger.state().registers.line[A0_REG]; // $a0
-        let seed = debugger.state().registers.line[A1_REG]; // $a1
+        let (id, seed) = debugger.with_state(|s| {
+            (s.registers.line[A0_REG], s.registers.line[A1_REG])
+        });
 
         syscall
             .generators
@@ -638,44 +648,43 @@ impl SyscallDelegate {
         ))
     }
 
-    async fn random_int(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn random_int(&self, debugger: &DebuggerType) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
 
-        let mut debugger = state.lock().unwrap();
-        let id = debugger.state().registers.line[A0_REG];
+        let id = a0(debugger);
         let Some(generator) = syscall.generators.get_mut(&id) else {
             return Self::fail_generator(id)
         };
 
         let value: u32 = generator.gen();
 
-        debugger.state().registers.line[A0_REG] = value;
+        debugger.with_state(|s| s.registers.line[A0_REG] = value);
 
         Completed
     }
 
-    async fn random_int_ranged(&self, state: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn random_int_ranged(&self, debugger: &DebuggerType) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
 
-        let mut debugger = state.lock().unwrap();
-        let id = debugger.state().registers.line[A0_REG];
-        let max = debugger.state().registers.line[A1_REG];
+        let (id, max) = debugger.with_state(|s| (
+            s.registers.line[A0_REG], s.registers.line[A1_REG])
+        );
         let Some(generator) = syscall.generators.get_mut(&id) else {
             return Self::fail_generator(id)
         };
 
         let value: u32 = generator.gen_range(0..max);
 
-        debugger.state().registers.line[A0_REG] = value;
+        debugger.with_state(|s| s.registers.line[A0_REG] = value);
 
         Completed
     }
 
-    async fn random_float(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn random_float(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(43)
     }
 
-    async fn random_double(&self, _: &Mutex<DebuggerType>) -> SyscallResult {
+    async fn random_double(&self, _: &DebuggerType) -> SyscallResult {
         Unimplemented(44)
     }
 
@@ -690,7 +699,7 @@ impl SyscallDelegate {
         result
     }
 
-    pub async fn dispatch(&self, state: &Mutex<DebuggerType>, code: u32) -> SyscallResult {
+    pub async fn dispatch(&self, state: &DebuggerType, code: u32) -> SyscallResult {
         match code {
             1 => self.wrap_cancel(self.print_integer(state)).await,
             2 => self.wrap_cancel(self.print_float(state)).await,
@@ -727,19 +736,19 @@ impl SyscallDelegate {
 
     async fn handle_frame(
         &self,
-        debugger: &Mutex<DebuggerType>,
+        debugger: &DebuggerType,
         frame: DebugFrame,
     ) -> (Option<DebugFrame>, Option<SyscallResult>) {
         match frame.mode {
             Invalid(CpuSyscall) => {
                 // $v0
-                let code = debugger.lock().unwrap().state().registers.line[V0_REG];
+                let code = debugger.with_state(|s| s.registers.line[V0_REG]);
                 let result = self.dispatch(debugger, code).await;
 
                 (
                     match result {
                         Completed => {
-                            debugger.lock().unwrap().invalid_handled();
+                            debugger.invalid_handled();
 
                             None
                         }
@@ -752,7 +761,7 @@ impl SyscallDelegate {
         }
     }
 
-    pub async fn run(&self, debugger: &Mutex<DebuggerType>) -> (DebugFrame, Option<SyscallResult>) {
+    pub async fn run(&self, debugger: &DebuggerType) -> (DebugFrame, Option<SyscallResult>) {
         loop {
             let frame = Debugger::run(debugger);
             let (frame, result) = self.handle_frame(debugger, frame).await;
@@ -762,7 +771,7 @@ impl SyscallDelegate {
             }
 
             // Need to re-check.
-            let frame = debugger.lock().unwrap().frame();
+            let frame = debugger.frame();
 
             if frame.mode != Recovered {
                 return (frame, None);
@@ -772,13 +781,9 @@ impl SyscallDelegate {
 
     pub async fn cycle(
         &self,
-        debugger: &Mutex<DebuggerType>,
+        debugger: &DebuggerType,
     ) -> (DebugFrame, Option<SyscallResult>) {
-        let frame = {
-            let mut pointer = debugger.lock().unwrap();
-
-            pointer.cycle(true)
-        };
+        let frame = debugger.cycle(true);
 
         let (frame, result) = if let Some(frame) = frame {
             self.handle_frame(debugger, frame).await
@@ -787,7 +792,7 @@ impl SyscallDelegate {
         };
 
         (
-            frame.unwrap_or_else(|| debugger.lock().unwrap().frame()),
+            frame.unwrap_or_else(|| debugger.frame()),
             result,
         )
     }

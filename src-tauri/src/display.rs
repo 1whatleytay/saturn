@@ -94,10 +94,9 @@ pub fn display_protocol(
         return builder.status(400).body(vec![])
     };
 
-    let mut debugger = pointer.debugger.lock().unwrap();
-    let memory = debugger.memory();
-
-    let Some(result) = read_display(address, width, height, memory) else {
+    let Some(result) = pointer.debugger.with_memory(|memory| {
+        read_display(address, width, height, memory)
+    }) else {
         return builder.status(400).body(vec![])
     };
 
