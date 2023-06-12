@@ -3529,7 +3529,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#1fd7a0fe1cb9504db2e1af77a95eaa89d5dedd46"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#83afe9b56ca69fee3eb326a9dac07f737e44d7d3"
 dependencies = [
  "bitflags 2.3.1",
  "byteorder",

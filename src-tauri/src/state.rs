@@ -9,42 +9,43 @@ use titan::debug::Debugger;
 
 pub type MemoryType = SectionMemory<KeyboardHandler>;
 
-pub struct DebuggerState {
-    pub debugger: Arc<Mutex<Debugger<MemoryType>>>,
+pub struct ExecutionState {
+    pub debugger: Arc<Debugger<MemoryType>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
     pub delegate: Arc<Mutex<SyscallState>>,
     pub finished_pcs: Vec<u32>,
 }
 
-pub type DebuggerBody = Mutex<Option<DebuggerState>>;
+pub type DebuggerBody = Mutex<Option<ExecutionState>>;
 
 pub fn swap(
-    mut pointer: MutexGuard<Option<DebuggerState>>,
-    mut debugger: Debugger<MemoryType>,
+    mut pointer: MutexGuard<Option<ExecutionState>>,
+    debugger: Debugger<MemoryType>,
     finished_pcs: Vec<u32>,
     console: Box<dyn ConsoleHandler + Send>,
     midi: Box<dyn MidiHandler + Send>,
 ) {
     if let Some(state) = pointer.as_ref() {
-        state.debugger.lock().unwrap().pause()
+        state.debugger.pause()
     }
 
     let handler = KeyboardHandler::new();
     let keyboard = handler.state.clone();
 
-    let memory = debugger.memory();
-    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+    debugger.with_memory(|memory| {
+        memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
 
-    // Mark heap as "Writable"
-    for selector in 0x1000..0x8000 {
-        memory.mount_writable(selector, 0xCC);
-    }
+        // Mark heap as "Writable"
+        for selector in 0x1000..0x8000 {
+            memory.mount_writable(selector, 0xCC);
+        }
+    });
 
-    let wrapped = Arc::new(Mutex::new(debugger));
+    let wrapped = Arc::new(debugger);
     let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
 
     // Drop should cancel the last process and kill the other thread.
-    *pointer = Some(DebuggerState {
+    *pointer = Some(ExecutionState {
         debugger: wrapped,
         keyboard,
         delegate,
