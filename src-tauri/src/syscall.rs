@@ -17,17 +17,19 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::memory::section::SectionMemory;
+use titan::cpu::memory::watched::WatchedMemory;
 use titan::cpu::state::Registers;
 use titan::cpu::Memory;
 use titan::debug::debugger::DebugFrame;
 use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
 use titan::debug::Debugger;
+use titan::debug::trackers::history::HistoryTracker;
 use tokio::select;
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
-type MemoryType = SectionMemory<KeyboardHandler>;
-type DebuggerType = Debugger<MemoryType>;
+type MemoryType = WatchedMemory<SectionMemory<KeyboardHandler>>;
+type DebuggerType = Debugger<MemoryType, HistoryTracker>;
 
 pub struct MidiRequest {
     pub pitch: u32,      // 0 - 127

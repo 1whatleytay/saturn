@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use titan::cpu::state::Registers;
 use titan::debug::debugger::{DebugFrame, DebuggerMode};
 use titan::debug::Debugger;
+use titan::debug::trackers::history::HistoryTracker;
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
@@ -96,7 +97,7 @@ impl ResumeResult {
 }
 
 type CloneResult = (
-    Arc<Debugger<MemoryType>>,
+    Arc<Debugger<MemoryType, HistoryTracker>>,
     Arc<Mutex<SyscallState>>,
     Vec<u32>,
 );
