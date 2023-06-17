@@ -4,13 +4,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use titan::assembler::binary::Binary;
 use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::State;
+use titan::cpu::memory::watched::WatchedMemory;
+use titan::cpu::{Memory, State};
 use titan::debug::Debugger;
+use titan::debug::trackers::history::HistoryTracker;
 
-pub type MemoryType = SectionMemory<KeyboardHandler>;
+pub type MemoryType = WatchedMemory<SectionMemory<KeyboardHandler>>;
 
 pub struct ExecutionState {
-    pub debugger: Arc<Debugger<MemoryType>>,
+    pub debugger: Arc<Debugger<MemoryType, HistoryTracker>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
     pub delegate: Arc<Mutex<SyscallState>>,
     pub finished_pcs: Vec<u32>,
@@ -20,7 +22,7 @@ pub type DebuggerBody = Mutex<Option<ExecutionState>>;
 
 pub fn swap(
     mut pointer: MutexGuard<Option<ExecutionState>>,
-    debugger: Debugger<MemoryType>,
+    debugger: Debugger<MemoryType, HistoryTracker>,
     finished_pcs: Vec<u32>,
     console: Box<dyn ConsoleHandler + Send>,
     midi: Box<dyn MidiHandler + Send>,
@@ -33,11 +35,11 @@ pub fn swap(
     let keyboard = handler.state.clone();
 
     debugger.with_memory(|memory| {
-        memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+        memory.backing.mount_listen(KEYBOARD_SELECTOR as usize, handler);
 
         // Mark heap as "Writable"
         for selector in 0x1000..0x8000 {
-            memory.mount_writable(selector, 0xCC);
+            memory.backing.mount_writable(selector, 0xCC);
         }
     });
 
@@ -54,7 +56,7 @@ pub fn swap(
 }
 
 pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
-    let mut memory = SectionMemory::new();
+    let mut memory = WatchedMemory::new(SectionMemory::new());
 
     for region in binary.regions {
         let region = Region {
@@ -82,7 +84,7 @@ pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
     state
 }
 
-pub fn setup_state(state: &mut State<MemoryType>) {
+pub fn setup_state<Mem: Memory + Mountable>(state: &mut State<Mem>) {
     let max_screen = 0x8000;
     let screen = Region {
         start: 0x10008000,

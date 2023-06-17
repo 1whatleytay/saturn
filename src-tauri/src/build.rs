@@ -8,11 +8,17 @@ use tauri::{Manager, Wry};
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::source::{assemble_from, SourceError};
+use titan::cpu::memory::{Mountable, Region};
+use titan::cpu::memory::section::{ListenResponder, SectionMemory};
+use titan::cpu::memory::watched::WatchedMemory;
+use titan::cpu::State;
 use titan::debug::elf::inspection::Inspection;
-use titan::debug::elf::setup::create_simple_state;
 use titan::debug::Debugger;
+use titan::debug::trackers::history::HistoryTracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
+
+const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
 #[derive(Serialize)]
 pub struct LineMarker {
@@ -118,6 +124,36 @@ fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send> {
     Box::new(ForwardPrinter { app })
 }
 
+pub fn create_elf_state<T: ListenResponder>(
+    elf: &Elf,
+    heap_size: u32,
+) -> State<WatchedMemory<SectionMemory<T>>> {
+    let mut memory = WatchedMemory::new(SectionMemory::new());
+
+    for header in &elf.program_headers {
+        let region = Region {
+            start: header.virtual_address,
+            data: header.data.clone(),
+        };
+
+        memory.mount(region)
+    }
+
+    let heap_end = 0x7FFFFFFCu32;
+
+    let heap = Region {
+        start: heap_end - heap_size,
+        data: vec![0; heap_size as usize],
+    };
+
+    memory.mount(heap);
+
+    let mut state = State::new(elf.header.program_entry, memory);
+    state.registers.line[29] = heap_end;
+
+    state
+}
+
 #[tauri::command]
 pub fn assemble(text: &str) -> AssemblerResult {
     let result = assemble_from(text);
@@ -190,14 +226,16 @@ pub fn configure_elf(
         .map(|header| header.virtual_address + header.data.len() as u32)
         .collect();
 
-    let mut cpu_state = create_simple_state(&elf, 0x100000);
+    let mut cpu_state = create_elf_state(&elf, 0x100000);
     setup_state(&mut cpu_state);
 
     let console = forward_print(app_handle.clone());
     let midi = forward_midi(app_handle);
+    let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
+
     swap(
         state.lock().unwrap(),
-        Debugger::new(cpu_state),
+        Debugger::new(cpu_state, history),
         finished_pcs,
         console,
         midi,
@@ -229,9 +267,11 @@ pub fn configure_asm(
 
     let console = forward_print(app_handle.clone());
     let midi = forward_midi(app_handle);
+    let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
+
     swap(
         state.lock().unwrap(),
-        Debugger::new(cpu_state),
+        Debugger::new(cpu_state, history),
         finished_pcs,
         console,
         midi,
