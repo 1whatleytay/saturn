@@ -236,6 +236,10 @@ export class ExecutionState {
 
     throw new Error()
   }
+  
+  public async rewind(count: number | null): Promise<ExecutionResult | null> {
+    return await tauri.invoke('rewind', { count })
+  }
 
   public async resume(
     count: number | null,
