@@ -30,6 +30,20 @@
     <button
       v-if="!!consoleData.execution"
       class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
+      @click="rewind()"
+      :class="{
+        'text-gray-300 cursor-default': !allowResume,
+        'text-teal-300 hover:bg-slate-800': allowResume,
+      }"
+      :disabled="!allowResume"
+      title="Step Back"
+    >
+      <ChevronLeftIcon class="w-4 h-4" />
+    </button>
+
+    <button
+      v-if="!!consoleData.execution"
+      class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
       @click="step()"
       :class="{
         'text-gray-300 cursor-default': !allowResume,
@@ -66,12 +80,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
-import { build, pause, resume, step, stop } from '../utils/debug'
+import { build, pause, resume, step, rewind, stop } from '../utils/debug'
 import { ExecutionModeType } from '../utils/mips'
 import { tab } from '../state/state'
 
 import {
   ArrowDownIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   PauseIcon,
   PlayIcon,

@@ -333,7 +333,7 @@ impl SyscallDelegate {
                 let result = memory.set(address.wrapping_add(i as u32), b);
 
                 if let Err(error) = result {
-                    Exception(error);
+                    return Exception(error)
                 }
             }
 

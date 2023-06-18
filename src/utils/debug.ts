@@ -214,6 +214,39 @@ export async function step() {
   }
 }
 
+export async function rewind() {
+  if (!consoleData.execution) {
+    return
+  }
+
+  const breakpoints = consoleData.execution.breakpoints
+
+  let skip = 1
+  if (breakpoints && consoleData.registers) {
+    const pc = consoleData.registers.pc - 4
+    const group = breakpoints.pcToGroup.get(pc)
+
+    if (group) {
+      const index = group.pcs.findIndex((x) => x === pc)
+
+      if (index >= 0) {
+        skip = index + 1
+      }
+    }
+  }
+
+  clearDebug()
+  consoleData.mode = ExecutionModeType.Running
+
+  const result = await consoleData.execution.rewind(skip)
+
+  consoleData.showConsole = true
+
+  if (result) {
+    postDebugInformation(result)
+  }
+}
+
 export async function stop() {
   if (!consoleData.execution) {
     return

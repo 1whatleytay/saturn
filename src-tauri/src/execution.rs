@@ -164,6 +164,26 @@ pub async fn resume(
 }
 
 #[tauri::command]
+pub fn rewind(state: tauri::State<'_, DebuggerBody>, count: u32) -> Option<ResumeResult> {
+    let Some(pointer) = &*state.lock().unwrap() else { return None };
+
+    for _ in 0 .. count {
+        let entry = pointer.debugger.with_tracker(|tracker| tracker.pop());
+        let Some(entry) = entry else {
+            let frame = pointer.debugger.frame();
+
+            return Some(ResumeResult::from_frame(frame, &[], None));
+        };
+
+        pointer.debugger.with_state(|state| entry.apply(state));
+    }
+
+    let frame = pointer.debugger.frame();
+
+    Some(ResumeResult::from_frame(frame, &[], None))
+}
+
+#[tauri::command]
 pub fn pause(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
