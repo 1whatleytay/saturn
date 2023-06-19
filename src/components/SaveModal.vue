@@ -1,10 +1,5 @@
 <template>
-  <div
-    class="fixed z-40 w-screen h-screen bg-black bg-opacity-40 transition-opacity duration-500"
-    :class="{ 'opacity-0 pointer-events-none': !dialog.state.tab }"
-  />
-
-  <div v-if="dialog.state.tab" class="fixed absolute z-50 top-12 w-full">
+  <Modal :show="!!props.dialog.state.tab">
     <div
       class="max-w-lg bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow"
     >
@@ -43,12 +38,13 @@
         </button>
       </div>
     </div>
-  </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { SaveModalResult } from '../utils/save-modal'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import Modal from './Modal.vue'
 
 const saveButton = ref(null as HTMLButtonElement | null)
 const discardButton = ref(null as HTMLButtonElement | null)

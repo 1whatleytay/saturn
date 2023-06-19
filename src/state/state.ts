@@ -23,6 +23,7 @@ export const {
   closeTab,
   loadElf,
   saveModal,
+  showSettings
 } = useTabs()
 
 export const find = useFind(() => tabBody.value, widthQuery)

@@ -13,10 +13,10 @@
     <button
       v-if="props.deletable"
       @click.stop="emit('delete')"
-      class="ml-3 w-4 h-4 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center group"
+      class="ml-3 translate-x-1 w-4 h-4 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center group"
     >
       <span
-        class="w-1.5 h-1.5 block rounded-full bg-white mx-auto"
+        class="w-2 h-2 block rounded-full bg-gray-300 mx-auto"
         :class="{ 'block group-hover:hidden': marked, hidden: !marked }"
       />
       <XMarkIcon

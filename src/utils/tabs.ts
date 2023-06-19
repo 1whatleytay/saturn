@@ -1,4 +1,4 @@
-import { computed, ComputedRef, reactive, watch } from 'vue'
+import { computed, ComputedRef, reactive, ref, Ref, watch } from 'vue'
 
 import { v4 as uuid } from 'uuid'
 import {
@@ -84,7 +84,8 @@ export interface TabsInterface {
 export type TabsResult = TabsInterface & {
   tabsState: Tabs
   tabBody: ComputedRef<string[]>
-  saveModal: SaveModalResult
+  saveModal: SaveModalResult,
+  showSettings: Ref<boolean>
 }
 
 const restoreKey = 'saturn:tabs-state'
@@ -281,6 +282,8 @@ export function useTabs(): TabsResult {
     (tab) => discardTab(tab.uuid)
   )
 
+  const showSettings = ref(false)
+
   function closeTab(uuid: string): boolean {
     const tab = editor.tabs.find((tab) => tab.uuid === uuid)
 
@@ -356,5 +359,6 @@ export function useTabs(): TabsResult {
     createTab,
     loadElf,
     saveModal,
+    showSettings
   }
 }
