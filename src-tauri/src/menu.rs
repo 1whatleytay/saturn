@@ -45,6 +45,7 @@ enum MenuOptions {
     Pause,
     Stop,
     ToggleConsole,
+    ToggleSettings,
 }
 
 impl ToString for MenuOptions {
@@ -65,6 +66,7 @@ impl ToString for MenuOptions {
             MenuOptions::Pause => "pause",
             MenuOptions::Stop => "stop",
             MenuOptions::ToggleConsole => "toggle-console",
+            MenuOptions::ToggleSettings => "toggle-settings",
         }
         .into()
     }
@@ -90,6 +92,7 @@ impl FromStr for MenuOptions {
             "pause" => MenuOptions::Pause,
             "stop" => MenuOptions::Stop,
             "toggle-console" => MenuOptions::ToggleConsole,
+            "toggle-settings" => MenuOptions::ToggleSettings,
             _ => return Err(()),
         })
     }
@@ -113,6 +116,7 @@ impl MenuOptions {
             MenuOptions::Pause => "Pause",
             MenuOptions::Stop => "Stop",
             MenuOptions::ToggleConsole => "Toggle Console",
+            MenuOptions::ToggleSettings => "Toggle Settings",
         }
     }
 
@@ -134,6 +138,7 @@ impl MenuOptions {
             MenuOptions::Pause => Accelerator::command("J"),
             MenuOptions::Stop => Accelerator::command("P"),
             MenuOptions::ToggleConsole => Accelerator::command("T"),
+            MenuOptions::ToggleSettings => Accelerator::command(","),
             _ => return None,
         })
     }
@@ -184,6 +189,7 @@ pub fn get_platform_emulated_shortcuts() -> Vec<MenuOptionsData> {
         MenuOptions::Pause.try_into(),
         MenuOptions::Stop.try_into(),
         MenuOptions::ToggleConsole.try_into(),
+        MenuOptions::ToggleSettings.try_into(),
     ]
     .into_iter()
     .filter_map(|x| x.ok())
@@ -209,6 +215,7 @@ pub fn create_menu() -> Menu {
             "Saturn",
             Menu::new()
                 .add_native_item(MenuItem::About("Saturn".into(), meta))
+                .add_item(MenuOptions::ToggleSettings.make_item())
                 .add_native_item(MenuItem::Separator)
                 .add_native_item(MenuItem::Hide)
                 .add_native_item(MenuItem::HideOthers)

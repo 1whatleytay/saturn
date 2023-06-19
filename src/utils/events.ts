@@ -19,7 +19,7 @@ import {
   createTab,
   closeTab,
   loadElf,
-  tab,
+  tab, showSettings
 } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
@@ -197,6 +197,10 @@ export async function setupEvents() {
 
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
+  })
+
+  await listen('toggle-settings', (event) => {
+    showSettings.value = !showSettings.value
   })
 
   await listen('play-midi', async (event) => {
