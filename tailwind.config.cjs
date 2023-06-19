@@ -15,10 +15,15 @@ module.exports = {
           '0%, 100%': { opacity: 0 },
           '50%': { opacity: 1 },
         },
+        bump: {
+          '0%, 100%': { transform: 'scale(1.0)' },
+          '50%': { transform: 'scale(1.2)' },
+        },
       },
 
       animation: {
         blink: 'blink 1s steps(1, end) infinite',
+        bump: 'bump 0.15s',
       },
     },
   },

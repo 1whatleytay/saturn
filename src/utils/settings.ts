@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig, configureDisplay } from './mips'
 
-const settingsVersion = 3
+const settingsVersion = 4
 
 export interface BitmapSettings {
   displayWidth: number
@@ -13,6 +13,9 @@ export interface BitmapSettings {
 
 export interface EditorSettings {
   tabSize: number
+  fontSize: number
+  consoleFontSize: number
+  enterAutocomplete: boolean
 }
 
 export enum RegisterFormat {
@@ -24,11 +27,16 @@ export interface RegisterSettings {
   format: RegisterFormat
 }
 
+export interface ExecutionSettings {
+  timeTravel: boolean
+}
+
 export interface Settings {
-  version: number // 1
+  version: number
   editor: EditorSettings
   bitmap: BitmapSettings
   registers: RegisterSettings
+  execution: ExecutionSettings
 }
 
 function defaultSettings(): Settings {
@@ -36,6 +44,9 @@ function defaultSettings(): Settings {
     version: settingsVersion,
     editor: {
       tabSize: 4,
+      fontSize: 22,
+      consoleFontSize: 16,
+      enterAutocomplete: true
     },
     bitmap: {
       displayWidth: 64,
@@ -47,6 +58,9 @@ function defaultSettings(): Settings {
     registers: {
       format: RegisterFormat.Hexadecimal,
     },
+    execution: {
+      timeTravel: true
+    }
   }
 }
 

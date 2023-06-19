@@ -4,8 +4,8 @@
     class="w-0.5 bg-orange-400 hidden peer-focus:block absolute"
     :style="{
       left: `${props.position.offsetX}px`,
-      top: `${props.position.offsetY}px`,
-      height: `${props.lineHeight}px`,
+      top: `${props.position.offsetY + 2}px`,
+      height: `${props.lineHeight - 4}px`,
       marginLeft: `${props.cursorShift}px`,
     }"
   />

@@ -673,11 +673,17 @@ export function useCursor(
           })
 
           suggestions?.dismissSuggestions()
-        } else if (suggestions && suggestions.flushSuggestions()) {
-          const suggestion = suggestions.mergeSuggestion()
+        } else if (suggestions) {
+          if (settings.enterAutocomplete) {
+            if (suggestions.flushSuggestions()) {
+              const suggestion = suggestions.mergeSuggestion()
 
-          if (suggestion) {
-            return applyMergeSuggestion(suggestion)
+              if (suggestion) {
+                return applyMergeSuggestion(suggestion)
+              }
+            }
+          } else {
+            suggestions.dismissSuggestions()
           }
         }
 
