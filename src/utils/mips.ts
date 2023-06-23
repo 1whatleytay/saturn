@@ -105,17 +105,33 @@ export interface LastDisplay {
 }
 
 class Breakpoints {
+  public maxLine: number
   public lineToPc: Map<number, number[]>
   public pcToGroup: Map<number, Breakpoint>
 
+  findNextPc(line: number): number[] {
+    while (line < this.maxLine) {
+      const value = this.lineToPc.get(line)
+
+      if (value !== undefined) {
+        return value
+      }
+
+      line += 1
+    }
+
+    return []
+}
+
   public mapLines(lines: number[]): number[] {
     return lines
-      .flatMap((line) => this.lineToPc.get(line))
+      .flatMap((line) => this.findNextPc(line))
       .filter((point) => !!point) as number[]
   }
 
   // pc -> line
   constructor(breakpoints: Breakpoint[]) {
+    this.maxLine = Math.max(...breakpoints.map(b => b.line))
     this.lineToPc = new Map()
     this.pcToGroup = new Map()
 
