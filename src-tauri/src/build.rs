@@ -7,7 +7,7 @@ use std::io::Cursor;
 use tauri::{Manager, Wry};
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
-use titan::assembler::source::{assemble_from, SourceError};
+use titan::assembler::string::{assemble_from, SourceError};
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
