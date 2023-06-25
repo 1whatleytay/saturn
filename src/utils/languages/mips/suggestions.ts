@@ -236,6 +236,7 @@ const directiveParts = [
   { name: 'Define Token', replace: '.eqv' },
   { name: 'Define Macro', replace: '.macro' },
   { name: 'End Macro', replace: '.end_macro' },
+  { name: 'Include Source', replace: '.include' },
 ].map((x) => ({ ...x, type: SuggestionType.Directive })) as Suggestion[]
 
 export const fuseOptions = {

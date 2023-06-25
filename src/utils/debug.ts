@@ -130,7 +130,9 @@ export function postBuildMessage(result: AssemblerResult): boolean {
 export async function build() {
   await saveCurrentTab(PromptType.NeverPrompt)
 
-  const result = await assembleText(collectLines(tab()?.lines ?? []))
+  const current = tab()
+
+  const result = await assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
 
   consoleData.showConsole = true
   consoleData.tab = DebugTab.Console
@@ -140,19 +142,21 @@ export async function build() {
 export async function resume() {
   clearDebug()
 
-  const usedProfile = tab()?.profile
-  const usedBreakpoints = tab()?.breakpoints ?? []
+  const current = tab()
 
-  if (!usedProfile) {
+  if (!current || !current.profile) {
     return
   }
 
+  const usedBreakpoints = current.breakpoints ?? []
+
   if (!consoleData.execution) {
-    const text = collectLines(tab()?.lines ?? [])
+    const text = collectLines(current.lines ?? [])
+    const path = current.path
 
     await saveCurrentTab(PromptType.NeverPrompt)
 
-    consoleData.execution = new ExecutionState(text, usedProfile)
+    consoleData.execution = new ExecutionState(text, path, current.profile)
   }
 
   consoleData.showConsole = true

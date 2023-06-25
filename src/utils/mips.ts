@@ -168,14 +168,14 @@ export async function disassembleElf(
   return value as DisassembleResult
 }
 
-export async function assembleText(text: string): Promise<AssemblerResult> {
-  const result = await tauri.invoke('assemble', { text })
+export async function assembleText(text: string, path: string | null): Promise<AssemblerResult> {
+  const result = await tauri.invoke('assemble', { text, path })
 
   return result as AssemblerResult
 }
 
-export async function assembleWithBinary(text: string): Promise<BinaryResult> {
-  const result = (await tauri.invoke('assemble_binary', { text })) as [
+export async function assembleWithBinary(text: string, path: string | null): Promise<BinaryResult> {
+  const result = (await tauri.invoke('assemble_binary', { text, path })) as [
     number[] | null,
     AssemblerResult
   ]
@@ -237,6 +237,7 @@ export class ExecutionState {
       case 'asm': {
         const result = (await tauri.invoke('configure_asm', {
           text: this.text,
+          path: this.path
         })) as AssemblerResult
 
         if (result.status === 'Success') {
@@ -335,7 +336,7 @@ export class ExecutionState {
     await tauri.invoke('set_register', { register, value })
   }
 
-  public constructor(public text: string, public profile: ExecutionProfile) {
+  public constructor(public text: string, public path: string | null, public profile: ExecutionProfile) {
     switch (profile.kind) {
       case 'elf': {
         const breakpoints = Object.entries(profile.breakpoints).map(
