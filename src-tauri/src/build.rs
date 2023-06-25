@@ -4,10 +4,11 @@ use crate::syscall::ConsoleHandler;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::path::PathBuf;
 use tauri::{Manager, Wry};
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
-use titan::assembler::string::{assemble_from, SourceError};
+use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
@@ -53,7 +54,7 @@ impl AssemblerResult {
         match result {
             Ok(binary) => {
                 let breakpoints = binary
-                    .source_breakpoints(source)
+                    .source_breakpoints(source, 0)
                     .into_iter()
                     .map(|b| Breakpoint {
                         line: b.line,
@@ -66,7 +67,7 @@ impl AssemblerResult {
             Err(error) => {
                 let details = error
                     .start()
-                    .map(|offset| LineDetails::from_offset(source, offset));
+                    .map(|location| LineDetails::from_offset(source, location.index));
 
                 let marker = details.as_ref().map(|details| LineMarker {
                     line: details.line_number,
@@ -120,6 +121,14 @@ impl ConsoleHandler for ForwardPrinter {
     }
 }
 
+fn assemble_text(text: &str, path: Option<&str>) -> Result<Binary, SourceError> {
+    if let Some(path) = path {
+        assemble_from_path(text.to_string(), PathBuf::from(path))
+    } else {
+        assemble_from(text)
+    }
+}
+
 fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send> {
     Box::new(ForwardPrinter { app })
 }
@@ -155,8 +164,8 @@ pub fn create_elf_state<T: ListenResponder>(
 }
 
 #[tauri::command]
-pub fn assemble(text: &str) -> AssemblerResult {
-    let result = assemble_from(text);
+pub fn assemble(text: &str, path: Option<&str>) -> AssemblerResult {
+    let result = assemble_text(text, path);
 
     AssemblerResult::from_result(result, text)
 }
@@ -184,8 +193,8 @@ pub fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
 }
 
 #[tauri::command]
-pub fn assemble_binary(text: &str) -> (Option<Vec<u8>>, AssemblerResult) {
-    let result = assemble_from(text);
+pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, AssemblerResult) {
+    let result = assemble_text(text, path);
     let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
 
     let Some(binary) = binary else {
@@ -247,10 +256,12 @@ pub fn configure_elf(
 #[tauri::command]
 pub fn configure_asm(
     text: &str,
+    path: Option<&str>,
     state: tauri::State<'_, DebuggerBody>,
     app_handle: tauri::AppHandle<Wry>,
 ) -> AssemblerResult {
-    let binary = assemble_from(text);
+    let binary = assemble_text(text, path);
+
     let (binary, result) = AssemblerResult::from_result_with_binary(binary, text);
 
     let Some(binary) = binary else { return result };

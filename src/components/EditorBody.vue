@@ -20,8 +20,11 @@
         class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto group"
       >
         <div
-          class="rounded-full bg-red-700 w-3 h-3 mr-auto ml-3 opacity-0 group-hover:opacity-30"
-          :class="{'opacity-100 group-hover:opacity-100': hasBreakpoint(getIndex(i))}"
+          class="rounded-full bg-red-700 w-3 h-3 mr-auto ml-3"
+          :class="{
+            'opacity-100 group-hover:opacity-100': hasBreakpoint(getIndex(i)),
+            'opacity-0 group-hover:opacity-30': !hasBreakpoint(getIndex(i))
+          }"
         />
 
         {{ getIndex(i) + 1 }}

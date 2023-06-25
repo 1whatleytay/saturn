@@ -170,7 +170,9 @@ export async function setupEvents() {
   })
 
   await listen('assemble', async () => {
-    const result = await assembleWithBinary(collectLines(tab()?.lines ?? []))
+    const current = tab()
+
+    const result = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
     if (result.binary) {
       const name = tab()?.title

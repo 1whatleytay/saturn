@@ -52,7 +52,9 @@ export function useStorage(
   }
 
   async function checkSyntax() {
-    const result = await assembleText(collectLines(tab()?.lines ?? []))
+    const current = tab()
+
+    const result = await assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
 
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]
