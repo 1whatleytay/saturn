@@ -2767,6 +2767,7 @@ dependencies = [
 name = "saturn"
 version = "0.1.6"
 dependencies = [
+ "async-trait",
  "futures",
  "hex",
  "percent-encoding",

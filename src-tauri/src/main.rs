@@ -7,35 +7,26 @@ mod build;
 mod channels;
 mod debug;
 mod display;
-mod execution;
 mod keyboard;
 mod menu;
 mod midi;
-mod state;
 mod syscall;
+mod state;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use tauri::WindowEvent::Destroyed;
 
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
-use crate::state::DebuggerBody;
 
 use crate::build::{assemble, assemble_binary, configure_asm, configure_elf, disassemble};
 use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
-use crate::execution::{pause, resume, rewind, stop};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
+use crate::state::commands::DebuggerBody;
 
-#[tauri::command]
-fn post_key(key: char, up: bool, state: tauri::State<'_, DebuggerBody>) {
-    let Some(pointer) = &*state.lock().unwrap() else { return };
-
-    let mut keyboard = pointer.keyboard.lock().unwrap();
-
-    keyboard.push_key(key, up)
-}
+use crate::state::commands::{resume, rewind, pause, stop, post_key, post_input, wake_sync};
 
 #[tauri::command]
 fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
@@ -54,31 +45,12 @@ fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
     state.lock().unwrap().clone()
 }
 
-#[tauri::command]
-fn post_input(text: String, state: tauri::State<'_, DebuggerBody>) {
-    let channel = {
-        let Some(pointer) = &*state.lock().unwrap() else { return };
-        let syscall = pointer.delegate.lock().unwrap();
-
-        syscall.input_buffer.clone()
-    };
-
-    channel.send(text.into_bytes())
-}
-
-#[tauri::command]
-fn wake_sync(state: tauri::State<'_, DebuggerBody>) {
-    let Some(pointer) = &*state.lock().unwrap() else { return };
-
-    pointer.delegate.lock().unwrap().sync_wake.notify_one();
-}
-
 fn main() {
     let menu = create_menu();
 
     tauri::Builder::default()
         .manage(Mutex::new(None) as DebuggerBody)
-        .manage(Mutex::new(FlushDisplayState::default()) as FlushDisplayBody)
+        .manage(Arc::new(Mutex::new(FlushDisplayState::default())) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
         .on_window_event(|event| {
@@ -98,7 +70,7 @@ fn main() {
             configure_elf,      // build
             configure_asm,      // build
             resume,             // execution
-            rewind,           // execution
+            rewind,             // execution
             pause,              // execution
             stop,               // execution
             read_bytes,         // debug
