@@ -1,12 +1,13 @@
-use crate::state::{DebuggerBody, MemoryType};
 use serde::Serialize;
 use std::error::Error;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::http::method::Method;
 use tauri::http::Response;
 use tauri::http::{Request, ResponseBuilder};
 use tauri::{AppHandle, Manager, Wry};
 use titan::cpu::Memory;
+use crate::state::commands::DebuggerBody;
+use crate::state::execution::read_display;
 
 #[derive(Clone, Serialize)]
 pub struct FlushDisplayState {
@@ -27,34 +28,13 @@ impl Default for FlushDisplayState {
     }
 }
 
-pub type FlushDisplayBody = Mutex<FlushDisplayState>;
-
-// NOT a tauri command.
-pub fn read_display(
-    address: u32,
-    width: u32,
-    height: u32,
-    memory: &mut MemoryType,
-) -> Option<Vec<u8>> {
-    let pixels = width.checked_mul(height)?;
-
-    let mut result = vec![0u8; (pixels * 4) as usize];
-
-    for i in 0..pixels {
-        let point = address.wrapping_add(i.wrapping_mul(4));
-
-        let pixel = memory.get_u32(point).ok()?;
-
-        // Assuming little endian: 0xAARRGGBB -> [BB, GG, RR, AA] -> want [RR, GG, BB, AA]
-        let start = (i as usize) * 4;
-        result[start] = (pixel.wrapping_shr(16) & 0xFF) as u8;
-        result[start + 1] = (pixel.wrapping_shr(8) & 0xFF) as u8;
-        result[start + 2] = (pixel.wrapping_shr(0) & 0xFF) as u8;
-        result[start + 3] = 255;
+impl FlushDisplayState {
+    pub fn flush<Mem: Memory>(&mut self, memory: &mut Mem) {
+        self.data = read_display(self.address, self.width, self.height, memory);
     }
-
-    Some(result)
 }
+
+pub type FlushDisplayBody = Arc<Mutex<FlushDisplayState>>;
 
 pub fn display_protocol(
     app: &AppHandle<Wry>,
@@ -94,9 +74,8 @@ pub fn display_protocol(
         return builder.status(400).body(vec![])
     };
 
-    let Some(result) = pointer.debugger.with_memory(|memory| {
-        read_display(address, width, height, memory)
-    }) else {
+
+    let Some(result) = pointer.read_display(address, width, height) else {
         return builder.status(400).body(vec![])
     };
 

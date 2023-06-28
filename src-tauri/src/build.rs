@@ -1,10 +1,10 @@
 use crate::midi::forward_midi;
-use crate::state::{setup_state, state_from_binary, swap, DebuggerBody};
-use crate::syscall::ConsoleHandler;
+use crate::syscall::{ConsoleHandler, MidiHandler, SyscallState};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::{Manager, Wry};
 use titan::assembler::binary::Binary;
 use titan::assembler::line_details::LineDetails;
@@ -18,6 +18,10 @@ use titan::debug::Debugger;
 use titan::debug::trackers::history::HistoryTracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
+use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler};
+use crate::state::commands::{DebuggerBody, setup_state, state_from_binary};
+use crate::state::device::{ExecutionState, MemoryType};
+use crate::state::execution::ExecutionDevice;
 
 const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
@@ -218,6 +222,41 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
     }
 
     (Some(out), result)
+}
+
+pub fn swap(
+    mut pointer: MutexGuard<Option<Arc<dyn ExecutionDevice>>>,
+    debugger: Debugger<MemoryType, HistoryTracker>,
+    finished_pcs: Vec<u32>,
+    console: Box<dyn ConsoleHandler + Send>,
+    midi: Box<dyn MidiHandler + Send>,
+) {
+    if let Some(state) = pointer.as_ref() {
+        state.pause(None);
+    }
+
+    let handler = KeyboardHandler::new();
+    let keyboard = handler.state.clone();
+
+    debugger.with_memory(|memory| {
+        memory.backing.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+
+        // Mark heap as "Writable"
+        for selector in 0x1000..0x8000 {
+            memory.backing.mount_writable(selector, 0xCC);
+        }
+    });
+
+    let wrapped = Arc::new(debugger);
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
+
+    // Drop should cancel the last process and kill the other thread.
+    *pointer = Some(Arc::new(ExecutionState {
+        debugger: wrapped,
+        keyboard,
+        delegate,
+        finished_pcs,
+    }));
 }
 
 #[tauri::command]
