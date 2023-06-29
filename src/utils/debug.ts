@@ -13,7 +13,7 @@ import {
   ExecutionResult,
   ExecutionState,
 } from './mips'
-import { tab } from '../state/state'
+import { tab, settings } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
@@ -156,7 +156,7 @@ export async function resume() {
 
     await saveCurrentTab(PromptType.NeverPrompt)
 
-    consoleData.execution = new ExecutionState(text, path, current.profile)
+    consoleData.execution = new ExecutionState(text, path, settings.execution.timeTravel, current.profile)
   }
 
   consoleData.showConsole = true
@@ -219,7 +219,7 @@ export async function step() {
 }
 
 export async function rewind() {
-  if (!consoleData.execution) {
+  if (!consoleData.execution || !consoleData.execution.timeTravel) {
     return
   }
 

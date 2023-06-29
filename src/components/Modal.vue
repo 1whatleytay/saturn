@@ -5,8 +5,10 @@
     @click="emit('close')"
   />
 
-  <div v-if="show" class="fixed absolute z-50 top-12 w-full">
-    <slot />
+  <div v-if="show" class="fixed absolute z-50 top-12 w-full pointer-events-none">
+    <span class="pointer-events-auto">
+      <slot />
+    </span>
   </div>
 </template>
 

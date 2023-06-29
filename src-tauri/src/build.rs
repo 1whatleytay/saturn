@@ -12,16 +12,18 @@ use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::cpu::State;
+use titan::cpu::{Memory, State};
 use titan::debug::elf::inspection::Inspection;
 use titan::debug::Debugger;
+use titan::debug::trackers::empty::EmptyTracker;
 use titan::debug::trackers::history::HistoryTracker;
+use titan::debug::trackers::Tracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
-use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler};
+use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
 use crate::state::commands::{DebuggerBody, setup_state, state_from_binary};
-use crate::state::device::{ExecutionState, MemoryType};
-use crate::state::execution::ExecutionDevice;
+use crate::state::device::ExecutionState;
+use crate::state::execution::RewindableDevice;
 
 const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
@@ -137,12 +139,11 @@ fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send> {
     Box::new(ForwardPrinter { app })
 }
 
-pub fn create_elf_state<T: ListenResponder>(
+pub fn create_elf_state<Mem: Memory + Mountable>(
     elf: &Elf,
     heap_size: u32,
-) -> State<WatchedMemory<SectionMemory<T>>> {
-    let mut memory = WatchedMemory::new(SectionMemory::new());
-
+    mut memory: Mem
+) -> State<Mem> {
     for header in &elf.program_headers {
         let region = Region {
             start: header.virtual_address,
@@ -224,10 +225,25 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
     (Some(out), result)
 }
 
-pub fn swap(
-    mut pointer: MutexGuard<Option<Arc<dyn ExecutionDevice>>>,
-    debugger: Debugger<MemoryType, HistoryTracker>,
+pub fn configure_keyboard(memory: &mut SectionMemory<KeyboardHandler>) -> Arc<Mutex<KeyboardState>> {
+    let handler = KeyboardHandler::new();
+    let keyboard = handler.state.clone();
+
+    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+
+    // Mark heap as "Writable"
+    for selector in 0x1000..0x8000 {
+        memory.mount_writable(selector, 0xCC);
+    }
+
+    keyboard
+}
+
+pub fn swap_watched<Mem: Memory + Send + 'static>(
+    mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
+    debugger: Debugger<WatchedMemory<Mem>, HistoryTracker>,
     finished_pcs: Vec<u32>,
+    keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send>,
     midi: Box<dyn MidiHandler + Send>,
 ) {
@@ -235,17 +251,29 @@ pub fn swap(
         state.pause(None);
     }
 
-    let handler = KeyboardHandler::new();
-    let keyboard = handler.state.clone();
+    let wrapped = Arc::new(debugger);
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
 
-    debugger.with_memory(|memory| {
-        memory.backing.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+    // Drop should cancel the last process and kill the other thread.
+    *pointer = Some(Arc::new(ExecutionState {
+        debugger: wrapped,
+        keyboard,
+        delegate,
+        finished_pcs,
+    }));
+}
 
-        // Mark heap as "Writable"
-        for selector in 0x1000..0x8000 {
-            memory.backing.mount_writable(selector, 0xCC);
-        }
-    });
+pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemory<Listen>> + Send + 'static>(
+    mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
+    debugger: Debugger<SectionMemory<Listen>, Track>,
+    finished_pcs: Vec<u32>,
+    keyboard: Arc<Mutex<KeyboardState>>,
+    console: Box<dyn ConsoleHandler + Send>,
+    midi: Box<dyn MidiHandler + Send>,
+) {
+    if let Some(state) = pointer.as_ref() {
+        state.pause(None);
+    }
 
     let wrapped = Arc::new(debugger);
     let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
@@ -262,6 +290,7 @@ pub fn swap(
 #[tauri::command]
 pub fn configure_elf(
     bytes: Vec<u8>,
+    time_travel: bool,
     state: tauri::State<'_, DebuggerBody>,
     app_handle: tauri::AppHandle<Wry>,
 ) -> bool {
@@ -274,20 +303,40 @@ pub fn configure_elf(
         .map(|header| header.virtual_address + header.data.len() as u32)
         .collect();
 
-    let mut cpu_state = create_elf_state(&elf, 0x100000);
-    setup_state(&mut cpu_state);
-
     let console = forward_print(app_handle.clone());
     let midi = forward_midi(app_handle);
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
-    swap(
-        state.lock().unwrap(),
-        Debugger::new(cpu_state, history),
-        finished_pcs,
-        console,
-        midi,
-    );
+    let mut memory = SectionMemory::new();
+    let keyboard = configure_keyboard(&mut memory);
+
+    if time_travel {
+        let memory = WatchedMemory::new(memory);
+
+        let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
+        setup_state(&mut cpu_state);
+
+        swap_watched(
+            state.lock().unwrap(),
+            Debugger::new(cpu_state, history),
+            finished_pcs,
+            keyboard,
+            console,
+            midi,
+        );
+    } else {
+        let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
+        setup_state(&mut cpu_state);
+
+        swap(
+            state.lock().unwrap(),
+            Debugger::new(cpu_state, EmptyTracker { }),
+            finished_pcs,
+            keyboard,
+            console,
+            midi,
+        );
+    }
 
     true
 }
@@ -296,6 +345,7 @@ pub fn configure_elf(
 pub fn configure_asm(
     text: &str,
     path: Option<&str>,
+    time_travel: bool,
     state: tauri::State<'_, DebuggerBody>,
     app_handle: tauri::AppHandle<Wry>,
 ) -> AssemblerResult {
@@ -312,20 +362,40 @@ pub fn configure_asm(
         .map(|region| region.address + region.data.len() as u32)
         .collect();
 
-    let mut cpu_state = state_from_binary(binary, 0x100000);
-    setup_state(&mut cpu_state);
-
     let console = forward_print(app_handle.clone());
     let midi = forward_midi(app_handle);
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
-    swap(
-        state.lock().unwrap(),
-        Debugger::new(cpu_state, history),
-        finished_pcs,
-        console,
-        midi,
-    );
+    let mut memory = SectionMemory::new();
+    let keyboard = configure_keyboard(&mut memory);
+
+    if time_travel {
+        let memory = WatchedMemory::new(memory);
+
+        let mut cpu_state = state_from_binary(binary, 0x100000, memory);
+        setup_state(&mut cpu_state);
+
+        swap_watched(
+            state.lock().unwrap(),
+            Debugger::new(cpu_state, history),
+            finished_pcs,
+            keyboard,
+            console,
+            midi,
+        );
+    } else {
+        let mut cpu_state = state_from_binary(binary, 0x100000, memory);
+        setup_state(&mut cpu_state);
+
+        swap(
+            state.lock().unwrap(),
+            Debugger::new(cpu_state, EmptyTracker { }),
+            finished_pcs,
+            keyboard,
+            console,
+            midi,
+        );
+    }
 
     result
 }
