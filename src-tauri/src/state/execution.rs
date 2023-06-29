@@ -4,8 +4,12 @@ use serde::Serialize;
 use std::collections::HashSet;
 use async_trait::async_trait;
 use titan::cpu::Memory;
+use titan::cpu::memory::section::{ListenResponder, SectionMemory};
+use titan::cpu::memory::watched::WatchedMemory;
 use titan::cpu::state::Registers;
 use titan::debug::debugger::{DebugFrame, DebuggerMode};
+use titan::debug::trackers::history::HistoryTracker;
+use titan::debug::trackers::Tracker;
 use crate::state::device::ExecutionState;
 
 #[derive(Serialize)]
@@ -122,6 +126,12 @@ pub fn read_display<Mem: Memory>(
     Some(result)
 }
 
+pub trait ExecutionRewindable {
+    fn rewind(&self, count: u32) -> ResumeResult;
+}
+
+pub trait RewindableDevice: ExecutionDevice + ExecutionRewindable { }
+
 #[async_trait]
 pub trait ExecutionDevice: Send + Sync {
     async fn resume(
@@ -131,7 +141,6 @@ pub trait ExecutionDevice: Send + Sync {
         display: Option<FlushDisplayBody>
     ) -> Result<ResumeResult, ()>;
 
-    fn rewind(&self, count: u32) -> Option<ResumeResult>;
     fn pause(&self, display: Option<&mut FlushDisplayState>);
 
     fn set_breakpoints(&self, breakpoints: HashSet<u32>);
@@ -148,7 +157,7 @@ pub trait ExecutionDevice: Send + Sync {
 }
 
 #[async_trait]
-impl ExecutionDevice for ExecutionState {
+impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for ExecutionState<Mem, Track> {
     async fn resume(
         &self,
         count: Option<u32>,
@@ -195,23 +204,6 @@ impl ExecutionDevice for ExecutionState {
         }
 
         Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
-    }
-
-    fn rewind(&self, count: u32) -> Option<ResumeResult> {
-        for _ in 0 .. count {
-            let entry = self.debugger.with_tracker(|tracker| tracker.pop());
-            let Some(entry) = entry else {
-                let frame = self.debugger.frame();
-
-                return Some(ResumeResult::from_frame(frame, &[], None));
-            };
-
-            self.debugger.with_state(|state| entry.apply(state));
-        }
-
-        let frame = self.debugger.frame();
-
-        Some(ResumeResult::from_frame(frame, &[], None))
     }
 
     fn pause(&self, display: Option<&mut FlushDisplayState>) {
@@ -280,3 +272,33 @@ impl ExecutionDevice for ExecutionState {
         self.delegate.lock().unwrap().input_buffer.send(text.into_bytes())
     }
 }
+
+impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Track> {
+    fn rewind(&self, _: u32) -> ResumeResult {
+        let frame = self.debugger.frame();
+
+        ResumeResult::from_frame(frame, &[], None)
+    }
+}
+
+impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, HistoryTracker> {
+    fn rewind(&self, count: u32) -> ResumeResult {
+        for _ in 0 .. count {
+            let entry = self.debugger.with_tracker(|tracker| tracker.pop());
+            let Some(entry) = entry else {
+                let frame = self.debugger.frame();
+
+                return ResumeResult::from_frame(frame, &[], None);
+            };
+
+            self.debugger.with_state(|state| entry.apply(state));
+        }
+
+        let frame = self.debugger.frame();
+
+        ResumeResult::from_frame(frame, &[], None)
+    }
+}
+
+impl<Listen: ListenResponder + Send, Track: Tracker<SectionMemory<Listen>> + Send> RewindableDevice for ExecutionState<SectionMemory<Listen>, Track> { }
+impl<Mem: Memory + Send> RewindableDevice for ExecutionState<WatchedMemory<Mem>, HistoryTracker> { }

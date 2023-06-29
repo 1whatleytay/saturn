@@ -2,17 +2,12 @@ use std::sync::{Arc, Mutex};
 use titan::assembler::binary::Binary;
 use titan::cpu::{Memory, State};
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::memory::section::SectionMemory;
-use titan::cpu::memory::watched::WatchedMemory;
 use crate::display::FlushDisplayBody;
-use crate::state::device::MemoryType;
-use crate::state::execution::{ExecutionDevice, ResumeResult};
+use crate::state::execution::{ResumeResult, RewindableDevice};
 
-pub type DebuggerBody = Mutex<Option<Arc<dyn ExecutionDevice>>>;
+pub type DebuggerBody = Mutex<Option<Arc<dyn RewindableDevice>>>;
 
-pub fn state_from_binary(binary: Binary, heap_size: u32) -> State<MemoryType> {
-    let mut memory = WatchedMemory::new(SectionMemory::new());
-
+pub fn state_from_binary<Mem: Memory + Mountable>(binary: Binary, heap_size: u32, mut memory: Mem) -> State<Mem> {
     for region in binary.regions {
         let region = Region {
             start: region.address,
@@ -71,7 +66,7 @@ pub async fn resume(
 pub fn rewind(state: tauri::State<'_, DebuggerBody>, count: u32) -> Option<ResumeResult> {
     let Some(pointer) = &*state.lock().unwrap() else { return None };
 
-    pointer.rewind(count)
+    Some(pointer.rewind(count))
 }
 
 #[tauri::command]

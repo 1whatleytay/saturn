@@ -222,7 +222,10 @@ export class ExecutionState {
           bytes[i] = text.charCodeAt(i)
         }
 
-        const result = await tauri.invoke('configure_elf', { bytes })
+        const result = await tauri.invoke('configure_elf', {
+          bytes,
+          timeTravel: this.timeTravel
+        })
 
         return result
           ? { status: 'Success', breakpoints: [] }
@@ -237,7 +240,8 @@ export class ExecutionState {
       case 'asm': {
         const result = (await tauri.invoke('configure_asm', {
           text: this.text,
-          path: this.path
+          path: this.path,
+          timeTravel: this.timeTravel
         })) as AssemblerResult
 
         if (result.status === 'Success') {
@@ -336,7 +340,12 @@ export class ExecutionState {
     await tauri.invoke('set_register', { register, value })
   }
 
-  public constructor(public text: string, public path: string | null, public profile: ExecutionProfile) {
+  public constructor(
+    public text: string,
+    public path: string | null,
+    public timeTravel: boolean,
+    public profile: ExecutionProfile
+  ) {
     switch (profile.kind) {
       case 'elf': {
         const breakpoints = Object.entries(profile.breakpoints).map(
