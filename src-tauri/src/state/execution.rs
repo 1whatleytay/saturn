@@ -7,9 +7,9 @@ use titan::cpu::Memory;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::cpu::state::Registers;
-use titan::debug::debugger::{DebugFrame, DebuggerMode};
-use titan::debug::trackers::history::HistoryTracker;
-use titan::debug::trackers::Tracker;
+use titan::execution::executor::{DebugFrame, ExecutorMode};
+use titan::execution::trackers::history::HistoryTracker;
+use titan::execution::trackers::Tracker;
 use crate::state::device::ExecutionState;
 
 #[derive(Serialize)]
@@ -22,16 +22,16 @@ pub enum ResumeMode {
     Finished { pc: u32, code: Option<u32> },
 }
 
-impl From<DebuggerMode> for ResumeMode {
-    fn from(value: DebuggerMode) -> Self {
+impl From<ExecutorMode> for ResumeMode {
+    fn from(value: ExecutorMode) -> Self {
         match value {
-            DebuggerMode::Running => ResumeMode::Running,
-            DebuggerMode::Recovered => ResumeMode::Breakpoint,
-            DebuggerMode::Invalid(error) => ResumeMode::Invalid {
+            ExecutorMode::Running => ResumeMode::Running,
+            ExecutorMode::Recovered => ResumeMode::Breakpoint,
+            ExecutorMode::Invalid(error) => ResumeMode::Invalid {
                 message: format!("{}", error),
             },
-            DebuggerMode::Paused => ResumeMode::Paused,
-            DebuggerMode::Breakpoint => ResumeMode::Breakpoint,
+            ExecutorMode::Paused => ResumeMode::Paused,
+            ExecutorMode::Breakpoint => ResumeMode::Breakpoint,
         }
     }
 }

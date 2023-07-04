@@ -13,11 +13,11 @@ use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::cpu::{Memory, State};
-use titan::debug::elf::inspection::Inspection;
-use titan::debug::Debugger;
-use titan::debug::trackers::empty::EmptyTracker;
-use titan::debug::trackers::history::HistoryTracker;
-use titan::debug::trackers::Tracker;
+use titan::execution::elf::inspection::Inspection;
+use titan::execution::Executor;
+use titan::execution::trackers::empty::EmptyTracker;
+use titan::execution::trackers::history::HistoryTracker;
+use titan::execution::trackers::Tracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
 use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
@@ -206,7 +206,7 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
         return (None, result)
     };
 
-    let elf: Elf = binary.into();
+    let elf: Elf = binary.create_elf();
 
     let mut out: Vec<u8> = vec![];
     let mut cursor = Cursor::new(&mut out);
@@ -241,7 +241,7 @@ pub fn configure_keyboard(memory: &mut SectionMemory<KeyboardHandler>) -> Arc<Mu
 
 pub fn swap_watched<Mem: Memory + Send + 'static>(
     mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
-    debugger: Debugger<WatchedMemory<Mem>, HistoryTracker>,
+    debugger: Executor<WatchedMemory<Mem>, HistoryTracker>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send>,
@@ -265,7 +265,7 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
 
 pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemory<Listen>> + Send + 'static>(
     mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
-    debugger: Debugger<SectionMemory<Listen>, Track>,
+    debugger: Executor<SectionMemory<Listen>, Track>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send>,
@@ -318,7 +318,7 @@ pub fn configure_elf(
 
         swap_watched(
             state.lock().unwrap(),
-            Debugger::new(cpu_state, history),
+            Executor::new(cpu_state, history),
             finished_pcs,
             keyboard,
             console,
@@ -330,7 +330,7 @@ pub fn configure_elf(
 
         swap(
             state.lock().unwrap(),
-            Debugger::new(cpu_state, EmptyTracker { }),
+            Executor::new(cpu_state, EmptyTracker { }),
             finished_pcs,
             keyboard,
             console,
@@ -377,7 +377,7 @@ pub fn configure_asm(
 
         swap_watched(
             state.lock().unwrap(),
-            Debugger::new(cpu_state, history),
+            Executor::new(cpu_state, history),
             finished_pcs,
             keyboard,
             console,
@@ -389,7 +389,7 @@ pub fn configure_asm(
 
         swap(
             state.lock().unwrap(),
-            Debugger::new(cpu_state, EmptyTracker { }),
+            Executor::new(cpu_state, EmptyTracker { }),
             finished_pcs,
             keyboard,
             console,
