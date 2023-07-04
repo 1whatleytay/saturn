@@ -17,10 +17,10 @@ use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::state::Registers;
 use titan::cpu::Memory;
-use titan::debug::debugger::DebugFrame;
-use titan::debug::debugger::DebuggerMode::{Invalid, Recovered};
-use titan::debug::Debugger;
-use titan::debug::trackers::Tracker;
+use titan::execution::executor::DebugFrame;
+use titan::execution::executor::ExecutorMode::{Invalid, Recovered};
+use titan::execution::Executor;
+use titan::execution::trackers::Tracker;
 use tokio::select;
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
@@ -95,7 +95,7 @@ pub struct SyscallDelegate {
     pub state: Arc<Mutex<SyscallState>>,
 }
 
-fn reg<Mem: Memory, Track: Tracker<Mem>>(debugger: &Debugger<Mem, Track>, index: usize) -> u32 {
+fn reg<Mem: Memory, Track: Tracker<Mem>>(debugger: &Executor<Mem, Track>, index: usize) -> u32 {
     debugger.with_state(|s| s.registers.line[index])
 }
 
@@ -105,7 +105,7 @@ const A1_REG: usize = 5;
 const A2_REG: usize = 6;
 const A3_REG: usize = 7;
 
-fn a0<Mem: Memory, Track: Tracker<Mem>>(state: &Debugger<Mem, Track>) -> u32 {
+fn a0<Mem: Memory, Track: Tracker<Mem>>(state: &Executor<Mem, Track>) -> u32 {
     reg(state, A0_REG)
 }
 
@@ -143,18 +143,18 @@ impl SyscallDelegate {
         }
     }
 
-    async fn print_integer<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_integer<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Executor<Mem, Track>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(2)
     }
 
-    async fn print_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(3)
     }
 
@@ -188,7 +188,7 @@ impl SyscallDelegate {
         Ok(buffer)
     }
 
-    async fn print_string<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_string<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let buffer = {
             let address = a0(debugger);
 
@@ -211,7 +211,7 @@ impl SyscallDelegate {
         self.state.lock().unwrap().input_buffer.clone()
     }
 
-    async fn read_integer<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_integer<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let buffer = self.lock_input();
 
         let mut positive = Option::<bool>::None;
@@ -272,15 +272,15 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn read_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(6)
     }
 
-    async fn read_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(7)
     }
 
-    async fn read_string<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_string<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let (address, count) = debugger.with_state(|s| {
             (s.registers.line[A0_REG], s.registers.line[A1_REG])
         });
@@ -335,7 +335,7 @@ impl SyscallDelegate {
         })
     }
 
-    async fn alloc_heap<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn alloc_heap<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let count = a0(debugger);
 
         // Primitive Heap Alloc, assuming 0x20000000 is safe heap.
@@ -348,11 +348,11 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn terminate<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn terminate<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Terminated(0)
     }
 
-    async fn print_character<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_character<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let character = a0(debugger) as u8 as char;
 
         self.send_print(&character.to_string()).await;
@@ -360,7 +360,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn read_character<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_character<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let buffer = self.lock_input();
 
         let result = buffer.read(1).await;
@@ -378,7 +378,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn open_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn open_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let (address, flags) = debugger.with_state(|s| {
             (s.registers.line[A0_REG], s.registers.line[A1_REG])
         });
@@ -425,7 +425,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    fn file_parameters<Mem: Memory, Track: Tracker<Mem>>(debugger: &Debugger<Mem, Track>) -> (u32, u32, u32) {
+    fn file_parameters<Mem: Memory, Track: Tracker<Mem>>(debugger: &Executor<Mem, Track>) -> (u32, u32, u32) {
         debugger.with_state(|s| {
             (s.registers.line[A0_REG], s.registers.line[A1_REG], s.registers.line[A2_REG])
         })
@@ -433,7 +433,7 @@ impl SyscallDelegate {
 
     // Duplicate Code Abstraction
     fn get_file<'a, Mem: Memory, Track: Tracker<Mem>>(
-        syscall: &'a mut SyscallState, descriptor: u32, debugger: &Debugger<Mem, Track>
+        syscall: &'a mut SyscallState, descriptor: u32, debugger: &Executor<Mem, Track>
     ) -> Option<&'a mut File> {
         let result = syscall.file_map.get_mut(&descriptor);
 
@@ -445,7 +445,7 @@ impl SyscallDelegate {
         result
     }
 
-    async fn read_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn read_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let (descriptor, address, size) = Self::file_parameters(debugger);
 
         let mut syscall = self.state.lock().unwrap();
@@ -480,7 +480,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn write_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn write_file<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let (descriptor, address, size) = Self::file_parameters(debugger);
 
         let mut syscall = self.state.lock().unwrap();
@@ -514,7 +514,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn close_file<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn close_file<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Executor<Mem, Track>) -> SyscallResult {
         let descriptor = a0(state);
 
         let mut syscall = self.state.lock().unwrap();
@@ -523,11 +523,11 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn terminate_valued<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn terminate_valued<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         Terminated(a0(debugger))
     }
 
-    async fn system_time<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn system_time<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(time) => {
                 let millis = time.as_millis() as u64;
@@ -543,7 +543,7 @@ impl SyscallDelegate {
         }
     }
 
-    async fn midi_out<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn midi_out<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let request = debugger.with_state(|s| midi_request(&s.registers));
 
         if self.play_installed(&request, false) {
@@ -573,7 +573,7 @@ impl SyscallDelegate {
         tokio::time::sleep(duration).await
     }
 
-    async fn sleep<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn sleep<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         // Not trusting sleep to be exact, so we're using Instant to keep track of the time.
         let time = a0(debugger) as u64;
 
@@ -582,7 +582,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn midi_out_sync<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn midi_out_sync<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let request = debugger.with_state(|s| midi_request(&s.registers));
 
         if self.play_installed(&request, true) {
@@ -604,28 +604,28 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn print_hexadecimal<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_hexadecimal<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Executor<Mem, Track>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{:x}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_binary<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_binary<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Executor<Mem, Track>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{:b}", value as i32)).await;
 
         Completed
     }
 
-    async fn print_unsigned<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn print_unsigned<Mem: Memory, Track: Tracker<Mem>>(&self, state: &Executor<Mem, Track>) -> SyscallResult {
         let value = a0(state);
         self.send_print(&format!("{}", value)).await;
 
         Completed
     }
 
-    async fn set_seed<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn set_seed<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
 
         let (id, seed) = debugger.with_state(|s| {
@@ -646,7 +646,7 @@ impl SyscallDelegate {
         ))
     }
 
-    async fn random_int<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn random_int<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
 
         let id = a0(debugger);
@@ -661,7 +661,7 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn random_int_ranged<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn random_int_ranged<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let mut syscall = self.state.lock().unwrap();
 
         let (id, max) = debugger.with_state(|s| (
@@ -678,11 +678,11 @@ impl SyscallDelegate {
         Completed
     }
 
-    async fn random_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn random_float<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(43)
     }
 
-    async fn random_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Debugger<Mem, Track>) -> SyscallResult {
+    async fn random_double<Mem: Memory, Track: Tracker<Mem>>(&self, _: &Executor<Mem, Track>) -> SyscallResult {
         Unimplemented(44)
     }
 
@@ -698,7 +698,7 @@ impl SyscallDelegate {
     }
 
     pub async fn dispatch<Mem: Memory, Track: Tracker<Mem>>(
-        &self, state: &Debugger<Mem, Track>, code: u32
+        &self, state: &Executor<Mem, Track>, code: u32
     ) -> SyscallResult {
         match code {
             1 => self.wrap_cancel(self.print_integer(state)).await,
@@ -736,7 +736,7 @@ impl SyscallDelegate {
 
     async fn handle_frame<Mem: Memory, Track: Tracker<Mem>>(
         &self,
-        debugger: &Debugger<Mem, Track>,
+        debugger: &Executor<Mem, Track>,
         frame: DebugFrame,
     ) -> (Option<DebugFrame>, Option<SyscallResult>) {
         match frame.mode {
@@ -762,10 +762,10 @@ impl SyscallDelegate {
     }
 
     pub async fn run<Mem: Memory, Track: Tracker<Mem>>(
-        &self, debugger: &Debugger<Mem, Track>
+        &self, debugger: &Executor<Mem, Track>
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
-            let frame = Debugger::run(debugger);
+            let frame = debugger.run();
             let (frame, result) = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
@@ -783,7 +783,7 @@ impl SyscallDelegate {
 
     pub async fn cycle<Mem: Memory + Send, Track: Tracker<Mem> + Send>(
         &self,
-        debugger: &Debugger<Mem, Track>,
+        debugger: &Executor<Mem, Track>,
     ) -> (DebugFrame, Option<SyscallResult>) {
         let frame = debugger.cycle(true);
 
