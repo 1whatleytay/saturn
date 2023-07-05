@@ -7,6 +7,8 @@ import {
 export enum TokenType {
   Comment,
   Hard,
+  BracketOpen,
+  BracketClose,
   Label,
   Directive,
   Parameter,
@@ -23,6 +25,7 @@ export interface Token {
   text: string
   type: TokenType
   color: string
+  bracket?: number
 }
 
 export const style = {
@@ -62,8 +65,9 @@ function mapStyle(type: TokenType): string {
       return style.symbol
     case TokenType.Text:
       return style.text
+    case TokenType.BracketOpen:
+    case TokenType.BracketClose:
     case TokenType.Nothing:
-      return style.nothing
     default:
       return style.nothing
   }

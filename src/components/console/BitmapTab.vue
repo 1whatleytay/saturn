@@ -23,7 +23,7 @@
       class="p-4 hidden flex flex-col content-center justify-center items-center align-center"
       :class="{ 'sm:block': !state.small }"
     >
-      <div class="text-lg font-light mb-4 flex items-center">
+      <div class="text-base font-bold mb-4 flex items-center">
         Bitmap Display
       </div>
 
