@@ -6,8 +6,11 @@ import { regular } from '../utils/query/text-size'
 import { useStorage } from '../utils/storage'
 import { useFind } from '../utils/find'
 import { useSuggestions } from '../utils/suggestions'
-import { useTabs } from '../utils/tabs'
+import { CursorState, useTabs } from '../utils/tabs'
 import { GotoMessage, useGoto } from '../utils/goto'
+import { useSymbolHighlight } from '../utils/symbol-highlight'
+import { watch } from 'vue'
+import { findToken } from '../utils/languages/suggestions'
 
 export const settings = useSettings()
 
@@ -28,17 +31,41 @@ export const {
 
 export const find = useFind(() => tabBody.value, widthQuery)
 
-export const highlights = useHighlights(widthQuery)
+export const errorHighlights = useHighlights(widthQuery)
 export const gotoHighlights = useHighlights<GotoMessage>(widthQuery)
+
+function cursorState(): CursorState {
+  return tab()?.cursor ?? { line: 0, index: 0, highlight: null }
+}
+
+function cursorIndex(): SelectionIndex {
+  const state = cursorState()
+
+  return { line: state.line, index: state.index }
+}
 
 function onDirty(line: number, deleted: number, insert: string[]) {
   find.dirty(line, deleted, insert)
   gotoHighlights.shiftHighlight(line, deleted, insert.length)
 }
 
-const storageResult = useStorage(highlights, tab, onDirty)
+const storageResult = useStorage(errorHighlights, tab, onDirty)
 
 export const { editor, storage, suggestionsStorage } = storageResult
+
+export const {
+  updateCursor: updateCursorSymbol,
+  highlights: symbolHighlights
+} = useSymbolHighlight(storageResult, widthQuery)
+
+watch(() => {
+  const cursor = cursorIndex()
+  const line = tab()?.lines[cursor.line]
+
+  const index = line ? Math.min(line.length, cursor.index) : cursor.index
+
+  return { line: cursor.line, index }
+}, updateCursorSymbol)
 
 export const goto = useGoto(gotoHighlights, storageResult)
 
@@ -70,7 +97,7 @@ export const {
   applyMergeSuggestion,
 } = useCursor(
   () => editor.value,
-  () => tab()?.cursor ?? { line: 0, index: 0, highlight: null },
+  cursorState,
   settings.editor,
   regular,
   24,

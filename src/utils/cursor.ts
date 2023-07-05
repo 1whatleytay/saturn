@@ -40,6 +40,7 @@ export interface CursorInterface {
   handleKey(event: KeyboardEvent): void
   applyMergeSuggestion(suggestion: MergeSuggestion): void
 }
+
 export type CursorResult = CursorInterface & {
   position: ComputedRef<CursorPosition>
 }

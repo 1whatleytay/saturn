@@ -78,29 +78,22 @@
       <SelectionOverlay v-if="computedRanges" :range="computedRanges" />
       <Suggestions />
       <FindOverlay :start="renderStart" :count="renderCount" />
+      <SymbolHighlightOverlay :start="renderStart" :count="renderCount" />
       <GotoOverlay
         v-if="gotoHighlights.state.highlight"
         @click="jumpGoto"
         :highlight="gotoHighlights.state.highlight"
       />
       <ErrorOverlay
-        v-if="highlights.state.highlight"
-        :highlight="highlights.state.highlight"
+        v-if="errorHighlights.state.highlight"
+        :highlight="errorHighlights.state.highlight"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  watch,
-} from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
@@ -112,17 +105,17 @@ import {
   dropSelection,
   find,
   getSelection,
+  goto,
+  gotoHighlights,
   handleKey,
+  errorHighlights,
   lineStart,
   pasteText,
   position,
   range,
   storage,
   tab,
-  tabBody,
-  highlights,
-  goto,
-  gotoHighlights,
+  tabBody
 } from '../state/state'
 
 import Cursor from './Cursor.vue'
@@ -132,6 +125,7 @@ import ErrorOverlay from './ErrorOverlay.vue'
 import Suggestions from './Suggestions.vue'
 import SelectionOverlay from './SelectionOverlay.vue'
 import { hasActionKey } from '../utils/query/shortcut-key'
+import SymbolHighlightOverlay from './SymbolHighlightOverlay.vue'
 
 const lineHeight = 24 // h-6 -> 1.5rem -> 24px
 

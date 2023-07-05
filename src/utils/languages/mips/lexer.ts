@@ -312,11 +312,23 @@ function readItem(line: string, index: number, initial: boolean): Item {
       }
     }
 
+    case '(':
+      return {
+        type: TokenType.BracketOpen,
+        known: false,
+        next: start + 1,
+      }
+
+    case ')':
+      return {
+        type: TokenType.BracketClose,
+        known: false,
+        next: start + 1,
+      }
+
     case ',':
     case '+':
     case '-':
-    case '(':
-    case ')':
     case ':':
       return {
         type: TokenType.Hard,
@@ -387,6 +399,9 @@ export function lex(line: string): HighlightResult {
   let index = 0
   let initial = true
 
+  let bracketIndex = 0
+  const bracketStack = []
+
   let marker: ItemSuggestionMarker | undefined = undefined
 
   while (index < line.length) {
@@ -427,12 +442,23 @@ export function lex(line: string): HighlightResult {
 
       index += some
     } else {
-      tokens.push({
+      const token = {
         start: index,
         text: line.substring(index, item.next),
         type: item.type,
         color: getStyle(item.type, item.known),
-      })
+      } as Token
+
+      if (item.type === TokenType.BracketOpen) {
+        const bracket = bracketIndex++
+        token.bracket = bracket
+
+        bracketStack.push(bracket)
+      } else if (item.type === TokenType.BracketClose) {
+        token.bracket = bracketStack.pop()
+      }
+
+      tokens.push(token)
 
       index = item.next
     }

@@ -1,16 +1,15 @@
 <template>
-  <div v-if="find.state.show">
+  <div v-if="highlightIndices">
     <div
-      v-for="matches in findIndices"
-      class="absolute"
+      v-for="matches in highlightIndices"
+      class="absolute -z-10"
       :style="{
         top: `${matches.height}px`,
       }"
     >
       <div
         v-for="match in matches.matches"
-        class="bg-yellow-500 h-6 bg-opacity-30 absolute"
-        :class="{ 'bg-opacity-50 bg-orange-500': match === find.state.lastMatch }"
+        class="bg-slate-800 h-6 absolute rounded"
         :style="{
           left: `${match.offset}px`,
           width: `${match.size}px`,
@@ -21,9 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import { FindMatch } from '../utils/find'
-import { find } from '../state/state'
+import { symbolHighlights } from '../state/state'
 import { computed } from 'vue'
+import { SymbolHighlight } from '../utils/symbol-highlight'
 
 const props = withDefaults(
   defineProps<{
@@ -34,17 +33,23 @@ const props = withDefaults(
   { lineHeight: 24 }
 )
 
-const findIndices = computed(() => {
-  const pairs = [] as { height: number; matches: FindMatch[] }[]
+const highlightIndices = computed(() => {
+  const pairs = [] as { height: number; matches: SymbolHighlight[] }[]
+
+  const highlights = symbolHighlights(props.start, props.count)
+
+  if (!highlights) {
+    return
+  }
 
   for (let a = 0; a < props.count; a++) {
     const line = a + props.start
 
-    if (line < 0 || line >= find.state.matches.length) {
+    if (a >= highlights.length) {
       continue
     }
 
-    const matches = find.state.matches[line]
+    const matches = highlights[a]
     if (!matches.length) {
       continue
     }

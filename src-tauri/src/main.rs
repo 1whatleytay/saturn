@@ -12,6 +12,7 @@ mod menu;
 mod midi;
 mod syscall;
 mod state;
+mod testing;
 
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
@@ -27,6 +28,7 @@ use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
 use crate::state::commands::DebuggerBody;
 
 use crate::state::commands::{resume, rewind, pause, stop, post_key, post_input, wake_sync};
+use crate::testing::{all_tests, run_tests};
 
 #[tauri::command]
 fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
@@ -82,7 +84,9 @@ fn main() {
             configure_display,  // bitmap
             last_display,       // bitmap
             midi_install,
-            wake_sync
+            wake_sync,
+            all_tests,
+            run_tests
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)

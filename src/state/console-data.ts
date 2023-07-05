@@ -6,6 +6,7 @@ export enum DebugTab {
   Memory,
   Console,
   Bitmap,
+  Tests,
 }
 
 export enum ConsoleType {

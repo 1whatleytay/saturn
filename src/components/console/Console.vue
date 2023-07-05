@@ -51,6 +51,12 @@
           @mousedown="() => (consoleData.tab = DebugTab.Bitmap)"
         />
 
+<!--        <Tab-->
+<!--          title="Tests"-->
+<!--          :selected="consoleData.tab === DebugTab.Tests"-->
+<!--          @mousedown="() => (consoleData.tab = DebugTab.Tests)"-->
+<!--        />-->
+
         <button
           class="w-10 h-10 ml-auto hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
           @click="close"
@@ -63,6 +69,7 @@
       <MemoryTab v-if="consoleData.tab === DebugTab.Memory" />
       <ConsoleTab v-if="consoleData.tab === DebugTab.Console" />
       <BitmapTab v-if="consoleData.tab === DebugTab.Bitmap" />
+      <TestsTab v-if="consoleData.tab === DebugTab.Tests" />
     </div>
   </div>
 </template>
@@ -79,6 +86,7 @@ import RegistersTab from './RegistersTab.vue'
 import MemoryTab from './MemoryTab.vue'
 import ConsoleTab from './ConsoleTab.vue'
 import BitmapTab from './BitmapTab.vue'
+import TestsTab from './TestsTab.vue'
 
 const closingHeight = 90
 const defaultHeight = 320
