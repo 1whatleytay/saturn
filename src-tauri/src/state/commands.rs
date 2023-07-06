@@ -70,18 +70,18 @@ pub fn rewind(state: tauri::State<'_, DebuggerBody>, count: u32) -> Option<Resum
 }
 
 #[tauri::command]
-pub fn pause(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
+pub fn pause(state: tauri::State<'_, DebuggerBody>) {
     let Some(pointer) = &*state.lock().unwrap() else { return };
 
-    pointer.pause(Some(&mut display.lock().unwrap()))
+    pointer.pause();
 }
 
 #[tauri::command]
-pub fn stop(state: tauri::State<'_, DebuggerBody>, display: tauri::State<'_, FlushDisplayBody>) {
+pub fn stop(state: tauri::State<'_, DebuggerBody>) {
     let debugger = &mut *state.lock().unwrap();
 
     if let Some(pointer) = debugger {
-        pointer.pause(Some(&mut display.lock().unwrap()));
+        pointer.pause();
     }
 
     *debugger = None;

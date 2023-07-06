@@ -58,7 +58,7 @@ fn main() {
         .on_window_event(|event| {
             if let Destroyed = event.event() {
                 // Relieve some pressure on tokio.
-                stop(event.window().state(), event.window().state())
+                stop(event.window().state())
 
                 // Assuming tokio will join threads for me if needed.
             }
