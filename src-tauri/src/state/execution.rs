@@ -141,7 +141,7 @@ pub trait ExecutionDevice: Send + Sync {
         display: Option<FlushDisplayBody>
     ) -> Result<ResumeResult, ()>;
 
-    fn pause(&self, display: Option<&mut FlushDisplayState>);
+    fn pause(&self);
 
     fn set_breakpoints(&self, breakpoints: HashSet<u32>);
 
@@ -198,23 +198,19 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         };
 
         if let Some(display) = display {
+            let mut lock = display.lock().unwrap();
+
             debugger_clone.with_memory(|memory| {
-                display.lock().unwrap().flush(memory)
+                lock.flush(memory)
             })
         }
 
         Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
     }
 
-    fn pause(&self, display: Option<&mut FlushDisplayState>) {
+    fn pause(&self) {
         self.debugger.pause();
         self.delegate.lock().unwrap().cancel();
-
-        if let Some(display) = display {
-            self.debugger.with_memory(|memory| {
-                display.flush(memory)
-            })
-        }
     }
 
     fn set_breakpoints(&self, breakpoints: HashSet<u32>) {

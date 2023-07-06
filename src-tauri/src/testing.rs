@@ -1,12 +1,12 @@
-use std::panic;
-use std::panic::UnwindSafe;
+// use std::panic;
+// use std::panic::UnwindSafe;
 use serde::Serialize;
 
 #[derive(Serialize)]
 pub enum TestResult {
-    Unset,
-    Failed,
-    Passed
+    // Unset,
+    // Failed,
+    // Passed
 }
 
 #[derive(Serialize)]
@@ -15,6 +15,7 @@ pub struct TestItem {
     result: TestResult
 }
 
+/*
 mod tests {
     use std::time::Duration;
     use titan::unit::device::{RegisterName, UnitDevice};
@@ -80,6 +81,7 @@ mod tests {
         })
     }
 }
+*/
 
 #[tauri::command]
 pub fn all_tests() -> Vec<TestItem> {
@@ -92,15 +94,17 @@ pub fn all_tests() -> Vec<TestItem> {
     ]
 }
 
+/*
 fn run_test<F: FnOnce () + UnwindSafe>(f: F) -> TestResult {
     match panic::catch_unwind(f) {
         Ok(_) => TestResult::Passed,
         Err(_) => TestResult::Failed
     }
 }
+ */
 
 #[tauri::command]
-pub fn run_tests(path: &str) -> Vec<TestItem> {
+pub fn run_tests(_: &str) -> Vec<TestItem> {
     vec![
         // TestItem { name: "0th Fib Number".to_string(), result: run_test(|| tests::zero_fib(path)) },
         // TestItem { name: "1th Fib Number".to_string(), result: run_test(|| tests::one_fib(path)) },

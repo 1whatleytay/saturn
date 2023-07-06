@@ -248,7 +248,7 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
     midi: Box<dyn MidiHandler + Send>,
 ) {
     if let Some(state) = pointer.as_ref() {
-        state.pause(None);
+        state.pause();
     }
 
     let wrapped = Arc::new(debugger);
@@ -272,7 +272,7 @@ pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemo
     midi: Box<dyn MidiHandler + Send>,
 ) {
     if let Some(state) = pointer.as_ref() {
-        state.pause(None);
+        state.pause();
     }
 
     let wrapped = Arc::new(debugger);
