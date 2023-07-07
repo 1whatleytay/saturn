@@ -567,6 +567,19 @@ export function useCursor(
         comment()
         break
 
+      case 'y': {
+        const position = editor().redo()
+
+        suggestions?.dismissSuggestions()
+
+        if (position) {
+          putCursor(position)
+          value.highlight = null
+        }
+
+        break
+      }
+
       case 'z': {
         let position: SelectionIndex | null
 
