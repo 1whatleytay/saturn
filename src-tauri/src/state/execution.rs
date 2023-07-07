@@ -1,4 +1,4 @@
-use crate::display::{FlushDisplayBody, FlushDisplayState};
+use crate::display::FlushDisplayBody;
 use crate::syscall::{SyscallDelegate, SyscallResult};
 use serde::Serialize;
 use std::collections::HashSet;
