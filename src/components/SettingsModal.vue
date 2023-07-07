@@ -26,29 +26,29 @@
         <NumberField class="my-2 text-sm" v-model="settings.editor.tabSize" />
       </div>
 
-      <div class="mt-8">
-        <div class="font-bold uppercase text-sm">
-          Font Size
-        </div>
+<!--      <div class="mt-8">-->
+<!--        <div class="font-bold uppercase text-sm">-->
+<!--          Font Size-->
+<!--        </div>-->
 
-        <div class="text-gray-300 text-sm mt-1">
-          Adjust the size of the text in the editor window.
-        </div>
+<!--        <div class="text-gray-300 text-sm mt-1">-->
+<!--          Adjust the size of the text in the editor window.-->
+<!--        </div>-->
 
-        <NumberField class="my-2 text-sm" v-model="settings.editor.fontSize" />
-      </div>
+<!--        <NumberField class="my-2 text-sm" v-model="settings.editor.fontSize" />-->
+<!--      </div>-->
 
-      <div class="mt-8">
-        <div class="font-bold uppercase text-sm">
-          Console Font Size
-        </div>
+<!--      <div class="mt-8">-->
+<!--        <div class="font-bold uppercase text-sm">-->
+<!--          Console Font Size-->
+<!--        </div>-->
 
-        <div class="text-gray-300 text-sm mt-1">
-          Adjust the size of the text in the debug console.
-        </div>
+<!--        <div class="text-gray-300 text-sm mt-1">-->
+<!--          Adjust the size of the text in the debug console.-->
+<!--        </div>-->
 
-        <NumberField class="my-2 text-sm" v-model="settings.editor.consoleFontSize" />
-      </div>
+<!--        <NumberField class="my-2 text-sm" v-model="settings.editor.consoleFontSize" />-->
+<!--      </div>-->
 
       <div class="mt-8">
         <div class="font-bold uppercase text-sm">
