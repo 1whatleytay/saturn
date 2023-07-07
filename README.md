@@ -12,6 +12,30 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - **Easy-to-use Tools** - Quick and simple interfaces that provide what you need at a glance.
 - **In-Place Debugging** - Set breakpoints and read values in-line with your source.
 
+# Building
+
+Saturn is built with Tauri and has a Typescript and Rust component.
+To build, please install the following tools:
+
+ - [Node](https://nodejs.org/en)
+ - [Rust](https://www.rust-lang.org)
+ - [Yarn (Classic)](https://yarnpkg.com)
+
+Before development, install dependencies using
+```
+yarn install
+```
+
+To run for development, use
+```shell
+yarn tauri dev
+```
+
+To build a binary for your platform, use
+```shell
+yarn tauri build
+```
+
 # Required Tasks
 
 - [x] Basic Editor
