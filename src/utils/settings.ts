@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig, configureDisplay } from './mips'
 
-const settingsVersion = 4
+const settingsVersion = 5
 
 export interface BitmapSettings {
   displayWidth: number
@@ -31,12 +31,24 @@ export interface ExecutionSettings {
   timeTravel: boolean
 }
 
+export enum AddressingMode {
+  Byte,
+  Half,
+  Word,
+}
+
+export interface MemorySettings {
+  address: string,
+  mode: AddressingMode
+}
+
 export interface Settings {
   version: number
   editor: EditorSettings
   bitmap: BitmapSettings
   registers: RegisterSettings
   execution: ExecutionSettings
+  memory: MemorySettings
 }
 
 function defaultSettings(): Settings {
@@ -60,6 +72,10 @@ function defaultSettings(): Settings {
     },
     execution: {
       timeTravel: true
+    },
+    memory: {
+      address: '0x10010000',
+      mode: AddressingMode.Word,
     }
   }
 }
