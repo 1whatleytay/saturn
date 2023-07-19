@@ -8,7 +8,7 @@
         id="address"
         type="text"
         class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
-        v-model="memory.address"
+        v-model="settings.memory.address"
       />
 
       <div class="flex px-2 space-x-1">
@@ -31,7 +31,7 @@
       <select
         id="data-type"
         class="appearance-none text-xs bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
-        :value="memory.mode"
+        :value="settings.memory.mode"
         @input="setMode"
       >
         <option :value="AddressingMode.Byte">Byte</option>
@@ -45,7 +45,7 @@
         <div class="w-32 px-2 py-1 shrink-0">Address</div>
 
         <div
-          v-for="(item, index) in table?.header"
+          v-for="(item, index) in table.header"
           :key="index"
           class="w-28 flex items-center px-2 py-1 shrink-0"
         >
@@ -53,21 +53,36 @@
         </div>
       </div>
 
-      <div
-        v-for="(row, index) in table?.rows"
-        :key="index"
-        class="flex font-mono"
-      >
-        <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
-          {{ row.header }}
-        </div>
-
+      <div v-if="table.rows">
         <div
-          v-for="(item, index) in row.items"
+          v-for="(row, index) in table.rows"
           :key="index"
-          class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
+          class="flex font-mono"
         >
-          {{ item }}
+          <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
+            {{ row.header }}
+          </div>
+
+          <div
+            v-for="(item, index) in row.items"
+            :key="index"
+            class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
+          >
+            {{ item }}
+          </div>
+        </div>
+      </div>
+      <div v-else>
+        <div
+          class="flex font-mono"
+        >
+          <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
+            {{ settings.memory.address }}
+          </div>
+
+          <div class="font-sans text-neutral-400 flex items-center px-2 py-1 shrink-0 select-all">
+            To view memory, set breakpoints or pause during execution.
+          </div>
         </div>
       </div>
     </div>
@@ -76,24 +91,18 @@
 
 <script setup lang="ts">
 import { consoleData, DebugTab } from '../../state/console-data'
+import { settings } from '../../state/state'
+import { AddressingMode } from '../../utils/settings'
 import { computed, onMounted, reactive, watch } from 'vue'
 
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/vue/24/solid'
-
-enum AddressingMode {
-  Byte,
-  Half,
-  Word,
-}
 
 const targetRows = 32
 const targetColumns = 8
 const defaultAddress = 0x10010000
 
 const memory = reactive({
-  address: addressString(defaultAddress),
-  data: Array(256).fill(0),
-  mode: AddressingMode.Word,
+  data: null as number[] | null,
 })
 
 function addressingModeSize(mode: AddressingMode) {
@@ -111,7 +120,7 @@ function setMode(event: Event) {
   const input = event.target as HTMLInputElement
 
   try {
-    memory.mode = parseInt(input.value) as AddressingMode
+    settings.memory.mode = parseInt(input.value) as AddressingMode
   } catch {}
 }
 
@@ -142,16 +151,16 @@ function addressString(value: number): string {
 }
 
 function pageSize() {
-  const unitSize = addressingModeSize(memory.mode)
+  const unitSize = addressingModeSize(settings.memory.mode)
 
   return targetRows * targetColumns * unitSize
 }
 
 function moveAddress(direction: number) {
-  const value = parseAddress(memory.address) ?? defaultAddress
+  const value = parseAddress(settings.memory.address) ?? defaultAddress
   const section = pageSize()
 
-  memory.address = addressString(value + section * direction)
+  settings.memory.address = addressString(value + section * direction)
 }
 
 interface MemoryRow {
@@ -161,13 +170,26 @@ interface MemoryRow {
 
 interface MemoryTable {
   header: string[]
-  rows: MemoryRow[]
+  rows: MemoryRow[] | null
 }
 
-const table = computed((): MemoryTable | null => {
-  const address = parseAddress(memory.address)
+const table = computed((): MemoryTable => {
+  const header = []
 
-  const unitSize = addressingModeSize(memory.mode)
+  const unitSize = addressingModeSize(settings.memory.mode)
+
+  for (let column = 0; column < targetColumns; column++) {
+    header.push(`Value +${(column * unitSize).toString(16)}`)
+  }
+
+  if (memory.data === null) {
+    return {
+      header,
+      rows: null
+    }
+  }
+
+  const address = parseAddress(settings.memory.address)
 
   const data = memory.data
   let index = 0
@@ -210,12 +232,6 @@ const table = computed((): MemoryTable | null => {
     result.push(element)
   }
 
-  const header = []
-
-  for (let column = 0; column < targetColumns; column++) {
-    header.push(`Value +${(column * unitSize).toString(16)}`)
-  }
-
   return {
     header,
     rows: result,
@@ -223,15 +239,11 @@ const table = computed((): MemoryTable | null => {
 })
 
 async function updateMemoryData() {
-  const address = parseAddress(memory.address)
+  const address = parseAddress(settings.memory.address)
 
-  if (!address) {
-    memory.data = []
+  if (!consoleData.execution || !address) {
+    memory.data = null
 
-    return
-  }
-
-  if (!consoleData.execution) {
     return
   }
 
@@ -242,6 +254,8 @@ async function updateMemoryData() {
   const data = await consoleData.execution.memoryAt(address, page)
 
   if (!data) {
+    memory.data = null
+
     return
   }
 
@@ -256,8 +270,9 @@ const checkMemory = () => {
 
 onMounted(updateMemoryData)
 
-watch(() => memory.address, checkMemory)
+watch(() => settings.memory.address, checkMemory)
 watch(() => consoleData.tab, checkMemory)
 watch(() => consoleData.showConsole, checkMemory)
 watch(() => consoleData.registers, checkMemory)
+watch(() => consoleData.execution, checkMemory)
 </script>
