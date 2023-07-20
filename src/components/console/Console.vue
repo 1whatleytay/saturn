@@ -28,6 +28,12 @@
         </div>
 
         <Tab
+          title="Debug"
+          :selected="consoleData.tab === DebugTab.Debug"
+          @mousedown="() => (consoleData.tab = DebugTab.Debug)"
+        />
+
+        <Tab
           title="Console"
           :selected="consoleData.tab === DebugTab.Console"
           @mousedown="() => (consoleData.tab = DebugTab.Console)"
@@ -70,6 +76,7 @@
       <ConsoleTab v-if="consoleData.tab === DebugTab.Console" />
       <BitmapTab v-if="consoleData.tab === DebugTab.Bitmap" />
       <TestsTab v-if="consoleData.tab === DebugTab.Tests" />
+      <BreakTab v-if="consoleData.tab === DebugTab.Debug" />
     </div>
   </div>
 </template>
@@ -87,6 +94,7 @@ import MemoryTab from './MemoryTab.vue'
 import ConsoleTab from './ConsoleTab.vue'
 import BitmapTab from './BitmapTab.vue'
 import TestsTab from './TestsTab.vue'
+import BreakTab from './BreakTab.vue'
 
 const closingHeight = 90
 const defaultHeight = 320
