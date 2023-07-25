@@ -3,13 +3,16 @@ use crate::syscall::{SyscallDelegate, SyscallResult};
 use serde::Serialize;
 use std::collections::HashSet;
 use async_trait::async_trait;
-use titan::cpu::Memory;
+use titan::cpu::error::Error::{CpuTrap, MemoryAlign, MemoryUnmapped};
+use titan::cpu::{Memory, State};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::cpu::state::Registers;
 use titan::execution::executor::{DebugFrame, ExecutorMode};
 use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
+use titan::unit::instruction::InstructionDecoder;
+use titan::unit::suggestions::MemoryErrorReason;
 use crate::state::device::ExecutionState;
 
 #[derive(Serialize)]
@@ -22,13 +25,48 @@ pub enum ResumeMode {
     Finished { pc: u32, code: Option<u32> },
 }
 
-impl From<ExecutorMode> for ResumeMode {
-    fn from(value: ExecutorMode) -> Self {
+fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>) -> String {
+    let memory = |reason: MemoryErrorReason| {
+        let pc = state.registers.pc.wrapping_sub(4);
+
+        let description = state.memory.get_u32(pc).ok()
+            .map_or(None, |value| InstructionDecoder::decode(pc, value))
+            .map_or(None, |instruction| instruction.describe_memory_error(reason, &state.registers));
+
+        if let Some(description) = description {
+            description.to_string()
+        } else {
+            error.to_string()
+        }
+    };
+
+    match error {
+        MemoryAlign(_) => memory(MemoryErrorReason::Alignment),
+        MemoryUnmapped(_) => memory(MemoryErrorReason::Unmapped),
+        CpuTrap => {
+            let pc = state.registers.pc.wrapping_sub(4);
+
+            let description = state.memory.get_u32(pc).ok()
+                .map_or(None, |value| InstructionDecoder::decode(pc, value))
+                .map_or(None, |instruction| instruction.describe_trap_error(&state.registers));
+
+            if let Some(description) = description {
+                description.to_string()
+            } else {
+                error.to_string()
+            }
+        }
+        _ => error.to_string()
+    }
+}
+
+impl ResumeMode {
+    fn from_executor<Mem: Memory>(value: ExecutorMode, state: &State<Mem>) -> Self {
         match value {
             ExecutorMode::Running => ResumeMode::Running,
             ExecutorMode::Recovered => ResumeMode::Breakpoint,
             ExecutorMode::Invalid(error) => ResumeMode::Invalid {
-                message: format!("{}", error),
+                message: format_error(error, state)
             },
             ExecutorMode::Paused => ResumeMode::Paused,
             ExecutorMode::Breakpoint => ResumeMode::Breakpoint,
@@ -62,10 +100,11 @@ pub struct ResumeResult {
 }
 
 impl ResumeResult {
-    fn from_frame(
+    fn from_frame<Mem: Memory>(
         frame: DebugFrame,
         finished_pcs: &[u32],
         result: Option<SyscallResult>,
+        state: &State<Mem>
     ) -> ResumeResult {
         let mode = match result {
             Some(SyscallResult::Failure(message)) => ResumeMode::Invalid { message },
@@ -74,7 +113,7 @@ impl ResumeResult {
             },
             Some(SyscallResult::Aborted) => ResumeMode::Paused,
             Some(SyscallResult::Exception(error)) => ResumeMode::Invalid {
-                message: error.to_string()
+                message: format_error(error, state)
             },
             Some(SyscallResult::Unimplemented(code)) => ResumeMode::Invalid {
                 message: format!("Unimplemented syscall {}, file a bug or make a contribution at https://github.com/1whatleytay/saturn.", code)
@@ -87,7 +126,7 @@ impl ResumeResult {
                 if finished_pcs.contains(&frame.registers.pc) {
                     ResumeMode::Finished { pc: frame.registers.pc, code: None }
                 } else {
-                    frame.mode.into()
+                    ResumeMode::from_executor(frame.mode, state)
                 }
             }
         };
@@ -205,7 +244,9 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
             })
         }
 
-        Ok(ResumeResult::from_frame(frame, &finished_pcs, result))
+        debugger.with_state(|state| {
+            Ok(ResumeResult::from_frame(frame, &finished_pcs, result, state))
+        })
     }
 
     fn pause(&self) {
@@ -273,7 +314,9 @@ impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRe
     fn rewind(&self, _: u32) -> ResumeResult {
         let frame = self.debugger.frame();
 
-        ResumeResult::from_frame(frame, &[], None)
+        self.debugger.with_state(|state| {
+            ResumeResult::from_frame(frame, &[], None, state)
+        })
     }
 }
 
@@ -284,7 +327,9 @@ impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, His
             let Some(entry) = entry else {
                 let frame = self.debugger.frame();
 
-                return ResumeResult::from_frame(frame, &[], None);
+                return self.debugger.with_state(|state| {
+                    ResumeResult::from_frame(frame, &[], None, state)
+                })
             };
 
             self.debugger.with_state(|state| {
@@ -294,7 +339,9 @@ impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, His
 
         let frame = self.debugger.frame();
 
-        ResumeResult::from_frame(frame, &[], None)
+        self.debugger.with_state(|state| {
+            ResumeResult::from_frame(frame, &[], None, state)
+        })
     }
 }
 
