@@ -54,7 +54,7 @@ yarn tauri build
 
 # Important Tasks
 
-- [ ] Memory Editing and Copying
+- [x] Memory Editing and Copying
 - [x] Register Editing and Copying
 - [x] Finding Text (Cmd + F)
 - [x] Finished Execution State
@@ -63,3 +63,4 @@ yarn tauri build
 - [x] MIDI and Other Syscalls
 - [x] Variable Name Suggestions
 - [x] Improve Bitmap Display
+- [x] Add Time Travel
