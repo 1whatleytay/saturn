@@ -63,13 +63,15 @@
             {{ row.header }}
           </div>
 
-          <div
+          <NumberField
             v-for="(item, index) in row.items"
             :key="index"
-            class="hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
-          >
-            {{ item }}
-          </div>
+            :hex="true"
+            :model-value="item"
+            :bytes="unitSize"
+            @update:model-value="value => setAddress(row.address, index, value, settings.memory.mode)"
+            classes="bg-transparent hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
+          />
         </div>
       </div>
       <div v-else>
@@ -96,6 +98,7 @@ import { AddressingMode } from '../../utils/settings'
 import { computed, onMounted, reactive, watch } from 'vue'
 
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/vue/24/solid'
+import NumberField from './NumberField.vue'
 
 const targetRows = 32
 const targetColumns = 8
@@ -116,6 +119,8 @@ function addressingModeSize(mode: AddressingMode) {
   }
 }
 
+const unitSize = computed(() => addressingModeSize(settings.memory.mode))
+
 function setMode(event: Event) {
   const input = event.target as HTMLInputElement
 
@@ -124,11 +129,38 @@ function setMode(event: Event) {
   } catch {}
 }
 
-function shift(bytes: number[]): string {
-  let result = ''
+function setAddress(start: number, index: number, to: number, mode: AddressingMode) {
+  if (!consoleData.execution) {
+    return
+  }
 
-  for (const byte of bytes) {
-    result = byte.toString(16).padStart(2, '0') + result
+  const address = start + index * unitSize.value
+
+  switch (mode) {
+    case AddressingMode.Byte:
+      consoleData.execution.setMemory(address, [to])
+      break
+    case AddressingMode.Half:
+      consoleData.execution.setMemory(address, [to & 0xff, (to >> 8) & 0xff])
+      break
+    case AddressingMode.Word:
+      consoleData.execution.setMemory(address, [
+        to & 0xff,
+        (to >> 8) & 0xff,
+        (to >> 16) & 0xff,
+        (to >> 24) & 0xff,
+      ])
+      break
+  }
+}
+
+function shift(bytes: number[]): number {
+  let result = 0
+
+  for (const byte of bytes.reverse()) {
+    // Why not (result << 8) | byte?
+    // | and << give signed integers as the result, which isn't what I'm looking for.
+    result = (result * 256) + byte
   }
 
   return result
@@ -151,9 +183,7 @@ function addressString(value: number): string {
 }
 
 function pageSize() {
-  const unitSize = addressingModeSize(settings.memory.mode)
-
-  return targetRows * targetColumns * unitSize
+  return targetRows * targetColumns * unitSize.value
 }
 
 function moveAddress(direction: number) {
@@ -165,7 +195,8 @@ function moveAddress(direction: number) {
 
 interface MemoryRow {
   header: string
-  items: string[]
+  address: number
+  items: number[]
 }
 
 interface MemoryTable {
@@ -182,14 +213,14 @@ const table = computed((): MemoryTable => {
     header.push(`Value +${(column * unitSize).toString(16)}`)
   }
 
-  if (memory.data === null) {
+  const address = parseAddress(settings.memory.address)
+
+  if (memory.data === null || address === null) {
     return {
       header,
       rows: null
     }
   }
-
-  const address = parseAddress(settings.memory.address)
 
   const data = memory.data
   let index = 0
@@ -197,14 +228,6 @@ const table = computed((): MemoryTable => {
   const result = [] as MemoryRow[]
 
   for (let row = 0; row < targetRows; row++) {
-    if (!address) {
-      result.push({
-        header: '',
-        items: Array(targetColumns).fill(''),
-      })
-      continue
-    }
-
     if (index >= data.length) {
       break
     }
@@ -213,6 +236,7 @@ const table = computed((): MemoryTable => {
 
     const element = {
       header: addressString(start),
+      address: start,
       items: [],
     } as MemoryRow
 

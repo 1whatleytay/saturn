@@ -34,12 +34,14 @@ const props = withDefaults(
     checker?: (value: number) => string | null
     editable?: boolean
     cleanOnly?: boolean
+    bytes?: number
   }>(),
   {
     hex: false,
     classes: '',
     editable: true,
     cleanOnly: true,
+    bytes: 4,
   }
 )
 
@@ -93,7 +95,7 @@ function parse(leading: string): number | null {
     const rest = text.substring(2)
 
     // Validate
-    if (!/^[0-9a-f]*$/.test(rest)) {
+    if (!/^[0-9a-fA-F]*$/.test(rest)) {
       return null
     }
 
@@ -111,10 +113,16 @@ function parse(leading: string): number | null {
     result = 0x100000000 - result
   }
 
+  result = result & (~0 >> ((4 - props.bytes) * 2))
+
   return isNaN(result) ? null : result
 }
 
 function formatHex(value: number, hex: boolean): string {
+  if (props.bytes < 4) {
+    value = value & (0x7fffffff >> ((4 - props.bytes) * 8 - 1))
+  }
+
   if (hex) {
     const signed = Math.abs(value).toString(16)
 
