@@ -110,7 +110,7 @@ class Breakpoints {
   public pcToGroup: Map<number, Breakpoint>
 
   findNextPc(line: number): number[] {
-    while (line < this.maxLine) {
+    while (line <= this.maxLine) {
       const value = this.lineToPc.get(line)
 
       if (value !== undefined) {
@@ -124,9 +124,11 @@ class Breakpoints {
 }
 
   public mapLines(lines: number[]): number[] {
-    return lines
+    const x = lines
       .flatMap((line) => this.findNextPc(line))
       .filter((point) => !!point) as number[]
+
+    return x
   }
 
   // pc -> line
@@ -338,6 +340,10 @@ export class ExecutionState {
   // register: 32 -> hi, 33 -> lo, 34 -> pc
   public async setRegister(register: number, value: number) {
     await tauri.invoke('set_register', { register, value })
+  }
+
+  public async setMemory(address: number, bytes: number[]) {
+    await tauri.invoke('write_bytes', { address, bytes })
   }
 
   public constructor(
