@@ -21,7 +21,7 @@
 
       <div class="h-10 flex items-center text-sm font-bold text-neutral-400">
         <div
-          class="rounded-full py-0.5 px-4 text-white text-gray-300 mx-4"
+          class="rounded-full py-0.5 px-4 mx-4"
           :class="[modeClass]"
         >
           {{ modeString }}
@@ -56,12 +56,6 @@
           :selected="consoleData.tab === DebugTab.Bitmap"
           @mousedown="() => (consoleData.tab = DebugTab.Bitmap)"
         />
-
-<!--        <Tab-->
-<!--          title="Tests"-->
-<!--          :selected="consoleData.tab === DebugTab.Tests"-->
-<!--          @mousedown="() => (consoleData.tab = DebugTab.Tests)"-->
-<!--        />-->
 
         <button
           class="w-10 h-10 ml-auto hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
@@ -118,17 +112,17 @@ const modeString = computed(() => {
 const modeClass = computed(() => {
   switch (consoleData.mode) {
     case ExecutionModeType.Running:
-      return 'bg-teal-900'
+      return 'text-teal-100 border-teal-300 border'
     case ExecutionModeType.Breakpoint:
-      return 'bg-red-900'
+      return 'text-red-300 border-red-300 border'
     case ExecutionModeType.Paused:
-      return 'bg-yellow-900'
+      return 'text-yellow-300 border-yellow-300 border'
     case ExecutionModeType.Invalid:
-      return 'bg-red-900'
+      return 'text-red-300 border-red-300 border'
     case ExecutionModeType.Finished:
-      return 'bg-lime-700'
+      return 'text-lime-300 border-lime-300 border'
     default:
-      return 'bg-transparent'
+      return 'text-white'
   }
 })
 
