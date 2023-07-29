@@ -114,13 +114,13 @@ const modeClass = computed(() => {
     case ExecutionModeType.Running:
       return 'text-teal-100 border-teal-300 border'
     case ExecutionModeType.Breakpoint:
-      return 'text-red-300 border-red-300 border'
+      return 'text-red-100 border-red-300 border'
     case ExecutionModeType.Paused:
-      return 'text-yellow-300 border-yellow-300 border'
+      return 'text-yellow-100 border-yellow-300 border'
     case ExecutionModeType.Invalid:
-      return 'text-red-300 border-red-300 border'
+      return 'text-red-100 border-red-300 border'
     case ExecutionModeType.Finished:
-      return 'text-lime-300 border-lime-300 border'
+      return 'text-lime-100 border-lime-300 border'
     default:
       return 'text-white'
   }
