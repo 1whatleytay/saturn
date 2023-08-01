@@ -198,6 +198,17 @@ export async function configureDisplay(config: BitmapConfig) {
   })
 }
 
+export interface ParameterItem { type: 'Register' | 'Immediate' | 'Address', value: number }
+
+export interface InstructionDetails {
+  name: string,
+  parameters: ParameterItem[]
+}
+
+export async function decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null> {
+  return await invoke('decode_instruction', { pc, instruction }) ?? null
+}
+
 export async function lastDisplay(): Promise<LastDisplay> {
   const result = await invoke('last_display')
 
