@@ -17,31 +17,16 @@
       </div>
 
       <div class="flex items-center flex-wrap w-full -ml-2">
-        <div
-          v-for="register of section.values"
+        <RegisterItem
+          v-for="register in section.values"
           :key="register.name"
-          class="w-28 py-1 px-0.5 h-12"
-          :class="!consoleData.execution ? 'opacity-50' : ''"
-        >
-          <div class="text-xs pl-2 group" :class="section.classes">
-            {{ register.name }}
-          </div>
-
-          <NumberField
-            v-if="register.value !== undefined"
-            :classes="`
-              pl-2 py-1 rounded
-              hover:bg-neutral-800 select-all cursor-text
-              w-28 bg-transparent
-              text-sm
-              ${register.marked ? 'text-orange-200' : 'text-gray-100'}`"
-            :model-value="register.value"
-            @update:model-value="(value) => setRegister(register.id, value)"
-            :checker="checker"
-            :editable="!!consoleData.execution"
-            :hex="settings.registers.format === RegisterFormat.Hexadecimal"
-          />
-        </div>
+          :name="register.name"
+          :editable="!!consoleData.execution"
+          :classes="section.classes"
+          :value="register.value"
+          :format="settings.registers.format"
+          @set="value => setRegister(register.id, value)"
+        />
       </div>
     </div>
 
@@ -77,7 +62,7 @@ import { settings } from '../../state/state'
 import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 import { RegisterFormat } from '../../utils/settings'
 import { Registers } from '../../utils/mips'
-import NumberField from './NumberField.vue'
+import RegisterItem from './RegisterItem.vue'
 
 function buttonClasses(format: RegisterFormat) {
   const use = settings.registers.format === format
@@ -182,12 +167,6 @@ watch(
     }
   }
 )
-
-function checker(value: number): string | null {
-  const valid = value >= 0 && value <= 0xffffffff
-
-  return !valid ? 'Value must be between 0x0 and 0xffffffff' : null
-}
 
 function register(
   name: string,
