@@ -262,3 +262,27 @@ export async function stop() {
 
   closeExecution()
 }
+
+export async function setRegister(id: number, value: number) {
+  if (consoleData.execution && consoleData.registers) {
+    switch (id) {
+      case 32:
+        consoleData.registers.hi = value
+        break
+
+      case 33:
+        consoleData.registers.lo = value
+        break
+
+      case 34:
+        consoleData.registers.pc = value
+        break
+
+      default:
+        consoleData.registers.line[id] = value
+        break
+    }
+
+    await consoleData.execution.setRegister(id, value)
+  }
+}
