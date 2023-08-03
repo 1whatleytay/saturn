@@ -1,46 +1,91 @@
 <template>
   <div class="text-sm flex flex-col grow overflow-clip content-start">
-    <div class="p-4">
-      <div class="border-b text-lg font-semibold">
-        Instruction
-      </div>
-
-      <div v-if="state.instruction" class="p-2 text-base font-mono select-auto">
-        <span class="mr-2">
-          Executing:
-        </span>
-
-        <span class="text-sky-400 font-bold">
-          {{ state.instruction.name }}
-        </span>
-
-        <span v-for="(parameter, index) in state.instruction.parameters" :key="index">
-          <span v-if="index !== 0">,&nbsp;</span>
-          <span v-else class="">&nbsp;</span>
-
-          <span v-if="parameter.type === 'Register'" :class="[registers[parameter.value].color]">
-            {{ registers[parameter.value].name }}
-          </span>
-
-          <span v-if="parameter.type === 'Address'">0x{{ parameter.value.toString(16) }}</span>
-
-          <span v-if="parameter.type === 'Immediate'">
-            {{ parameter.value }}
-          </span>
-        </span>
-      </div>
+    <div class="text-2xl font-bold w-full px-8 py-4">
+      {{ consoleData.mode ?? 'Debug' }}
     </div>
 
-    <div class="p-4">
-      Stack
+    <div class="flex">
+      <div v-if="!state.instruction && !state.values" class="px-8 text-neutral-500">
+        Run the application to show things on the debug tab.
+      </div>
 
-      <div v-for="value in state.values" class="flex items-center font-mono">
-        <div class="w-32">
-          0x{{ value.address.toString(16).padStart(8, '0') }}
+      <div class="w-1/2 px-8" v-if="state.instruction">
+        <div class="text-base select-auto mt-3">
+          <div class="text-lg font-semibold">
+            Instruction
+          </div>
+
+          <span class="mr-2">
+            Executing:
+          </span>
+
+          <span class="font-mono">
+            <span class="text-sky-400 font-bold">
+              {{ state.instruction.name }}
+            </span>
+
+            <span v-for="(parameter, index) in state.instruction.parameters" :key="index">
+              <span v-if="index !== 0">,&nbsp;</span>
+              <span v-else>&nbsp;</span>
+
+              <span v-if="parameter.type === 'Register'" :class="[registers[parameter.value].color]">
+                {{ registers[parameter.value].name }}
+              </span>
+
+              <span v-if="parameter.type === 'Address'">0x{{ parameter.value.toString(16) }}</span>
+
+              <span v-if="parameter.type === 'Immediate'">
+                {{ parameter.value }}
+              </span>
+            </span>
+          </span>
+
+          <div class="flex items-center mt-4 border-t border-gray-700 p-2">
+            <div v-for="parameter in state.instruction.parameters">
+              <RegisterItem
+                v-if="parameter.type === 'Register'"
+                :name="registers[parameter.value].name"
+                :value="consoleData.registers?.line[parameter.value]"
+                :classes="registers[parameter.value].color"
+                :editable="true"
+                @set="value => setRegister(parameter.value, value)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-2 py-4" v-if="state.values">
+        <span class="text-lg font-semibold">
+          Stack
+        </span>
+
+        <div class="flex items-center text-neutral-500 border-b border-gray-700 p-2">
+          <div class="w-10">
+
+          </div>
+
+          <div class="w-32">
+            Address
+          </div>
+
+          <div class="w-32">
+            Value
+          </div>
         </div>
 
-        <div class="w-32">
-          0x{{ value.value.toString(16).padStart(8, '0') }}
+        <div v-for="(value, index) in state.values" class="flex items-center font-mono my-1">
+          <div class="w-10 text-xs text-purple-300">
+            {{ index === 0 ? '$sp' : '' }}
+          </div>
+
+          <div class="w-32 px-2 py-1 hover:bg-neutral-800 rounded">
+            0x{{ value.address.toString(16).padStart(8, '0') }}
+          </div>
+
+          <div class="w-32 px-2 py-1 select-all hover:bg-neutral-800 rounded">
+            0x{{ value.value.toString(16).padStart(8, '0') }}
+          </div>
         </div>
       </div>
     </div>
@@ -51,6 +96,8 @@
 import { consoleData } from '../../state/console-data'
 import { onMounted, reactive, watch } from 'vue'
 import { decodeInstruction, InstructionDetails } from '../../utils/mips'
+import { setRegister } from '../../utils/debug'
+import RegisterItem from './RegisterItem.vue'
 
 const systemColor = 'text-purple-300'
 const valueColor = 'text-red-300'
@@ -98,7 +145,7 @@ interface StackElement {
 }
 
 const state = reactive({
-  values: [] as StackElement[],
+  values: null as StackElement[] | null,
   instruction: null as InstructionDetails | null
 })
 
@@ -127,11 +174,9 @@ function combine(data: (number | null)[], index: number = 0): number {
     + (data[index + 3] ?? 0) * 256 * 256 * 256
 }
 
-async function stackInfo(): Promise<StackElement[]> {
-  const result = [] as StackElement[]
-
+async function stackInfo(): Promise<StackElement[] | null> {
   if (!consoleData.registers || !consoleData.execution) {
-    return result
+    return null
   }
 
   const sp = consoleData.registers.line[29]
@@ -139,8 +184,10 @@ async function stackInfo(): Promise<StackElement[]> {
   const data = await consoleData.execution.memoryAt(sp, 4 * 12)
 
   if (!data) {
-    return result
+    return null
   }
+
+  const result = [] as StackElement[]
 
   for (let index = 0; index < data.length; index += 4) {
     // Avoid << because we don't want signed integers

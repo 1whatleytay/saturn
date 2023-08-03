@@ -58,6 +58,7 @@
 import { computed, watch } from 'vue'
 import { consoleData } from '../../state/console-data'
 import { settings } from '../../state/state'
+import { setRegister } from '../../utils/debug'
 
 import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 import { RegisterFormat } from '../../utils/settings'
@@ -206,27 +207,4 @@ const mappedSections = computed((): RegisterSection[] => {
     }
   })
 })
-
-function setRegister(id: number, value: number) {
-  if (consoleData.execution && consoleData.registers) {
-    switch (id) {
-      case 32:
-        consoleData.registers.hi = value
-        break
-
-      case 33:
-        consoleData.registers.lo = value
-        break
-
-      case 34:
-        consoleData.registers.pc = value
-        break
-
-      default:
-        consoleData.registers.line[id] = value
-        break
-    }
-    consoleData.execution.setRegister(id, value)
-  }
-}
 </script>
