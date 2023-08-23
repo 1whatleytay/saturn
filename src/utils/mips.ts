@@ -198,7 +198,17 @@ export async function configureDisplay(config: BitmapConfig) {
   })
 }
 
-export interface ParameterItem { type: 'Register' | 'Immediate' | 'Address', value: number }
+export interface ParameterItemRegular {
+  type: 'Register' | 'Immediate' | 'Address'
+  value: number
+}
+
+export interface ParameterItemOffset {
+  type: 'Offset'
+  value: { offset: number, register: number }
+}
+
+export type ParameterItem = ParameterItemRegular | ParameterItemOffset
 
 export interface InstructionDetails {
   name: string,

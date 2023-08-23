@@ -22,10 +22,10 @@
             />
 
             <span class="text-sky-400 font-bold">
-              {{ instruction.name }}
+              {{ instruction?.name || 'unk' }}
             </span>
 
-            <span v-for="(parameter, index) in instruction.parameters" :key="index">
+            <span v-for="(parameter, index) in instruction?.parameters ?? []" :key="index">
               <span v-if="index !== 0">,&nbsp;</span>
               <span v-else>&nbsp;</span>
 
@@ -33,10 +33,16 @@
                 {{ registers[parameter.value].name }}
               </span>
 
-              <span v-if="parameter.type === 'Address'">0x{{ parameter.value.toString(16) }}</span>
+              <span v-if="parameter.type === 'Address'">
+                0x{{ parameter.value.toString(16) }}
+              </span>
 
               <span v-if="parameter.type === 'Immediate'">
                 {{ parameter.value }}
+              </span>
+
+              <span v-if="parameter.type === 'Offset'">
+                {{ parameter.value.offset }}(<span :class="[registers[parameter.value.register].color]">{{ registers[parameter.value.register].name }}</span>)
               </span>
             </span>
           </div>
@@ -95,7 +101,13 @@
 <script setup lang="ts">
 import { consoleData } from '../../state/console-data'
 import { computed, onMounted, reactive, watch } from 'vue'
-import { Breakpoints, decodeInstruction, ExecutionState, InstructionDetails } from '../../utils/mips'
+import {
+  Breakpoints,
+  decodeInstruction,
+  ExecutionState,
+  InstructionDetails,
+  ParameterItemRegular
+} from '../../utils/mips'
 import { setRegister } from '../../utils/debug'
 import RegisterItem from './RegisterItem.vue'
 
@@ -157,7 +169,7 @@ const registerParameters = computed(() => {
   // Not worries about optimization here, we want unique + sorted.
   return [...new Set(state.instructions.instructions
     .flatMap(x => x?.parameters ?? [])
-    .filter(x => x.type === 'Register')
+    .filter((x): x is ParameterItemRegular => x.type === 'Register')
     .map(x => x.value))]
     .sort()
 })
