@@ -104,7 +104,7 @@ export interface LastDisplay {
   data: number[] | null
 }
 
-class Breakpoints {
+export class Breakpoints {
   public maxLine: number
   public lineToPc: Map<number, number[]>
   public pcToGroup: Map<number, Breakpoint>

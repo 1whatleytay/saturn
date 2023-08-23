@@ -1,30 +1,31 @@
 <template>
-  <div class="text-sm flex flex-col grow overflow-clip content-start">
+  <div class="text-sm flex flex-col grow overflow-clip content-start overflow-y-scroll">
     <div class="text-2xl font-bold w-full px-8 py-4">
       {{ consoleData.mode ?? 'Debug' }}
     </div>
 
     <div class="flex">
-      <div v-if="!state.instruction && !state.values" class="px-8 text-neutral-500">
+      <div v-if="!state.instructions && !state.stack" class="px-8 text-neutral-500">
         Run the application to show things on the debug tab.
       </div>
 
-      <div class="w-1/2 px-8" v-if="state.instruction">
+      <div class="w-1/2 px-8" v-if="state.instructions">
         <div class="text-base select-auto mt-3">
-          <div class="text-lg font-semibold">
+          <div class="text-lg font-semibold mb-2">
             Instruction
           </div>
 
-          <span class="mr-2">
-            Executing:
-          </span>
+          <div class="font-mono my-1" v-for="(instruction, index) in state.instructions.instructions" :key="index">
+            <div
+              class="bg-blue-500 rounded-full w-3 h-3 mr-2 inline-block"
+              :class="{'opacity-0': state.instructions.currentIndex !== index}"
+            />
 
-          <span class="font-mono">
             <span class="text-sky-400 font-bold">
-              {{ state.instruction.name }}
+              {{ instruction.name }}
             </span>
 
-            <span v-for="(parameter, index) in state.instruction.parameters" :key="index">
+            <span v-for="(parameter, index) in instruction.parameters" :key="index">
               <span v-if="index !== 0">,&nbsp;</span>
               <span v-else>&nbsp;</span>
 
@@ -38,24 +39,23 @@
                 {{ parameter.value }}
               </span>
             </span>
-          </span>
+          </div>
 
           <div class="flex items-center mt-4 border-t border-gray-700 p-2">
-            <div v-for="parameter in state.instruction.parameters">
+            <div v-for="register in registerParameters">
               <RegisterItem
-                v-if="parameter.type === 'Register'"
-                :name="registers[parameter.value].name"
-                :value="consoleData.registers?.line[parameter.value]"
-                :classes="registers[parameter.value].color"
+                :name="registers[register].name"
+                :value="consoleData.registers?.line[register]"
+                :classes="registers[register].color"
                 :editable="true"
-                @set="value => setRegister(parameter.value, value)"
+                @set="value => setRegister(register, value)"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div class="px-2 py-4" v-if="state.values">
+      <div class="px-2 py-4" v-if="state.stack">
         <span class="text-lg font-semibold">
           Stack
         </span>
@@ -74,13 +74,13 @@
           </div>
         </div>
 
-        <div v-for="(value, index) in state.values" class="flex items-center font-mono my-1">
+        <div v-for="(value, index) in state.stack.elements" class="flex items-center font-mono my-1">
           <div class="w-10 text-xs text-purple-300">
-            {{ index === 0 ? '$sp' : '' }}
+            {{ value.address === state.stack.sp ? '$sp' : '' }}
           </div>
 
-          <div class="w-32 px-2 py-1 hover:bg-neutral-800 rounded">
-            0x{{ value.address.toString(16).padStart(8, '0') }}
+          <div class="w-32 px-2 py-1 text-neutral-400 hover:bg-neutral-800 rounded">
+            0x{{ value.address.toString(16).padStart(8, '0') }}:
           </div>
 
           <div class="w-32 px-2 py-1 select-all hover:bg-neutral-800 rounded">
@@ -94,8 +94,8 @@
 
 <script setup lang="ts">
 import { consoleData } from '../../state/console-data'
-import { onMounted, reactive, watch } from 'vue'
-import { decodeInstruction, InstructionDetails } from '../../utils/mips'
+import { computed, onMounted, reactive, watch } from 'vue'
+import { Breakpoints, decodeInstruction, ExecutionState, InstructionDetails } from '../../utils/mips'
 import { setRegister } from '../../utils/debug'
 import RegisterItem from './RegisterItem.vue'
 
@@ -145,26 +145,86 @@ interface StackElement {
 }
 
 const state = reactive({
-  values: null as StackElement[] | null,
-  instruction: null as InstructionDetails | null
+  stack: null as StackInfo | null,
+  instructions: null as CurrentInstructions | null
 })
 
-async function currentInstruction(): Promise<InstructionDetails | null> {
-  if (!consoleData.registers || !consoleData.execution) {
-    return null
+const registerParameters = computed(() => {
+  if (!state.instructions) {
+    return []
   }
 
-  const pc = consoleData.registers.pc
+  // Not worries about optimization here, we want unique + sorted.
+  return [...new Set(state.instructions.instructions
+    .flatMap(x => x?.parameters ?? [])
+    .filter(x => x.type === 'Register')
+    .map(x => x.value))]
+    .sort()
+})
 
-  const data = await consoleData.execution.memoryAt(pc, 4)
+interface InstructionGroup {
+  start: number
+  count: number
+  index: number
+}
+
+function instructionGroup(breakpoints: Breakpoints | null, pc: number): InstructionGroup {
+  const failed = { start: pc, count: 1, index: 0 }
+
+  if (!breakpoints) {
+    return failed
+  }
+
+  const group = breakpoints.pcToGroup.get(pc)
+
+  if (!group || group.pcs.length <= 0) {
+    return failed
+  }
+
+  const start = group.pcs[0]
+
+  // Assert group.pcs are in increasing order
+  return {
+    start,
+    count: group.pcs.length,
+    index: (pc - start) / 4,
+  }
+}
+
+async function instructionAtAddress(state: ExecutionState, address: number): Promise<InstructionDetails | null> {
+  const data = await state.memoryAt(address, 4)
 
   if (data === null) {
     return null
   }
 
-  const instruction = combine(data)
+  return await decodeInstruction(address, combine(data))
+}
 
-  return await decodeInstruction(pc, instruction)
+interface CurrentInstructions {
+  instructions: (InstructionDetails | null)[]
+  currentIndex: number
+}
+
+async function currentInstructions(): Promise<CurrentInstructions | null> {
+  if (!consoleData.registers || !consoleData.execution) {
+    return null
+  }
+
+  const state = consoleData.execution
+
+  const pc = consoleData.registers.pc
+  const group = instructionGroup(consoleData.execution.breakpoints, pc)
+
+  const instructions = (await Promise.all(
+    [...Array(group.count).keys()]
+      .map(index => instructionAtAddress(state, group.start + 4 * index))
+  ))
+
+  return {
+    instructions,
+    currentIndex: group.index
+  }
 }
 
 function combine(data: (number | null)[], index: number = 0): number {
@@ -174,34 +234,43 @@ function combine(data: (number | null)[], index: number = 0): number {
     + (data[index + 3] ?? 0) * 256 * 256 * 256
 }
 
-async function stackInfo(): Promise<StackElement[] | null> {
+interface StackInfo {
+  sp: number
+  elements: StackElement[]
+}
+
+async function stackInfo(): Promise<StackInfo | null> {
   if (!consoleData.registers || !consoleData.execution) {
     return null
   }
 
-  const sp = consoleData.registers.line[29]
+  const back = 2
+  const items = 12
 
-  const data = await consoleData.execution.memoryAt(sp, 4 * 12)
+  const sp = consoleData.registers.line[29]
+  const start = Math.max(0, sp - back * 4)
+
+  const data = await consoleData.execution.memoryAt(start, 4 * items)
 
   if (!data) {
     return null
   }
 
-  const result = [] as StackElement[]
+  const elements = [] as StackElement[]
 
   for (let index = 0; index < data.length; index += 4) {
     // Avoid << because we don't want signed integers
     const value = combine(data, index)
 
-    result.push({ address: sp + index, value })
+    elements.push({ address: start + index, value })
   }
 
-  return result
+  return { sp, elements }
 }
 
 async function loadDetails() {
-  state.instruction = await currentInstruction()
-  state.values = await stackInfo()
+  state.instructions = await currentInstructions()
+  state.stack = await stackInfo()
 }
 
 watch(
