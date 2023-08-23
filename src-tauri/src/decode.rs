@@ -7,7 +7,8 @@ use num::ToPrimitive;
 pub enum ParameterItem {
     Register(u32),
     Immediate(u16),
-    Address(u32)
+    Address(u32),
+    Offset { offset: u16, register: u32 }
 }
 
 #[derive(Serialize)]
@@ -24,13 +25,15 @@ pub fn decode_instruction(pc: u32, instruction: u32) -> Option<InstructionDetail
 
     Some(InstructionDetails {
         name: instruction.name(),
-        parameters: instruction.registers()
+        parameters: instruction.parameters()
             .into_iter()
             .map(|x| {
                 match x {
                     InstructionParameter::Register(name) => ParameterItem::Register(name.to_u32().unwrap()),
                     InstructionParameter::Immediate(imm) => ParameterItem::Immediate(imm),
                     InstructionParameter::Address(address) => ParameterItem::Address(address),
+                    InstructionParameter::Offset(offset, register) =>
+                        ParameterItem::Offset { offset, register: register.to_u32().unwrap() }
                 }
             })
             .collect(),
