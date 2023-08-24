@@ -9,10 +9,23 @@
         Run the application to show things on the debug tab.
       </div>
 
-      <div class="w-1/2 px-8" v-if="state.instructions">
+      <div class="px-8 flex-grow" v-if="state.instructions">
         <div class="text-base select-auto mt-3">
-          <div class="text-lg font-semibold mb-2">
+          <div class="text-lg font-semibold mb-2 flex items-center">
             Instruction
+
+            <button
+              class="ml-auto px-2 py-1 text-xs font-normal rounded border border-gray-700 shrink-0 flex items-center"
+              @click="stepOne()"
+              title="Step One"
+              :class="{
+                'text-gray-300 cursor-default': !allowResume,
+                'text-sky-300 hover:bg-slate-800': allowResume,
+              }"
+              :disabled="!allowResume"
+            >
+              <ChevronRightIcon class="w-4 h-4 mr-1" /> Step 1
+            </button>
           </div>
 
           <div class="font-mono my-1" v-for="(instruction, index) in state.instructions.instructions" :key="index">
@@ -47,7 +60,7 @@
             </span>
           </div>
 
-          <div class="flex items-center mt-4 border-t border-gray-700 p-2">
+          <div class="flex items-center flex-wrap mt-4 border-t border-gray-700 p-2">
             <div v-for="register in registerParameters">
               <RegisterItem
                 :name="registers[register].name"
@@ -61,7 +74,7 @@
         </div>
       </div>
 
-      <div class="px-2 py-4" v-if="state.stack">
+      <div class="px-2 py-4 ml-auto mr-8" v-if="state.stack">
         <span class="text-lg font-semibold">
           Stack
         </span>
@@ -103,13 +116,20 @@ import { consoleData } from '../../state/console-data'
 import { computed, onMounted, reactive, watch } from 'vue'
 import {
   Breakpoints,
-  decodeInstruction,
+  decodeInstruction, ExecutionModeType,
   ExecutionState,
-  InstructionDetails,
-  ParameterItemRegular
+  InstructionDetails
 } from '../../utils/mips'
-import { setRegister } from '../../utils/debug'
+import { setRegister, stepCount } from '../../utils/debug'
+import { ChevronRightIcon } from '@heroicons/vue/24/solid'
 import RegisterItem from './RegisterItem.vue'
+
+const allowResume = computed(
+  () =>
+    !consoleData.execution ||
+    (consoleData.mode !== ExecutionModeType.Invalid &&
+      consoleData.mode !== ExecutionModeType.Running)
+)
 
 const systemColor = 'text-purple-300'
 const valueColor = 'text-red-300'
@@ -156,6 +176,10 @@ interface StackElement {
   value: number
 }
 
+async function stepOne() {
+  await stepCount(1)
+}
+
 const state = reactive({
   stack: null as StackInfo | null,
   instructions: null as CurrentInstructions | null
@@ -168,9 +192,15 @@ const registerParameters = computed(() => {
 
   // Not worries about optimization here, we want unique + sorted.
   return [...new Set(state.instructions.instructions
-    .flatMap(x => x?.parameters ?? [])
-    .filter((x): x is ParameterItemRegular => x.type === 'Register')
-    .map(x => x.value))]
+    .flatMap(x => (x?.parameters ?? [])
+      .map(y => {
+        switch (y.type) {
+          case 'Register': return y.value
+          case 'Offset': return y.value.register
+          default: return null
+        }
+      })
+      .filter((x): x is number => x !== null)))]
     .sort()
 })
 

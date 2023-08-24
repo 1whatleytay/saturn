@@ -185,6 +185,23 @@ export async function pause() {
   await consoleData.execution.pause()
 }
 
+export async function stepCount(skip: number) {
+  if (!consoleData.execution) {
+    return
+  }
+
+  clearDebug()
+  consoleData.mode = ExecutionModeType.Running
+
+  const result = await consoleData.execution.resume(skip, null)
+
+  consoleData.showConsole = true
+
+  if (result) {
+    postDebugInformation(result)
+  }
+}
+
 export async function step() {
   if (!consoleData.execution) {
     return
@@ -206,16 +223,7 @@ export async function step() {
     }
   }
 
-  clearDebug()
-  consoleData.mode = ExecutionModeType.Running
-
-  const result = await consoleData.execution.resume(skip, null)
-
-  consoleData.showConsole = true
-
-  if (result) {
-    postDebugInformation(result)
-  }
+  await stepCount(skip)
 }
 
 export async function rewind() {
