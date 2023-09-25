@@ -39,6 +39,7 @@ enum MenuOptions {
     Disassemble,
     Assemble,
     Export,
+    ExportHex,
     Build,
     Run,
     Step,
@@ -60,6 +61,7 @@ impl ToString for MenuOptions {
             MenuOptions::Disassemble => "disassemble",
             MenuOptions::Assemble => "assemble",
             MenuOptions::Export => "export",
+            MenuOptions::ExportHex => "export-hex",
             MenuOptions::Build => "build",
             MenuOptions::Run => "run",
             MenuOptions::Step => "step",
@@ -86,6 +88,7 @@ impl FromStr for MenuOptions {
             "disassemble" => MenuOptions::Disassemble,
             "assemble" => MenuOptions::Assemble,
             "export" => MenuOptions::Export,
+            "export-hex" => MenuOptions::ExportHex,
             "build" => MenuOptions::Build,
             "run" => MenuOptions::Run,
             "step" => MenuOptions::Step,
@@ -110,6 +113,7 @@ impl MenuOptions {
             MenuOptions::Disassemble => "Disassemble Elf",
             MenuOptions::Assemble => "Assemble Elf",
             MenuOptions::Export => "Export Elf",
+            MenuOptions::ExportHex => "Export Hex Regions",
             MenuOptions::Build => "Build",
             MenuOptions::Run => "Run",
             MenuOptions::Step => "Step",
@@ -235,9 +239,10 @@ pub fn create_menu() -> Menu {
             .add_item(MenuOptions::Save.make_item())
             .add_item(MenuOptions::SaveAs.make_item())
             .add_native_item(MenuItem::Separator)
-            // .add_item(MenuOptions::Export.make_item())
             .add_item(MenuOptions::Assemble.make_item())
-            .add_item(MenuOptions::Disassemble.make_item()),
+            .add_item(MenuOptions::Disassemble.make_item())
+            .add_item(MenuOptions::Export.make_item())
+            .add_item(MenuOptions::ExportHex.make_item())
     ));
 
     // windows unsupported for some of these, hopefully this wont cause a crash

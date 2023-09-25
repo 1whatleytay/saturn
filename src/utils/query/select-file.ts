@@ -1,4 +1,4 @@
-import { open, save } from '@tauri-apps/api/dialog'
+import { DialogFilter, open, save } from '@tauri-apps/api/dialog'
 import { basename, extname } from '@tauri-apps/api/path'
 import { readBinaryFile, readTextFile, writeTextFile } from '@tauri-apps/api/fs'
 
@@ -24,16 +24,42 @@ async function lock<T>(callback: () => Promise<T>): Promise<T | null> {
   return result
 }
 
+export const assemblyFilter: DialogFilter[] = [
+  {
+    name: 'Assembly',
+    extensions: ['asm', 's'],
+  },
+]
+
+export const elfFilter: DialogFilter[] = [
+  {
+    name: 'ELF',
+    extensions: ['elf'],
+  },
+]
+
+export async function selectSaveDestination(title: string, filters?: DialogFilter[]): Promise<SelectedFile<undefined> | null> {
+  const result = await lock(async () => {
+    return await save({
+      title,
+      filters
+    })
+  })
+
+  if (!result) {
+    return null
+  }
+
+  const name = await basename(result)
+
+  return { name, path: result, data: undefined }
+}
+
 export async function openElf(): Promise<SelectedFile<Uint8Array> | null> {
   const result = await lock(async () => {
     return await open({
       title: 'Select ELF',
-      filters: [
-        {
-          name: 'ELF',
-          extensions: ['elf'],
-        },
-      ],
+      filters: elfFilter,
       multiple: false,
       directory: false,
     })
@@ -87,28 +113,6 @@ export async function openInputFile(): Promise<SelectedFile<
   }
 
   return await readInputFile(result)
-}
-
-export async function selectSaveAssembly(): Promise<SelectedFile<undefined> | null> {
-  const result = await lock(async () => {
-    return await save({
-      title: 'Save File',
-      filters: [
-        {
-          name: 'Assembly',
-          extensions: ['asm', 's'],
-        },
-      ],
-    })
-  })
-
-  if (!result) {
-    return null
-  }
-
-  const name = await basename(result)
-
-  return { name, path: result, data: undefined }
 }
 
 export async function writeFile(path: string, content: string) {

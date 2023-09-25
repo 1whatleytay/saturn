@@ -44,8 +44,18 @@ export type AssemblerResultError = AssemblerError & { status: 'Error' }
 
 export type AssemblerResult = AssemblerResultSuccess | AssemblerResultError
 
-export type BinaryResult = {
+export interface BinaryResult {
   binary: Uint8Array | null
+  result: AssemblerResult
+}
+
+export interface HexRegion {
+  name: string,
+  data: string
+}
+
+export interface HexBinaryResult {
+  regions: HexRegion[] | null
   result: AssemblerResult
 }
 
@@ -187,6 +197,20 @@ export async function assembleWithBinary(text: string, path: string | null): Pro
   return {
     binary: binary ? Uint8Array.from(binary) : null,
     result: assemblerResult,
+  }
+}
+
+export async function assembleWithHex(text: string, path: string | null) : Promise<HexBinaryResult> {
+  const result = (await tauri.invoke('assemble_hex', { text, path })) as [
+    HexRegion[] | null,
+    AssemblerResult
+  ]
+
+  const [regions, assemblerResult ] = result
+
+  return {
+    regions,
+    result: assemblerResult
   }
 }
 

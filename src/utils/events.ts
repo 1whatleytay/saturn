@@ -1,30 +1,24 @@
 import { listen } from '@tauri-apps/api/event'
 
 import { collectLines, EditorTab } from './tabs'
-import { resume, step, pause, stop, build, postBuildMessage } from './debug'
+import { build, pause, postBuildMessage, resume, step, stop } from './debug'
 import {
-  openInputFile,
+  assemblyFilter,
   openElf,
-  selectSaveAssembly,
-  writeFile,
+  openInputFile,
   readInputFile,
   SelectedFile,
+  selectSaveDestination,
+  writeFile
 } from './query/select-file'
 import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
-import { assembleWithBinary } from './mips'
-import {
-  find,
-  suggestions,
-  tabsState,
-  createTab,
-  closeTab,
-  loadElf,
-  tab, showSettings
-} from '../state/state'
+import { assembleWithBinary, assembleWithHex } from './mips'
+import { closeTab, createTab, find, loadElf, showSettings, suggestions, tab, tabsState } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
+import { writeHexRegions } from './query/serialize-files'
 
 export enum PromptType {
   NeverPrompt,
@@ -69,7 +63,7 @@ export async function saveTab(
   }
 
   if (type === PromptType.ForcePrompt || !current.path) {
-    const result = await selectSaveAssembly()
+    const result = await selectSaveDestination('Save File', assemblyFilter)
 
     if (!result) {
       return false
@@ -183,6 +177,31 @@ export async function setupEvents() {
 
     consoleData.showConsole = true
     postBuildMessage(result.result)
+  })
+
+  await listen('export-hex', async () => {
+    const current = tab()
+
+    const result = await assembleWithHex(collectLines(current?.lines ?? []), current?.path ?? null)
+
+    let destination: SelectedFile<undefined> | null = null
+
+    if (result.regions !== null) {
+      destination = await selectSaveDestination('Select Directory')
+
+      if (!destination) {
+        return
+      }
+
+      await writeHexRegions(destination.path, result.regions)
+    }
+
+    consoleData.showConsole = true
+    postBuildMessage(result.result)
+
+    if (destination !== null) {
+      pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
+    }
   })
 
   await listen('disassemble', async () => {

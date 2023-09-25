@@ -14,6 +14,7 @@ mod syscall;
 mod state;
 mod testing;
 mod decode;
+mod hex_format;
 
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
@@ -22,7 +23,7 @@ use tauri::WindowEvent::Destroyed;
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
 
-use crate::build::{assemble, assemble_binary, configure_asm, configure_elf, disassemble};
+use crate::build::{assemble, assemble_binary, assemble_hex, configure_asm, configure_elf, disassemble};
 use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
@@ -72,6 +73,7 @@ fn main() {
             assemble,           // build
             disassemble,        // build
             assemble_binary,    // build
+            assemble_hex,       // build
             configure_elf,      // build
             configure_asm,      // build
             resume,             // execution
