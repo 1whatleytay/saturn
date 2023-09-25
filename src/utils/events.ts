@@ -11,8 +11,8 @@ import {
   selectSaveDestination,
   writeFile
 } from './query/select-file'
-import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
-import { assembleWithBinary, assembleWithHex } from './mips'
+import { consoleData, ConsoleType, openConsole, pushConsole } from '../state/console-data'
+import { assembleWithBinary, assembleWithHex, BinaryResult } from './mips'
 import { closeTab, createTab, find, loadElf, showSettings, suggestions, tab, tabsState } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
@@ -183,22 +183,37 @@ export async function setupEvents() {
   await listen('export', async () => {
     const current = tab()
 
-    const result = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+    if (!current) {
+      return
+    }
+
+    let binary: Uint8Array | null = null
+    let result: BinaryResult | null = null
+
+    if (current.profile && current.profile.kind === 'elf') {
+      binary = Uint8Array.from(window.atob(current.profile.elf), c => c.charCodeAt(0))
+    } else {
+      result = await assembleWithBinary(collectLines(current.lines), current.path)
+      binary = result.binary
+    }
 
     let destination: SelectedFile<undefined> | null = null
 
-    if (result.binary !== null) {
+    if (binary !== null) {
       destination = await selectSaveDestination('Save File', elfFilter)
 
       if (!destination) {
         return
       }
 
-      await writeBinaryFile(destination.path, result.binary)
+      await writeBinaryFile(destination.path, binary)
     }
 
     consoleData.showConsole = true
-    postBuildMessage(result.result)
+
+    if (result !== null) {
+      postBuildMessage(result.result)
+    }
 
     if (destination !== null) {
       pushConsole(`ELF file written to ${destination.path}`, ConsoleType.Info)
@@ -207,6 +222,20 @@ export async function setupEvents() {
 
   await listen('export-hex', async () => {
     const current = tab()
+
+    if (!current) {
+      return
+    }
+
+    if (current.profile && current.profile.kind !== 'asm') {
+      consoleData.showConsole = true
+
+      openConsole()
+      pushConsole('Generating hex regions directly from an elf file is not supported.', ConsoleType.Info)
+      pushConsole('Use an un-assembled assembly file, or submit a feature request at https://github.com/1whatleytay/saturn.', ConsoleType.Info)
+
+      return
+    }
 
     const result = await assembleWithHex(collectLines(current?.lines ?? []), current?.path ?? null)
 
