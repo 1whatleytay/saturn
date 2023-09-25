@@ -228,6 +228,7 @@ const directiveParts = [
   { name: 'Word Literals', replace: '.word' },
   { name: 'Float Literals', replace: '.float' },
   { name: 'Double Literals', replace: '.double' },
+  { name: 'Entry Point', replace: '.entry' },
   { name: 'Text Section', replace: '.text' },
   { name: 'Data Section', replace: '.data' },
   { name: 'Kernel Text Section', replace: '.ktext' },

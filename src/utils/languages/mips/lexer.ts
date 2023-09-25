@@ -94,6 +94,7 @@ const knownDirectives = new Set([
   'word',
   'float',
   'double',
+  'entry',
   'text',
   'data',
   'ktext',
