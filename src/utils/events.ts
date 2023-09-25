@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 import { collectLines, EditorTab } from './tabs'
 import { build, pause, postBuildMessage, resume, step, stop } from './debug'
 import {
-  assemblyFilter,
+  assemblyFilter, elfFilter,
   openElf,
   openInputFile,
   readInputFile,
@@ -19,6 +19,7 @@ import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
 import { writeHexRegions } from './query/serialize-files'
+import { writeBinaryFile } from '@tauri-apps/api/fs'
 
 export enum PromptType {
   NeverPrompt,
@@ -179,6 +180,31 @@ export async function setupEvents() {
     postBuildMessage(result.result)
   })
 
+  await listen('export', async () => {
+    const current = tab()
+
+    const result = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+
+    let destination: SelectedFile<undefined> | null = null
+
+    if (result.binary !== null) {
+      destination = await selectSaveDestination('Save File', elfFilter)
+
+      if (!destination) {
+        return
+      }
+
+      await writeBinaryFile(destination.path, result.binary)
+    }
+
+    consoleData.showConsole = true
+    postBuildMessage(result.result)
+
+    if (destination !== null) {
+      pushConsole(`ELF file written to ${destination.path}`, ConsoleType.Info)
+    }
+  })
+
   await listen('export-hex', async () => {
     const current = tab()
 
@@ -187,7 +213,7 @@ export async function setupEvents() {
     let destination: SelectedFile<undefined> | null = null
 
     if (result.regions !== null) {
-      destination = await selectSaveDestination('Select Directory')
+      destination = await selectSaveDestination('Save Directory')
 
       if (!destination) {
         return
