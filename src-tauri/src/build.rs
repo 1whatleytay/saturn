@@ -6,7 +6,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::{Manager, Wry};
-use titan::assembler::binary::Binary;
+use titan::assembler::binary::{Binary, RegionFlags};
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::{Mountable, Region};
@@ -20,6 +20,7 @@ use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
+use crate::hex_format::encode_hex;
 use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
 use crate::state::commands::{DebuggerBody, setup_state, state_from_binary};
 use crate::state::device::ExecutionState;
@@ -223,6 +224,55 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
     }
 
     (Some(out), result)
+}
+
+#[derive(Serialize)]
+pub struct HexRegion {
+    pub name: String,
+    pub data: String
+}
+
+#[tauri::command]
+pub fn assemble_hex(text: &str, path: Option<&str>) -> (Option<Vec<HexRegion>>, AssemblerResult) {
+    let result = assemble_text(text, path);
+    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+
+    let Some(binary) = binary else {
+        return (None, result)
+    };
+
+    let regions = binary.regions.iter().map(|region| {
+        let address = region.address;
+
+        let heading = if address == binary.entry {
+            "entry"
+        } else if region.flags.contains(RegionFlags::EXECUTABLE) {
+            "code"
+        } else {
+            "data"
+        };
+
+        let flags = [
+            (RegionFlags::EXECUTABLE, "x"),
+            (RegionFlags::READABLE, "r"),
+            (RegionFlags::WRITABLE, "w")
+        ]
+            .into_iter()
+            .map(|(f, s)| {
+                if region.flags.contains(f) { s } else { "o" }
+            })
+            .collect::<Vec<&str>>()
+            .join("");
+
+        let name = format!("{heading}_{address:x}_{flags}");
+
+        HexRegion {
+            name,
+            data: encode_hex(region.data.iter().copied().map(|x| x as u64).collect())
+        }
+    }).collect();
+
+    (Some(regions), result)
 }
 
 pub fn configure_keyboard(memory: &mut SectionMemory<KeyboardHandler>) -> Arc<Mutex<KeyboardState>> {
