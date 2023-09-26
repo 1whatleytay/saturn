@@ -9,14 +9,14 @@ export function setupWindow() {
     }
   })
 
-  const handler = (event: Event) => {
-    // Don't bring up the "reload" context menu. It's note great!
-    event.preventDefault()
-  }
-
-  if (!import.meta.env.TAURI_DEBUG) {
-    window.addEventListener('contextmenu', handler)
-  }
+  // const handler = (event: Event) => {
+  //   // Don't bring up the "reload" context menu. It's note great!
+  //   event.preventDefault()
+  // }
+  //
+  // if (!import.meta.env.TAURI_DEBUG) {
+  //   window.addEventListener('contextmenu', handler)
+  // }
 }
 
 // Restricting tauri calls to certain files.

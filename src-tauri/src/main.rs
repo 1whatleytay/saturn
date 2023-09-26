@@ -15,6 +15,7 @@ mod state;
 mod testing;
 mod decode;
 mod hex_format;
+mod auto_save;
 
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
@@ -59,6 +60,11 @@ fn main() {
         .manage(Arc::new(Mutex::new(FlushDisplayState::default())) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
+        // .setup(|app| {
+        //     app.manage(Mutex::new(AutoSaveState::read_from_disc(app.handle())));
+        //
+        //     Ok(())
+        // })
         .on_window_event(|event| {
             if let Destroyed = event.event() {
                 // Relieve some pressure on tokio.

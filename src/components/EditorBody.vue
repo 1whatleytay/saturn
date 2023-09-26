@@ -327,6 +327,8 @@ function handlePaste(event: ClipboardEvent) {
 onMounted(() => {
   handleScroll()
 
+  setTimeout(handleScroll, 0)
+
   window.addEventListener('mousemove', handleMove)
   window.addEventListener('mouseup', handleUp)
 })
