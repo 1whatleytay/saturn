@@ -134,11 +134,7 @@ export class Breakpoints {
 }
 
   public mapLines(lines: number[]): number[] {
-    const x = lines
-      .flatMap((line) => this.findNextPc(line))
-      .filter((point) => !!point) as number[]
-
-    return x
+    return lines.flatMap((line) => this.findNextPc(line))
   }
 
   // pc -> line
