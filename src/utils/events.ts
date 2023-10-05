@@ -12,8 +12,18 @@ import {
   writeFile
 } from './query/select-file'
 import { consoleData, ConsoleType, openConsole, pushConsole } from '../state/console-data'
-import { assembleWithBinary, assembleWithHex, BinaryResult } from './mips'
-import { closeTab, createTab, find, loadElf, showSettings, suggestions, tab, tabsState } from '../state/state'
+import { assembleWithBinary, assembleRegions, BinaryResult } from './mips'
+import {
+  closeTab,
+  createTab,
+  find,
+  loadElf,
+  showExportRegionsDialog,
+  showSettings,
+  suggestions,
+  tab,
+  tabsState
+} from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
@@ -221,42 +231,7 @@ export async function setupEvents() {
   })
 
   await listen('export-hex', async () => {
-    const current = tab()
-
-    if (!current) {
-      return
-    }
-
-    if (current.profile && current.profile.kind !== 'asm') {
-      consoleData.showConsole = true
-
-      openConsole()
-      pushConsole('Generating hex regions directly from an elf file is not supported.', ConsoleType.Info)
-      pushConsole('Use an un-assembled assembly file, or submit a feature request at https://github.com/1whatleytay/saturn.', ConsoleType.Info)
-
-      return
-    }
-
-    const result = await assembleWithHex(collectLines(current?.lines ?? []), current?.path ?? null)
-
-    let destination: SelectedFile<undefined> | null = null
-
-    if (result.regions !== null) {
-      destination = await selectSaveDestination('Save Directory')
-
-      if (!destination) {
-        return
-      }
-
-      await writeHexRegions(destination.path, result.regions)
-    }
-
-    consoleData.showConsole = true
-    postBuildMessage(result.result)
-
-    if (destination !== null) {
-      pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
-    }
+    showExportRegionsDialog.value = true
   })
 
   await listen('disassemble', async () => {

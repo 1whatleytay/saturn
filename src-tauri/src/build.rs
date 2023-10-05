@@ -1,6 +1,6 @@
 use crate::midi::forward_midi;
 use crate::syscall::{ConsoleHandler, MidiHandler, SyscallState};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
@@ -232,8 +232,52 @@ pub struct HexRegion {
     pub data: String
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all="snake_case")]
+pub enum AssembleRegionsKind {
+    Plain,
+    HexV3
+}
+
+#[derive(Deserialize)]
+pub struct AssembleRegionsOptions {
+    pub kind: AssembleRegionsKind,
+    pub continuous: bool
+}
+
 #[tauri::command]
-pub fn assemble_hex(text: &str, path: Option<&str>) -> (Option<Vec<HexRegion>>, AssemblerResult) {
+pub fn assemble_regions_continuous(text: &str, path: Option<&str>, options: AssembleRegionsOptions) -> (Option<String>, AssemblerResult) {
+    let result = assemble_text(text, path);
+    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+
+    let Some(binary) = binary else {
+        return (None, result)
+    };
+
+    let mut output: Vec<u8> = vec![];
+
+    for region in binary.regions {
+        if region.data.is_empty() {
+            continue
+        }
+        
+        // Potential Overflow!
+        let end = region.address as usize + region.data.len();
+
+        if end > output.len() {
+            output.resize(end, 0);
+        }
+
+        output[region.address as usize .. end].copy_from_slice(&region.data);
+    };
+
+    let output = output.into_iter().map(|x| x as u64).collect();
+
+    (Some(encode_hex(output)), result)
+}
+
+#[tauri::command]
+pub fn assemble_regions(text: &str, path: Option<&str>, options: AssembleRegionsOptions) -> (Option<Vec<HexRegion>>, AssemblerResult) {
     let result = assemble_text(text, path);
     let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
 
@@ -266,9 +310,11 @@ pub fn assemble_hex(text: &str, path: Option<&str>) -> (Option<Vec<HexRegion>>, 
 
         let name = format!("{heading}_{address:x}_{flags}");
 
+        let data = region.data.iter().copied().map(|x| x as u64).collect();
+
         HexRegion {
             name,
-            data: encode_hex(region.data.iter().copied().map(|x| x as u64).collect())
+            data: encode_hex(data)
         }
     }).collect();
 

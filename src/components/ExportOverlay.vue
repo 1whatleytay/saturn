@@ -1,0 +1,162 @@
+<template>
+  <Modal :show="props.show" @close="emit('close')">
+    <div
+      class="max-w-2xl bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
+    >
+      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2">
+        <DocumentArrowUpIcon class="w-7 h-7 mr-3" /> Export Regions
+
+        <button
+          class="w-8 h-8 ml-auto rounded hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
+          @click="emit('close')"
+        >
+          <XMarkIcon class="w-4 h-4" />
+        </button>
+      </div>
+
+      <div class="mt-8">
+        <div class="font-bold uppercase text-sm">
+          Output Format
+        </div>
+
+        <div class="text-gray-300 text-sm mt-1">
+          Plain format will export binary,
+          while HexV3 is designed for use with Logism Evolution.
+        </div>
+
+        <select
+          id="data-type"
+          class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
+          :value="state.kind"
+          @input="event => state.kind = event.target.value"
+        >
+          <option value="plain">Plain</option>
+          <option value="hex_v3">HexV3</option>
+        </select>
+      </div>
+
+      <div class="mt-8">
+        <div class="font-bold uppercase text-sm">
+          Continuous Export
+        </div>
+
+        <div class="text-gray-300 text-sm mt-1">
+          A continuous export will create one large file with all regions back to back.
+        </div>
+
+        <ToggleField
+          class="my-2"
+          title="Continuous Export"
+          v-model="state.continuous"
+        />
+      </div>
+
+      <div class="flex items-center mt-4">
+        <div class="text-sm text-gray-400">
+          Continuous exports may result in large file exports (> 800MB).
+        </div>
+
+        <button
+          class="rounded px-6 py-3 bg-gray-800 hover:bg-gray-700 transition-colors uppercase font-bold text-sm ml-auto active:bg-slate-700"
+          @click="exportRegions()"
+        >
+          Export
+        </button>
+      </div>
+    </div>
+  </Modal>
+</template>
+
+<script setup lang="ts">
+import Modal from './Modal.vue'
+
+import { tab } from '../state/state'
+import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
+import { assembleRegions, assembleRegionsContinuous, AssembleRegionsOptions } from '../utils/mips'
+import { collectLines } from '../utils/tabs'
+import { SelectedFile, selectSaveDestination } from '../utils/query/select-file'
+import { writeHexRegions } from '../utils/query/serialize-files'
+import { postBuildMessage } from '../utils/debug'
+import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
+import { reactive } from 'vue'
+import ToggleField from './console/ToggleField.vue'
+import { writeFile } from '@tauri-apps/api/fs'
+
+const state = reactive({
+  continuous: true,
+  kind: 'hex_v3'
+} as AssembleRegionsOptions)
+
+const props = defineProps<{
+  show: boolean
+}>()
+
+const emit = defineEmits(['close'])
+
+async function exportRegions() {
+  emit('close')
+
+  const current = tab()
+
+  if (!current) {
+    return
+  }
+
+  if (current.profile && current.profile.kind !== 'asm') {
+    consoleData.showConsole = true
+
+    openConsole()
+    pushConsole('Generating hex regions directly from an elf file is not supported.', ConsoleType.Info)
+    pushConsole('Use an un-assembled assembly file, or submit ' +
+      'a feature request at https://github.com/1whatleytay/saturn.', ConsoleType.Info)
+
+    return
+  }
+
+  if (state.continuous) {
+    const result = await assembleRegionsContinuous(collectLines(current.lines), current.path, state)
+
+    let destination: SelectedFile<undefined> | null = null
+
+    if (result.data !== null) {
+      destination = await selectSaveDestination('Save Region File')
+
+      if (!destination) {
+        return
+      }
+
+      await writeFile(destination.path, result.data)
+    }
+
+    consoleData.showConsole = true
+    postBuildMessage(result.result)
+
+    if (destination !== null) {
+      consoleData.tab = DebugTab.Console
+      pushConsole(`Continuous hex regions written to ${destination.path}`, ConsoleType.Info)
+    }
+  } else {
+    const result = await assembleRegions(collectLines(current.lines), current.path, state)
+
+    let destination: SelectedFile<undefined> | null = null
+
+    if (result.regions !== null) {
+      destination = await selectSaveDestination('Save Directory')
+
+      if (!destination) {
+        return
+      }
+
+      await writeHexRegions(destination.path, result.regions)
+    }
+
+    consoleData.showConsole = true
+    postBuildMessage(result.result)
+
+    if (destination !== null) {
+      consoleData.tab = DebugTab.Console
+      pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
+    }
+  }
+}
+</script>
