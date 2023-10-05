@@ -2,11 +2,12 @@
   <div @click.stop>
     <SaveModal :dialog="saveModal" />
     <SettingsModal :show="showSettings" @close="showSettings = false" />
+    <ExportOverlay :show="showExportRegionsDialog" @close="showExportRegionsDialog = false" />
 
     <div
-      class="h-10 flex items-center items-start bg-neutral-900 w-full fixed z-20 top-0"
+      class="h-10 flex items-start bg-neutral-900 w-full fixed z-20 top-0"
     >
-      <div class="flex flex-grow items-center overflow-x-auto no-scrollbar items-start">
+      <div class="flex flex-grow overflow-x-auto no-scrollbar items-start">
         <Tab
           v-for="tab in tabsState.tabs"
           :ref="(component) => refTab(tab.uuid, component)"
@@ -39,12 +40,13 @@
 import Tab from './Tab.vue'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 
-import { closeTab, createTab, saveModal, tabsState, showSettings } from '../state/state'
+import { closeTab, createTab, saveModal, tabsState, showSettings, showExportRegionsDialog } from '../state/state'
 
 import TabBarItems from './TabBarItems.vue'
 import SaveModal from './SaveModal.vue'
 import { nextTick, onMounted, onUnmounted, reactive, StyleValue } from 'vue'
 import SettingsModal from './SettingsModal.vue'
+import ExportOverlay from './ExportOverlay.vue'
 
 const state = reactive({
   dragging: false,

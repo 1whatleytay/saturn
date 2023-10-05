@@ -196,8 +196,40 @@ export async function assembleWithBinary(text: string, path: string | null): Pro
   }
 }
 
-export async function assembleWithHex(text: string, path: string | null) : Promise<HexBinaryResult> {
-  const result = (await tauri.invoke('assemble_hex', { text, path })) as [
+export interface AssembleRegionsOptions {
+  kind: 'plain' | 'hex_v3'
+  continuous: boolean
+}
+
+export interface ContinuousRegionResult {
+  data: string | null
+  result: AssemblerResult
+}
+
+export async function assembleRegionsContinuous(
+  text: string,
+  path: string | null,
+  options: AssembleRegionsOptions
+) : Promise<ContinuousRegionResult> {
+  const result = (await tauri.invoke('assemble_regions_continuous', { text, path, options })) as [
+    string | null,
+    AssemblerResult
+  ]
+
+  const [data, assemblerResult ] = result
+
+  return {
+    data,
+    result: assemblerResult
+  }
+}
+
+export async function assembleRegions(
+  text: string,
+  path: string | null,
+  options: AssembleRegionsOptions
+) : Promise<HexBinaryResult> {
+  const result = (await tauri.invoke('assemble_regions', { text, path, options })) as [
     HexRegion[] | null,
     AssemblerResult
   ]

@@ -9,7 +9,7 @@ import { useSuggestions } from '../utils/suggestions'
 import { CursorState, useTabs } from '../utils/tabs'
 import { GotoMessage, useGoto } from '../utils/goto'
 import { useSymbolHighlight } from '../utils/symbol-highlight'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { findToken } from '../utils/languages/suggestions'
 
 export const settings = useSettings()
@@ -81,6 +81,8 @@ function showSuggestionsAt(cursor: SelectionIndex) {
     suggestions.showSuggestions(storage.highlights[cursor.line], cursor.index)
   }
 }
+
+export const showExportRegionsDialog = ref(false)
 
 export const {
   range,
