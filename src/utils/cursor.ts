@@ -361,6 +361,28 @@ export function useCursor(
     putCursor({ line: cursor().line - 1, index: cursor().index })
   }
 
+  function moveStart(shift: boolean = false) {
+    setSelection(shift)
+
+    const current = cursor()
+    const text = editor().lineAt(current.line)
+    const space = grabWhitespace(text)
+
+    putCursor({ line: current.line, index: space.leading.length })
+    promptSuggestions()
+  }
+
+  function moveEnd(shift: boolean = false) {
+    setSelection(shift)
+
+    const current = cursor()
+    const text = editor().lineAt(current.line)
+    const space = grabWhitespace(text)
+
+    putCursor({ line: current.line, index: text.length - space.trailing.length })
+    promptSuggestions()
+  }
+
   function hitTab(shift: boolean = false) {
     const value = cursor()
     const region = selectionRange(value)
@@ -609,11 +631,19 @@ export function useCursor(
 
     switch (event.key) {
       case 'ArrowLeft':
-        moveLeft(hasAltKey(event), event.shiftKey)
+        if (hasActionKey(event)) {
+          moveStart(event.shiftKey)
+        } else {
+          moveLeft(hasAltKey(event), event.shiftKey)
+        }
         break
 
       case 'ArrowRight':
-        moveRight(hasAltKey(event), event.shiftKey)
+        if (hasActionKey(event)) {
+          moveEnd(event.shiftKey)
+        } else {
+          moveRight(hasAltKey(event), event.shiftKey)
+        }
         break
 
       case 'ArrowDown':
@@ -622,6 +652,14 @@ export function useCursor(
 
       case 'ArrowUp':
         moveUp(event.shiftKey)
+        break
+
+      case 'Home':
+        moveStart(event.shiftKey)
+        break
+
+      case 'End':
+        moveEnd(event.shiftKey)
         break
 
       case 'Escape':
