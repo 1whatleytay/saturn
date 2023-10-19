@@ -3,8 +3,8 @@
     <div
       class="max-w-2xl bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
     >
-      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2">
-        <DocumentArrowUpIcon class="w-7 h-7 mr-3" /> Export Regions
+      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2 shrink-0">
+        <DocumentArrowUpIcon class="w-7 h-7 mr-3 shrink-0" /> Export Regions
 
         <button
           class="w-8 h-8 ml-auto rounded hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
@@ -33,6 +33,34 @@
           <option value="plain">Plain</option>
           <option value="hex_v3">HexV3</option>
         </select>
+      </div>
+
+      <div class="mt-8" :class="{'opacity-50 cursor-not-allowed': state.kind !== 'hex_v3'}">
+        <div class="font-bold uppercase text-sm">
+          Bit Encoding
+        </div>
+
+        <div class="text-gray-300 text-sm mt-1">
+          Encoding type for HexV3 export.
+          For 32-bit memory modules, try using 32-bit Little Endian.
+        </div>
+
+        <select
+          id="data-type"
+          v-if="state.kind === 'hex_v3'"
+          class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
+          :value="state.encoding"
+          :disabled="state.kind !== 'hex_v3'"
+          @input="event => state.encoding = event.target.value"
+        >
+          <option value="byte">8-bit Encoding</option>
+          <option value="little32">32-bit Little Endian</option>
+          <option value="big32">32-bit Big Endian</option>
+        </select>
+
+        <div v-else class="uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded">
+          Plain Encoding
+        </div>
       </div>
 
       <div class="mt-8">
@@ -84,7 +112,8 @@ import { writeFile } from '@tauri-apps/api/fs'
 
 const state = reactive({
   continuous: true,
-  kind: 'hex_v3'
+  kind: 'hex_v3',
+  encoding: 'little32'
 } as AssembleRegionsOptions)
 
 const props = defineProps<{

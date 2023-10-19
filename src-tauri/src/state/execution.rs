@@ -30,8 +30,8 @@ fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>
         let pc = state.registers.pc.wrapping_sub(4);
 
         let description = state.memory.get_u32(pc).ok()
-            .map_or(None, |value| InstructionDecoder::decode(pc, value))
-            .map_or(None, |instruction| instruction.describe_memory_error(reason, &state.registers));
+            .and_then(|value| InstructionDecoder::decode(pc, value))
+            .and_then(|instruction| instruction.describe_memory_error(reason, &state.registers));
 
         if let Some(description) = description {
             description.to_string()
@@ -47,8 +47,8 @@ fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>
             let pc = state.registers.pc.wrapping_sub(4);
 
             let description = state.memory.get_u32(pc).ok()
-                .map_or(None, |value| InstructionDecoder::decode(pc, value))
-                .map_or(None, |instruction| instruction.describe_trap_error(&state.registers));
+                .and_then(|value| InstructionDecoder::decode(pc, value))
+                .and_then(|instruction| instruction.describe_trap_error(&state.registers));
 
             if let Some(description) = description {
                 description.to_string()
