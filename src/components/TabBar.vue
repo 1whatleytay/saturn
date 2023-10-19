@@ -46,7 +46,7 @@ import TabBarItems from './TabBarItems.vue'
 import SaveModal from './SaveModal.vue'
 import { nextTick, onMounted, onUnmounted, reactive, StyleValue } from 'vue'
 import SettingsModal from './SettingsModal.vue'
-import ExportOverlay from './ExportOverlay.vue'
+import ExportOverlay from './ExportModal.vue'
 
 const state = reactive({
   dragging: false,
