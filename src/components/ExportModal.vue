@@ -28,7 +28,7 @@
           id="data-type"
           class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
           :value="state.kind"
-          @input="event => state.kind = event.target.value"
+          @input="setKind"
         >
           <option value="plain">Plain</option>
           <option value="hex_v3">HexV3</option>
@@ -51,7 +51,7 @@
           class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
           :value="state.encoding"
           :disabled="state.kind !== 'hex_v3'"
-          @input="event => state.encoding = event.target.value"
+          @input="setEncoding"
         >
           <option value="byte">8-bit Encoding</option>
           <option value="little32">32-bit Little Endian</option>
@@ -100,25 +100,40 @@ import Modal from './Modal.vue'
 
 import { tab } from '../state/state'
 import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
-import { assembleRegions, assembleRegionsContinuous, AssembleRegionsOptions } from '../utils/mips'
+import { assembleRegions } from '../utils/mips'
 import { collectLines } from '../utils/tabs'
 import { SelectedFile, selectSaveDestination } from '../utils/query/select-file'
-import { writeHexRegions } from '../utils/query/serialize-files'
+import { writeHexContents, writeHexRegions } from '../utils/query/serialize-files'
 import { postBuildMessage } from '../utils/debug'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
-import { reactive } from 'vue'
+import { settings } from '../state/state'
 import ToggleField from './console/ToggleField.vue'
-import { writeFile } from '@tauri-apps/api/fs'
-
-const state = reactive({
-  continuous: true,
-  kind: 'hex_v3',
-  encoding: 'little32'
-} as AssembleRegionsOptions)
 
 const props = defineProps<{
   show: boolean
 }>()
+
+function setEncoding(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+
+  if (value !== 'byte' && value !== 'big32' && value !== 'little32') {
+    return
+  }
+
+  state.encoding = value
+}
+
+function setKind(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+
+  if (value !== 'plain' && value !== 'hex_v3') {
+    return
+  }
+
+  state.kind = value
+}
+
+const state = settings.export
 
 const emit = defineEmits(['close'])
 
@@ -142,49 +157,45 @@ async function exportRegions() {
     return
   }
 
-  if (state.continuous) {
-    const result = await assembleRegionsContinuous(collectLines(current.lines), current.path, state)
+  const result = await assembleRegions(collectLines(current.lines), current.path, state)
 
-    let destination: SelectedFile<undefined> | null = null
+  if (result.regions) {
+    switch (result.regions.type) {
+      case 'binary': {
+        let destination: SelectedFile<undefined> | null = await selectSaveDestination('Save Region File')
 
-    if (result.data !== null) {
-      destination = await selectSaveDestination('Save Region File')
+        if (!destination) {
+          return
+        }
 
-      if (!destination) {
-        return
+        await writeHexContents(destination.path, result.regions.value)
+
+        consoleData.showConsole = true
+        postBuildMessage(result.result)
+
+        consoleData.tab = DebugTab.Console
+        pushConsole(`Continuous hex regions written to ${destination.path}`, ConsoleType.Info)
+
+        break
       }
 
-      await writeFile(destination.path, result.data)
-    }
+      case 'split': {
+        let destination: SelectedFile<undefined> | null = await selectSaveDestination('Save Directory')
 
-    consoleData.showConsole = true
-    postBuildMessage(result.result)
+        if (!destination) {
+          return
+        }
 
-    if (destination !== null) {
-      consoleData.tab = DebugTab.Console
-      pushConsole(`Continuous hex regions written to ${destination.path}`, ConsoleType.Info)
-    }
-  } else {
-    const result = await assembleRegions(collectLines(current.lines), current.path, state)
+        await writeHexRegions(destination.path, result.regions.value)
 
-    let destination: SelectedFile<undefined> | null = null
+        consoleData.showConsole = true
+        postBuildMessage(result.result)
 
-    if (result.regions !== null) {
-      destination = await selectSaveDestination('Save Directory')
+        consoleData.tab = DebugTab.Console
+        pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
 
-      if (!destination) {
-        return
+        break
       }
-
-      await writeHexRegions(destination.path, result.regions)
-    }
-
-    consoleData.showConsole = true
-    postBuildMessage(result.result)
-
-    if (destination !== null) {
-      consoleData.tab = DebugTab.Console
-      pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
     }
   }
 }

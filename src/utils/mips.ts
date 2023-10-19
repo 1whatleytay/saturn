@@ -1,4 +1,5 @@
 import { invoke, tauri } from '@tauri-apps/api'
+import { ExportRegionsOptions } from './settings'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
@@ -46,16 +47,6 @@ export type AssemblerResult = AssemblerResultSuccess | AssemblerResultError
 
 export interface BinaryResult {
   binary: Uint8Array | null
-  result: AssemblerResult
-}
-
-export interface HexRegion {
-  name: string,
-  data: string
-}
-
-export interface HexBinaryResult {
-  regions: HexRegion[] | null
   result: AssemblerResult
 }
 
@@ -196,50 +187,43 @@ export async function assembleWithBinary(text: string, path: string | null): Pro
   }
 }
 
-export interface AssembleRegionsOptions {
-  kind: 'plain' | 'hex_v3'
-  continuous: boolean
-  encoding: 'byte' | 'big32' | 'little32'
+export interface HexRegion {
+  name: string
+  data: string // base64 encoded
 }
 
-export interface ContinuousRegionResult {
-  data: string | null
+interface AssembledRegionsBinary {
+  type: 'binary'
+  value: string // base64 encoded
+}
+
+interface AssembledRegionsSplit {
+  type: 'split'
+  value: HexRegion[]
+}
+
+type AssembledRegions = AssembledRegionsBinary | AssembledRegionsSplit
+
+export interface HexBinaryResult {
+  regions: AssembledRegions | null
   result: AssemblerResult
-}
-
-export async function assembleRegionsContinuous(
-  text: string,
-  path: string | null,
-  options: AssembleRegionsOptions
-) : Promise<ContinuousRegionResult> {
-  const result = (await tauri.invoke('assemble_regions_continuous', { text, path, options })) as [
-    string | null,
-    AssemblerResult
-  ]
-
-  const [data, assemblerResult ] = result
-
-  return {
-    data,
-    result: assemblerResult
-  }
 }
 
 export async function assembleRegions(
   text: string,
   path: string | null,
-  options: AssembleRegionsOptions
+  options: ExportRegionsOptions
 ) : Promise<HexBinaryResult> {
-  const result = (await tauri.invoke('assemble_regions', { text, path, options })) as [
-    HexRegion[] | null,
+  const value = (await tauri.invoke('assemble_regions', { text, path, options })) as [
+    AssembledRegions | null,
     AssemblerResult
   ]
 
-  const [regions, assemblerResult ] = result
+  const [regions, result ] = value
 
   return {
     regions,
-    result: assemblerResult
+    result
   }
 }
 

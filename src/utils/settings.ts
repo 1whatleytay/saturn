@@ -1,7 +1,13 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig, configureDisplay } from './mips'
 
-const settingsVersion = 5
+const settingsVersion = 6
+
+export interface ExportRegionsOptions {
+  kind: 'plain' | 'hex_v3'
+  continuous: boolean
+  encoding: 'byte' | 'big32' | 'little32'
+}
 
 export interface BitmapSettings {
   displayWidth: number
@@ -49,6 +55,7 @@ export interface Settings {
   registers: RegisterSettings
   execution: ExecutionSettings
   memory: MemorySettings
+  export: ExportRegionsOptions
 }
 
 function defaultSettings(): Settings {
@@ -76,6 +83,11 @@ function defaultSettings(): Settings {
     memory: {
       address: '0x10010000',
       mode: AddressingMode.Word,
+    },
+    export: {
+      continuous: false,
+      kind: 'hex_v3',
+      encoding: 'little32'
     }
   }
 }

@@ -5,8 +5,9 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
+use base64::Engine;
 use tauri::{Manager, Wry};
-use titan::assembler::binary::{Binary, RegionFlags};
+use titan::assembler::binary::{Binary, RawRegion, RegionFlags};
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::{Mountable, Region};
@@ -20,7 +21,8 @@ use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
-use crate::hex_format::encode_hex;
+use crate::build::AssembleRegionsKind::HexV3;
+use crate::hex_format::{encode_hex_with_encoding, HexEncoding};
 use crate::keyboard::{KEYBOARD_SELECTOR, KeyboardHandler, KeyboardState};
 use crate::state::commands::{DebuggerBody, setup_state, state_from_binary};
 use crate::state::device::ExecutionState;
@@ -229,10 +231,10 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
 #[derive(Serialize)]
 pub struct HexRegion {
     pub name: String,
-    pub data: String
+    pub data: String // base64 encoded
 }
 
-#[derive(Deserialize)]
+#[derive(Copy, Clone, Deserialize)]
 #[serde(rename_all="snake_case")]
 pub enum AssembleRegionsKind {
     Plain,
@@ -242,21 +244,60 @@ pub enum AssembleRegionsKind {
 #[derive(Deserialize)]
 pub struct AssembleRegionsOptions {
     pub kind: AssembleRegionsKind,
-    pub continuous: bool
+    pub continuous: bool,
+    pub encoding: HexEncoding // Encoding option ignored if kind != HexV3
 }
 
-#[tauri::command]
-pub fn assemble_regions_continuous(text: &str, path: Option<&str>, options: AssembleRegionsOptions) -> (Option<String>, AssemblerResult) {
-    let result = assemble_text(text, path);
-    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+#[derive(Serialize)]
+#[serde(rename_all="snake_case", tag="type", content="value")]
+pub enum AssembledRegions {
+    Binary(String), // base64 encoded
+    Split(Vec<HexRegion>)
+}
 
-    let Some(binary) = binary else {
-        return (None, result)
+fn region_name(region: &RawRegion, entry: bool) -> String {
+    let address = region.address;
+
+    let heading = if entry {
+        "entry"
+    } else if region.flags.contains(RegionFlags::EXECUTABLE) {
+        "code"
+    } else {
+        "data"
     };
 
+    let flags = [
+        (RegionFlags::EXECUTABLE, "x"),
+        (RegionFlags::READABLE, "r"),
+        (RegionFlags::WRITABLE, "w")
+    ]
+        .into_iter()
+        .map(|(f, s)| {
+            if region.flags.contains(f) { s } else { "o" }
+        })
+        .collect::<Vec<&str>>()
+        .join("");
+
+    format!("{heading}_{address:x}_{flags}")
+}
+
+fn encode_region_data(data: &[u8], options: &AssembleRegionsOptions) -> String {
+    match options.kind {
+        HexV3 => {
+            let encoding = encode_hex_with_encoding(data, options.encoding);
+
+            base64::engine::general_purpose::STANDARD.encode(encoding)
+        },
+        AssembleRegionsKind::Plain => {
+            base64::engine::general_purpose::STANDARD.encode(data)
+        }
+    }
+}
+
+fn export_continuous(binary: &Binary, options: &AssembleRegionsOptions) -> String {
     let mut output: Vec<u8> = vec![];
 
-    for region in binary.regions {
+    for region in &binary.regions {
         if region.data.is_empty() {
             continue
         }
@@ -271,13 +312,28 @@ pub fn assemble_regions_continuous(text: &str, path: Option<&str>, options: Asse
         output[region.address as usize .. end].copy_from_slice(&region.data);
     };
 
-    let output = output.into_iter().map(|x| x as u64).collect();
+    encode_region_data(&output, options)
+}
 
-    (Some(encode_hex(output)), result)
+fn export_regions(binary: &Binary, options: &AssembleRegionsOptions) -> Vec<HexRegion> {
+    binary.regions.iter().filter_map(|region| {
+        if region.data.is_empty() {
+            return None
+        }
+
+        let name = region_name(region, region.address == binary.entry);
+
+        Some(HexRegion {
+            name,
+            data: encode_region_data(&region.data, options),
+        })
+    }).collect()
 }
 
 #[tauri::command]
-pub fn assemble_regions(text: &str, path: Option<&str>, options: AssembleRegionsOptions) -> (Option<Vec<HexRegion>>, AssemblerResult) {
+pub fn assemble_regions(
+    text: &str, path: Option<&str>, options: AssembleRegionsOptions
+) -> (Option<AssembledRegions>, AssemblerResult) {
     let result = assemble_text(text, path);
     let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
 
@@ -285,38 +341,11 @@ pub fn assemble_regions(text: &str, path: Option<&str>, options: AssembleRegions
         return (None, result)
     };
 
-    let regions = binary.regions.iter().map(|region| {
-        let address = region.address;
-
-        let heading = if address == binary.entry {
-            "entry"
-        } else if region.flags.contains(RegionFlags::EXECUTABLE) {
-            "code"
-        } else {
-            "data"
-        };
-
-        let flags = [
-            (RegionFlags::EXECUTABLE, "x"),
-            (RegionFlags::READABLE, "r"),
-            (RegionFlags::WRITABLE, "w")
-        ]
-            .into_iter()
-            .map(|(f, s)| {
-                if region.flags.contains(f) { s } else { "o" }
-            })
-            .collect::<Vec<&str>>()
-            .join("");
-
-        let name = format!("{heading}_{address:x}_{flags}");
-
-        let data = region.data.iter().copied().map(|x| x as u64).collect();
-
-        HexRegion {
-            name,
-            data: encode_hex(data)
-        }
-    }).collect();
+    let regions = if options.continuous {
+        AssembledRegions::Binary(export_continuous(&binary, &options))
+    } else {
+        AssembledRegions::Split(export_regions(&binary, &options))
+    };
 
     (Some(regions), result)
 }

@@ -20,12 +20,12 @@ mod auto_save;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use tauri::WindowEvent::Destroyed;
-use crate::auto_save::AutoSaveState;
+// use crate::auto_save::AutoSaveState;
 
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
 
-use crate::build::{assemble, assemble_binary, assemble_regions, assemble_regions_continuous, configure_asm, configure_elf, disassemble};
+use crate::build::{assemble, assemble_binary, assemble_regions, configure_asm, configure_elf, disassemble};
 use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
@@ -61,11 +61,11 @@ fn main() {
         .manage(Arc::new(Mutex::new(FlushDisplayState::default())) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
-        .setup(|app| {
-            app.manage(AutoSaveState::read_from_disc(app.handle()));
-        
-            Ok(())
-        })
+        // .setup(|app| {
+        //     app.manage(AutoSaveState::read_from_disc(app.handle()));
+        //
+        //     Ok(())
+        // })
         .on_window_event(|event| {
             if let Destroyed = event.event() {
                 // Relieve some pressure on tokio.
@@ -81,7 +81,6 @@ fn main() {
             disassemble,        // build
             assemble_binary,    // build
             assemble_regions,   // build
-            assemble_regions_continuous, // build
             configure_elf,      // build
             configure_asm,      // build
             resume,             // execution
