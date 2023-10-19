@@ -44,10 +44,6 @@ function cursorIndex(): SelectionIndex {
   return { line: state.line, index: state.index }
 }
 
-function onDirty(line: number, deleted: number, insert: string[]) {
-  find.dirty(line, deleted, insert)
-  gotoHighlights.shiftHighlight(line, deleted, insert.length)
-}
 
 const storageResult = useStorage(errorHighlights, tab, onDirty)
 
@@ -57,6 +53,12 @@ export const {
   updateCursor: updateCursorSymbol,
   highlights: symbolHighlights
 } = useSymbolHighlight(storageResult, widthQuery)
+
+function onDirty(line: number, deleted: number, insert: string[]) {
+  find.dirty(line, deleted, insert)
+  gotoHighlights.shiftHighlight(line, deleted, insert.length)
+  updateCursorSymbol(cursorState())
+}
 
 watch(() => {
   const cursor = cursorIndex()

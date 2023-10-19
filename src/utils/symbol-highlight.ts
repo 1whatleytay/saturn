@@ -1,7 +1,6 @@
 import { grabWhitespace, Token, TokenType } from './languages/language'
 import { reactive, ref } from 'vue'
 import { StorageResult } from './storage'
-import { CursorPosition } from './cursor'
 import { findToken } from './languages/suggestions'
 import { SelectionIndex } from './editor'
 
@@ -104,6 +103,10 @@ export function useSymbolHighlight(
   }
 
   function updateCursor(cursor: SelectionIndex) {
+    if (storage.storage.highlights.length <= cursor.line) {
+      return
+    }
+
     const tokens = storage.storage.highlights[cursor.line]
     const token = findToken(tokens, cursor.index)
 

@@ -1,3 +1,4 @@
+/*
 use std::collections::HashSet;
 use std::error::Error;
 use std::fs;
@@ -169,3 +170,4 @@ pub fn save_sync_get(files: Vec<PathBuf>, state: tauri::State<AutoSaveState>) {
 pub fn save_write(file: PathBuf, content: String, state: tauri::State<AutoSaveState>) {
 
 }
+*/
