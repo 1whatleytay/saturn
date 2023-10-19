@@ -3,8 +3,8 @@
     <div
       class="max-w-2xl bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
     >
-      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2">
-        <CogIcon class="w-7 h-7 mr-3" /> Settings
+      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2 shrink-0">
+        <CogIcon class="w-7 h-7 mr-3 shrink-0" /> Settings
 
         <button
           class="w-8 h-8 ml-auto rounded hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"

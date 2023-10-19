@@ -199,6 +199,7 @@ export async function assembleWithBinary(text: string, path: string | null): Pro
 export interface AssembleRegionsOptions {
   kind: 'plain' | 'hex_v3'
   continuous: boolean
+  encoding: 'byte' | 'big32' | 'little32'
 }
 
 export interface ContinuousRegionResult {

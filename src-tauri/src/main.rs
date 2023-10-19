@@ -20,6 +20,7 @@ mod auto_save;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use tauri::WindowEvent::Destroyed;
+use crate::auto_save::AutoSaveState;
 
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
@@ -60,11 +61,11 @@ fn main() {
         .manage(Arc::new(Mutex::new(FlushDisplayState::default())) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
-        // .setup(|app| {
-        //     app.manage(Mutex::new(AutoSaveState::read_from_disc(app.handle())));
-        //
-        //     Ok(())
-        // })
+        .setup(|app| {
+            app.manage(AutoSaveState::read_from_disc(app.handle()));
+        
+            Ok(())
+        })
         .on_window_event(|event| {
             if let Destroyed = event.event() {
                 // Relieve some pressure on tokio.

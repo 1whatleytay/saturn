@@ -260,7 +260,7 @@ pub fn assemble_regions_continuous(text: &str, path: Option<&str>, options: Asse
         if region.data.is_empty() {
             continue
         }
-        
+
         // Potential Overflow!
         let end = region.address as usize + region.data.len();
 

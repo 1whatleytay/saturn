@@ -346,9 +346,11 @@ export function useCursor(
       return suggestions.moveIndex(+1)
     }
 
+    const current = cursor()
+
     setSelection(shift)
 
-    putCursor({ line: cursor().line + 1, index: cursor().index })
+    putCursor({ line: current.line + 1, index: current.index })
   }
 
   function moveUp(shift: boolean = false) {
