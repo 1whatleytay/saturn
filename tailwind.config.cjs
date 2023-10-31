@@ -6,7 +6,7 @@ module.exports = {
     extend: {
       colors: {
         'breakpoint-neutral': '#2b1515',
-        'breakpoint-stopped': '#2b2a15',
+        'breakpoint-stopped': '#3f3b18',
         'readonly-neutral': '#2b2b15',
       },
 

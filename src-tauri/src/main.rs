@@ -16,11 +16,13 @@ mod testing;
 mod decode;
 mod hex_format;
 mod auto_save;
+mod access_manager;
+mod watch;
 
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
-use tauri::WindowEvent::Destroyed;
-// use crate::auto_save::AutoSaveState;
+use tauri::{FileDropEvent, Manager};
+use tauri::WindowEvent::{FileDrop, Destroyed};
+use crate::access_manager::AccessManager;
 
 use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
@@ -61,17 +63,26 @@ fn main() {
         .manage(Arc::new(Mutex::new(FlushDisplayState::default())) as FlushDisplayBody)
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(menu)
-        // .setup(|app| {
-        //     app.manage(AutoSaveState::read_from_disc(app.handle()));
-        //
-        //     Ok(())
-        // })
-        .on_window_event(|event| {
-            if let Destroyed = event.event() {
-                // Relieve some pressure on tokio.
-                stop(event.window().state())
+        .setup(|app| {
+            app.manage(AccessManager::load(app.handle()));
 
-                // Assuming tokio will join threads for me if needed.
+            Ok(())
+        })
+        .on_window_event(|event| {
+            match event.event() {
+                FileDrop(FileDropEvent::Dropped(paths)) => {
+                    let app = event.window().app_handle();
+                    let manager: tauri::State<AccessManager> = app.state();
+
+                    manager.permit(paths.clone());
+                },
+                Destroyed => {
+                    // Relieve some pressure on tokio.
+                    stop(event.window().state())
+
+                    // Assuming tokio will join threads for me if needed.
+                }
+                _ => { }
             }
         })
         .on_menu_event(handle_event)
@@ -95,6 +106,11 @@ fn main() {
             post_input,         // bitmap
             configure_display,  // bitmap
             last_display,       // bitmap
+            access_manager::access_sync,
+            access_manager::access_select_save,
+            access_manager::access_select_open,
+            access_manager::access_read_text,
+            access_manager::access_write_text,
             midi_install,
             wake_sync,
             all_tests,

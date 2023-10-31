@@ -331,7 +331,7 @@ function stylingFor(type: ConsoleType): string {
     case ConsoleType.Secondary:
       return 'text-gray-500 border-gray-700'
     case ConsoleType.Editing:
-      return 'text-lime-400 border-green-700'
+      return 'text-lime-400 border-neutral-700'
     case ConsoleType.Submitted:
       return 'text-lime-500 font-black border-green-700'
     default:

@@ -11,8 +11,8 @@ import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
-import { readFile } from './query/select-file'
 import { splitLines } from './split-lines'
+import { accessReadText, accessSync } from './query/access-manager'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -148,7 +148,7 @@ export function useTabs(): TabsResult {
       const title = tab.title || 'Untitled'
       let data: string | null
       if (tab.path) {
-        data = (await readFile(tab.path)).data
+        data = await accessReadText(tab.path)
       } else {
         data = localStorage.getItem(backupKey(tab.uuid))
       }
@@ -178,6 +178,11 @@ export function useTabs(): TabsResult {
       const hasSelected = editor.tabs.some((x) => x.uuid === state.selected)
       editor.selected = hasSelected ? state.selected : editor.tabs[0].uuid
     }
+
+    await accessSync(editor.tabs
+      .map(x => x.path)
+      .filter((x): x is string => x !== null)
+    )
   }
 
   function updateBackups(map: Map<string, string>) {
