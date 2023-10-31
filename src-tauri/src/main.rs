@@ -15,7 +15,6 @@ mod state;
 mod testing;
 mod decode;
 mod hex_format;
-mod auto_save;
 mod access_manager;
 mod watch;
 

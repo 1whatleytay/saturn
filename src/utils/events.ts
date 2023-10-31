@@ -278,6 +278,18 @@ export async function setupEvents() {
     }
   })
 
+  await listen('save:create', (event) => {
+    console.log(`Save Create ${event.payload}`)
+  })
+
+  await listen('save:remove', (event) => {
+    console.log(`Save Remove ${event.payload}`)
+  })
+
+  await listen('save:modify', (event) => {
+    console.log(`Save Modify ${event.payload}`)
+  })
+
   await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {
       for (const item of event.payload.paths) {
