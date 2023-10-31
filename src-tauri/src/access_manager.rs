@@ -5,10 +5,12 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::future::Future;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use notify::event::ModifyKind;
 use serde::{Deserialize, Serialize};
 use tauri::api::dialog::FileDialogBuilder;
-use tauri::{AppHandle, Config};
+use tauri::{AppHandle, Config, Manager};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::Sender;
 use crate::access_manager::AccessFileData::{Binary, Text};
@@ -39,13 +41,17 @@ impl Error for AccessError { }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AccessManagerState {
     version: u32,
+
     #[serde(skip)]
     locked: bool,
-    access: Vec<PathBuf>
+    #[serde(skip)]
+    dismiss: HashSet<PathBuf>,
+
+    access: HashSet<PathBuf>
 }
 
 pub struct AccessManager {
-    app: AppHandle,
+    watcher: Option<Arc<Mutex<RecommendedWatcher>>>,
     state: Arc<Watch<AccessManagerState>>
 }
 
@@ -93,6 +99,44 @@ pub struct AccessFilter {
 }
 
 impl AccessManager {
+    fn watcher(
+        app: AppHandle, details: Arc<Watch<AccessManagerState>>
+    ) -> Option<RecommendedWatcher> {
+        notify::recommended_watcher(move |event: Result<notify::Event, notify::Error>| {
+            let Ok(event) = event else { return };
+
+            let Some(path) = event.paths.first() else {
+                return
+            };
+
+            let mut details = details.get_silent();
+
+            // If the path is in dismiss, we probably caused the save.
+            if details.dismiss.remove(path) {
+                return
+            }
+
+            let Some(path) = event.paths.first().and_then(|x| x.to_str()) else {
+                return
+            };
+
+            println!("Got event {:?} for {:?}", event.kind, path);
+
+            match event.kind {
+                notify::EventKind::Create(_) => {
+                    app.emit_all("save:create", path).ok();
+                },
+                notify::EventKind::Remove(_) => {
+                    app.emit_all("save:remove", path).ok();
+                },
+                notify::EventKind::Modify(ModifyKind::Data(_)) => {
+                    app.emit_all("save:modify", path).ok();
+                },
+                _ => {}
+            }
+        }).ok()
+    }
+
     fn config_path(config: &Config) -> Option<PathBuf> {
         let mut path = tauri::api::path::app_data_dir(config)?;
 
@@ -117,17 +161,44 @@ impl AccessManager {
     fn new(app: AppHandle, state: AccessManagerState) -> Self {
         let app_clone = app.clone();
 
-        let watch = Watch::new(state)
-            .listen(move |state| {
-                Self::write_config(&app_clone.config(), state);
-            })
-            .listen(|state| {
-                println!("Modified: {:?}", state);
+        let watch = Watch::new(state);
+
+        watch.listen(move |state, _| {
+            Self::write_config(&app_clone.config(), state);
+        });
+
+        let state = Arc::new(watch);
+        let watcher = Self::watcher(app, state.clone())
+            .map(|watcher| Arc::new(Mutex::new(watcher)));
+
+        if let Some(watcher) = &watcher {
+            let watcher = watcher.clone();
+
+            state.listen(move |state, old| {
+                println!("Updating!");
+
+                let new_states = state.access.difference(&old.access);
+                let removed_states = old.access.difference(&state.access);
+
+                let mut watcher = watcher.lock().unwrap();
+
+                for path in new_states {
+                    println!("Watching: {:?}", path);
+
+                    watcher.watch(path, RecursiveMode::NonRecursive).ok();
+                }
+
+                for path in removed_states {
+                    println!("Unwatching: {:?}", path);
+
+                    watcher.unwatch(path).ok();
+                }
             });
+        }
 
         AccessManager {
-            state: Arc::new(watch),
-            app
+            state,
+            watcher
         }
     }
 
@@ -136,13 +207,15 @@ impl AccessManager {
             .unwrap_or(AccessManagerState {
                 version: ACCESS_CONFIG_VERSION,
                 locked: false,
-                access: vec![]
+                dismiss: HashSet::new(),
+                access: HashSet::new()
             });
 
         Self::new(app, config)
     }
 
     pub fn sync(&self, items: HashSet<PathBuf>) {
+        println!("Syncing!");
         self.state.get_mut().access.retain(|x| items.contains(x));
     }
 
@@ -255,6 +328,8 @@ pub fn access_write_text(
     if !state.has_access(&path) {
         return Err(AccessError::AccessDenied(path))
     }
+
+    state.state.get_silent().dismiss.insert(path.clone());
 
     fs::write(&path, content).map_err(|_| AccessError::NotFound(path))
 }
