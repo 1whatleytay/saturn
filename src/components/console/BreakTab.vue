@@ -6,7 +6,7 @@
 
     <div class="flex">
       <div v-if="!state.instructions && !state.stack" class="px-8 text-neutral-500">
-        Run the application to show things on the debug tab.
+        To view debug information, set breakpoints or pause during execution.
       </div>
 
       <div class="px-8 flex-grow" v-if="state.instructions">
@@ -47,7 +47,7 @@
               </span>
 
               <span v-if="parameter.type === 'Address'">
-                0x{{ parameter.value.toString(16) }}
+                0x{{ (parameter.value as number).toString(16) }}
               </span>
 
               <span v-if="parameter.type === 'Immediate'">
@@ -84,7 +84,7 @@
 
           </div>
 
-          <div class="w-32">
+          <div class="w-28">
             Address
           </div>
 
@@ -93,13 +93,13 @@
           </div>
         </div>
 
-        <div v-for="(value, index) in state.stack.elements" class="flex items-center font-mono my-1">
+        <div v-for="value in state.stack.elements" class="flex items-center font-mono my-1">
           <div class="w-10 text-xs text-purple-300">
-            {{ value.address === state.stack.sp ? '$sp' : '' }}
+            {{ value.address === state.stack?.sp ? '$sp' : '' }}
           </div>
 
-          <div class="w-32 px-2 py-1 text-neutral-400 hover:bg-neutral-800 rounded">
-            0x{{ value.address.toString(16).padStart(8, '0') }}:
+          <div class="w-28 px-2 py-1 text-neutral-400 hover:bg-neutral-800 rounded">
+            0x{{ value.address.toString(16).padStart(8, '0') }}
           </div>
 
           <div class="w-32 px-2 py-1 select-all hover:bg-neutral-800 rounded">

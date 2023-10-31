@@ -4,15 +4,11 @@ import { collectLines, EditorTab } from './tabs'
 import { build, pause, postBuildMessage, resume, step, stop } from './debug'
 import {
   assemblyFilter, elfFilter,
-  openElf,
-  openInputFile,
-  readInputFile,
-  SelectedFile,
-  selectSaveDestination,
-  writeFile
-} from './query/select-file'
-import { consoleData, ConsoleType, openConsole, pushConsole } from '../state/console-data'
-import { assembleWithBinary, assembleRegions, BinaryResult } from './mips'
+  AccessFile,
+  selectSaveDestination, selectOpenFile, accessWriteText, selectOpenElf
+} from './query/access-manager'
+import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
+import { assembleWithBinary, BinaryResult } from './mips'
 import {
   closeTab,
   createTab,
@@ -28,7 +24,6 @@ import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
-import { writeHexRegions } from './query/serialize-files'
 import { writeBinaryFile } from '@tauri-apps/api/fs'
 
 export enum PromptType {
@@ -42,8 +37,9 @@ interface ConsoleEvent {
   message: string
 }
 
-export async function openTab(file: SelectedFile<string | Uint8Array>) {
-  const { name, path, data } = file
+export async function openTab(file: AccessFile<string | Uint8Array>) {
+  const { name: inName, path, data } = file
+  const name = inName ?? 'Untitled'
 
   const existing = tabsState.tabs.find((tab) => tab.path === path)
 
@@ -82,13 +78,13 @@ export async function saveTab(
 
     const { name, path } = result
 
-    current.title = name
+    current.title = name ?? 'Untitled'
     current.path = path
   }
 
   const data = collectLines(current.lines)
 
-  await writeFile(current.path, data)
+  await accessWriteText(current.path, data)
 
   current.marked = false // Remove "needs saving" marker
 
@@ -125,7 +121,7 @@ export async function setupEvents() {
   })
 
   await listen('open-file', async () => {
-    const result = await openInputFile()
+    const result = await selectOpenFile('')
 
     if (!result) {
       return
@@ -197,7 +193,7 @@ export async function setupEvents() {
       return
     }
 
-    let binary: Uint8Array | null = null
+    let binary: Uint8Array | null
     let result: BinaryResult | null = null
 
     if (current.profile && current.profile.kind === 'elf') {
@@ -207,7 +203,7 @@ export async function setupEvents() {
       binary = result.binary
     }
 
-    let destination: SelectedFile<undefined> | null = null
+    let destination: AccessFile<undefined> | null = null
 
     if (binary !== null) {
       destination = await selectSaveDestination('Save File', elfFilter)
@@ -235,7 +231,7 @@ export async function setupEvents() {
   })
 
   await listen('disassemble', async () => {
-    const result = await openElf()
+    const result = await selectOpenElf()
 
     if (!result) {
       return
@@ -243,14 +239,14 @@ export async function setupEvents() {
 
     const { name, data } = result
 
-    await loadElf(name, data.buffer)
+    await loadElf(name ?? 'Untitled', data.buffer)
   })
 
   await listen('toggle-console', () => {
     consoleData.showConsole = !consoleData.showConsole
   })
 
-  await listen('toggle-settings', (event) => {
+  await listen('toggle-settings', () => {
     showSettings.value = !showSettings.value
   })
 
@@ -285,7 +281,7 @@ export async function setupEvents() {
   await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {
       for (const item of event.payload.paths) {
-        const file = await readInputFile(item)
+        const file = await selectOpenFile(item)
 
         if (!file) {
           continue

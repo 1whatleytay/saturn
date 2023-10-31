@@ -102,7 +102,7 @@ import { tab } from '../state/state'
 import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import { assembleRegions } from '../utils/mips'
 import { collectLines } from '../utils/tabs'
-import { SelectedFile, selectSaveDestination } from '../utils/query/select-file'
+import { selectSaveDestination } from '../utils/query/access-manager'
 import { writeHexContents, writeHexRegions } from '../utils/query/serialize-files'
 import { postBuildMessage } from '../utils/debug'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
@@ -162,7 +162,7 @@ async function exportRegions() {
   if (result.regions) {
     switch (result.regions.type) {
       case 'binary': {
-        let destination: SelectedFile<undefined> | null = await selectSaveDestination('Save Region File')
+        let destination = await selectSaveDestination('Save Region File')
 
         if (!destination) {
           return
@@ -180,7 +180,7 @@ async function exportRegions() {
       }
 
       case 'split': {
-        let destination: SelectedFile<undefined> | null = await selectSaveDestination('Save Directory')
+        let destination = await selectSaveDestination('Save Directory')
 
         if (!destination) {
           return

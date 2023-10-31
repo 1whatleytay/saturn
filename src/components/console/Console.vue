@@ -112,15 +112,14 @@ const modeString = computed(() => {
 const modeClass = computed(() => {
   switch (consoleData.mode) {
     case ExecutionModeType.Running:
-      return 'text-teal-100 border-teal-300 border'
+      return 'text-teal-100 border-teal-500 border'
     case ExecutionModeType.Breakpoint:
-      return 'text-red-100 border-red-300 border'
-    case ExecutionModeType.Paused:
-      return 'text-yellow-100 border-yellow-300 border'
     case ExecutionModeType.Invalid:
-      return 'text-red-100 border-red-300 border'
+      return 'text-red-100 border-red-400 border'
+    case ExecutionModeType.Paused:
+      return 'text-yellow-100 border-yellow-400 border'
     case ExecutionModeType.Finished:
-      return 'text-lime-100 border-lime-300 border'
+      return 'text-lime-100 border-lime-500 border'
     default:
       return 'text-white'
   }

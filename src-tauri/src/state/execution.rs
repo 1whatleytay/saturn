@@ -116,10 +116,14 @@ impl ResumeResult {
                 message: format_error(error, state)
             },
             Some(SyscallResult::Unimplemented(code)) => ResumeMode::Invalid {
-                message: format!("Unimplemented syscall {}, file a bug or make a contribution at https://github.com/1whatleytay/saturn.", code)
+                message: format!("Unimplemented syscall {}, file a bug or make a \
+                contribution at https://github.com/1whatleytay/saturn.", code)
             },
             Some(SyscallResult::Unknown(code)) => ResumeMode::Invalid {
-                message: format!("Unrecognized syscall {}.", code)
+                message: format!("Unrecognized syscall {}, select a syscall by loading \
+                a value into $v0.\n > li $v0, new_value\n\
+                You can make a feature request or make a contribution at \
+                https://github.com/1whatleytay/saturn.", code)
             },
             _ => {
                 // This is probably okay...
