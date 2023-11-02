@@ -51,11 +51,10 @@ struct AccessManagerState {
 }
 
 pub struct AccessManager {
-    watcher: Option<Arc<Mutex<RecommendedWatcher>>>,
     state: Arc<Watch<AccessManagerState>>
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(untagged)]
 pub enum AccessFileData {
     Binary(Vec<u8>),
@@ -98,6 +97,12 @@ pub struct AccessFilter {
     pub extensions: Vec<String>
 }
 
+#[derive(Clone, Serialize)]
+pub struct AccessModify {
+    pub path: String,
+    pub data: AccessFileData
+}
+
 impl AccessManager {
     fn watcher(
         app: AppHandle, details: Arc<Watch<AccessManagerState>>
@@ -120,8 +125,6 @@ impl AccessManager {
                 return
             };
 
-            println!("Got event {:?} for {:?}", event.kind, path);
-
             match event.kind {
                 notify::EventKind::Create(_) => {
                     app.emit_all("save:create", path).ok();
@@ -130,7 +133,11 @@ impl AccessManager {
                     app.emit_all("save:remove", path).ok();
                 },
                 notify::EventKind::Modify(ModifyKind::Data(_)) => {
-                    app.emit_all("save:modify", path).ok();
+                    if let Ok(data) = fs::read_to_string(path) {
+                        app.emit_all("save:modify", AccessModify {
+                            path: path.to_string(), data: Text(data)
+                        }).ok();
+                    }
                 },
                 _ => {}
             }
@@ -175,8 +182,6 @@ impl AccessManager {
             let watcher = watcher.clone();
 
             state.listen(move |state, old| {
-                println!("Updating!");
-
                 let new_states = state.access.difference(&old.access);
                 let removed_states = old.access.difference(&state.access);
 
@@ -197,8 +202,7 @@ impl AccessManager {
         }
 
         AccessManager {
-            state,
-            watcher
+            state
         }
     }
 
@@ -215,7 +219,6 @@ impl AccessManager {
     }
 
     pub fn sync(&self, items: HashSet<PathBuf>) {
-        println!("Syncing!");
         self.state.get_mut().access.retain(|x| items.contains(x));
     }
 

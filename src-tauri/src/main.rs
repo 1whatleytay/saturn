@@ -54,6 +54,11 @@ fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
     state.lock().unwrap().clone()
 }
 
+#[tauri::command]
+fn is_debug() -> bool {
+    cfg!(debug_assertions)
+}
+
 fn main() {
     let menu = create_menu();
 
@@ -111,6 +116,7 @@ fn main() {
             access_manager::access_read_text,
             access_manager::access_write_text,
             midi_install,
+            is_debug,
             wake_sync,
             all_tests,
             run_tests,
