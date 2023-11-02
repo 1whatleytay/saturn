@@ -14,6 +14,7 @@
           :key="tab.uuid"
           :title="tab.title"
           :marked="tab.marked"
+          :removed="tab.removed"
           :selected="tabsState.selected === tab.uuid"
           :deletable="true"
           :style="styleForTab(tab.uuid)"

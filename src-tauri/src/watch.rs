@@ -1,6 +1,5 @@
 use std::ops::{Deref, DerefMut};
 use std::sync::{Mutex, MutexGuard};
-use tauri::ClipboardManager;
 
 // (New, Old)
 type Listener<T> = Box<dyn Fn(&T, &T) + Send + Sync>;

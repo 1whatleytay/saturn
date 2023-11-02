@@ -476,6 +476,14 @@ export class Editor {
     }
   }
 
+  replaceAll(text: string) {
+    const textLines = splitLines(text)
+
+    this.mutate(0, this.data.length, textLines.length, () => {
+      this.data.splice(0, Infinity, ...textLines)
+    })
+  }
+
   lineCount(): number {
     return this.data.length
   }

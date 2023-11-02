@@ -52,6 +52,7 @@ export interface EditorTab {
   uuid: string
   title: string
   lines: string[]
+  removed: boolean
   cursor: CursorState
   breakpoints: number[]
   path: string | null
@@ -148,7 +149,15 @@ export function useTabs(): TabsResult {
       const title = tab.title || 'Untitled'
       let data: string | null
       if (tab.path) {
-        data = await accessReadText(tab.path)
+        try {
+          data = await accessReadText(tab.path)
+        } catch (e) {
+          console.error(`Could not resume tab ${tab.path ?? 'Untitled'} (${tab.uuid}) with error`)
+          console.error(e)
+
+          // Discard tab.
+          continue
+        }
       } else {
         data = localStorage.getItem(backupKey(tab.uuid))
       }
@@ -164,6 +173,7 @@ export function useTabs(): TabsResult {
         title,
         cursor: { line: 0, index: 0, highlight: null },
         path: tab.path,
+        removed: false,
         breakpoints: tab.breakpoints,
         writable: tab.writable,
         marked: tab.marked,
@@ -324,6 +334,7 @@ export function useTabs(): TabsResult {
       uuid: id,
       title: named,
       lines: content,
+      removed: false,
       breakpoints: [],
       cursor: {
         line: 0,
