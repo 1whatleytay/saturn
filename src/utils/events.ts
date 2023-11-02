@@ -11,7 +11,7 @@ import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { assembleWithBinary, BinaryResult } from './mips'
 import {
   closeTab,
-  createTab,
+  createTab, editor,
   find,
   loadElf,
   showExportRegionsDialog,
@@ -279,15 +279,41 @@ export async function setupEvents() {
   })
 
   await listen('save:create', (event) => {
-    console.log(`Save Create ${event.payload}`)
+    const path = event.payload as string
+
+    for (const tab of tabsState.tabs) {
+      if (tab.path === path) {
+        tab.removed = false
+      }
+    }
   })
 
   await listen('save:remove', (event) => {
-    console.log(`Save Remove ${event.payload}`)
+    const path = event.payload as string
+
+    for (const tab of tabsState.tabs) {
+      if (tab.path === path) {
+        tab.removed = true
+      }
+    }
   })
 
   await listen('save:modify', (event) => {
-    console.log(`Save Modify ${event.payload}`)
+    const modification = event.payload as {
+      path: string,
+      data: any
+    }
+
+    if (typeof modification.data !== 'string') {
+      return
+    }
+
+    for (const tab of tabsState.tabs) {
+      if (tab.path === modification.path) {
+        editor.value.replaceAll(modification.data)
+        tab.marked = false
+      }
+    }
   })
 
   await appWindow.onFileDropEvent(async (event) => {

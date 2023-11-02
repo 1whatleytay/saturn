@@ -51,6 +51,7 @@ struct AccessManagerState {
 }
 
 pub struct AccessManager {
+    watcher: Option<Arc<Mutex<RecommendedWatcher>>>,
     state: Arc<Watch<AccessManagerState>>
 }
 
@@ -116,29 +117,36 @@ impl AccessManager {
 
             let mut details = details.get_silent();
 
-            // If the path is in dismiss, we probably caused the save.
-            if details.dismiss.remove(path) {
-                return
-            }
-
-            let Some(path) = event.paths.first().and_then(|x| x.to_str()) else {
+            let Some(path) = event.paths.first() else {
                 return
             };
 
             match event.kind {
                 notify::EventKind::Create(_) => {
                     app.emit_all("save:create", path).ok();
-                },
+                }
                 notify::EventKind::Remove(_) => {
                     app.emit_all("save:remove", path).ok();
-                },
+                }
+                notify::EventKind::Modify(ModifyKind::Name(_)) => {
+                    if path.exists() {
+                        app.emit_all("save:create", path).ok();
+                    } else {
+                        app.emit_all("save:remove", path).ok();
+                    }
+                }
                 notify::EventKind::Modify(ModifyKind::Data(_)) => {
+                    // If the path is in dismiss, we probably caused the save.
+                    if details.dismiss.remove(path) {
+                        return
+                    }
+
                     if let Ok(data) = fs::read_to_string(path) {
                         app.emit_all("save:modify", AccessModify {
-                            path: path.to_string(), data: Text(data)
+                            path: path.to_string_lossy().to_string(), data: Text(data)
                         }).ok();
                     }
-                },
+                }
                 _ => {}
             }
         }).ok()
@@ -188,21 +196,18 @@ impl AccessManager {
                 let mut watcher = watcher.lock().unwrap();
 
                 for path in new_states {
-                    println!("Watching: {:?}", path);
-
                     watcher.watch(path, RecursiveMode::NonRecursive).ok();
                 }
 
                 for path in removed_states {
-                    println!("Unwatching: {:?}", path);
-
                     watcher.unwatch(path).ok();
                 }
             });
         }
 
         AccessManager {
-            state
+            state,
+            watcher
         }
     }
 
@@ -219,7 +224,17 @@ impl AccessManager {
     }
 
     pub fn sync(&self, items: HashSet<PathBuf>) {
-        self.state.get_mut().access.retain(|x| items.contains(x));
+        let mut value = self.state.get_mut();
+
+        value.access.retain(|x| items.contains(x));
+
+        if let Some(watcher) = &self.watcher {
+            let mut watcher = watcher.lock().unwrap();
+
+            for path in &value.access {
+                watcher.watch(path, RecursiveMode::NonRecursive).ok();
+            }
+        }
     }
 
     fn builder(title: &str, filters: &[AccessFilter]) -> FileDialogBuilder {

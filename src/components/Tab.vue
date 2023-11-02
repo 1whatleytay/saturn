@@ -6,7 +6,7 @@
       'border-transparent': !props.selected,
     }"
   >
-    <span class="max-w-[260px] truncate">
+    <span class="max-w-[260px] truncate" :class="{'text-red-400': props.removed}">
       {{ props.title }}
     </span>
 
@@ -33,12 +33,14 @@ import { XMarkIcon } from '@heroicons/vue/20/solid'
 const props = withDefaults(
   defineProps<{
     title: string
+    removed?: boolean
     selected?: boolean
     deletable?: boolean
     marked?: boolean
   }>(),
   {
     selected: false,
+    removed: false,
     deletable: false,
     marked: false,
   }
