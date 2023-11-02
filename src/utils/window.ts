@@ -1,5 +1,6 @@
 import { appWindow } from '@tauri-apps/api/window'
 import { hasActionKey } from './query/shortcut-key'
+import { invoke } from '@tauri-apps/api'
 
 export function setupWindow() {
   window.addEventListener('keydown', (event) => {
@@ -10,13 +11,15 @@ export function setupWindow() {
   })
 
   const handler = (event: Event) => {
-    // Don't bring up the "reload" context menu. It's note great!
+    // Don't bring up the "reload" context menu. It's not great!
     event.preventDefault()
   }
 
-  if (!import.meta.env.TAURI_DEBUG) {
-    window.addEventListener('contextmenu', handler)
-  }
+  invoke('is_debug').then(debug => {
+    if (!debug) {
+      window.addEventListener('contextmenu', handler)
+    }
+  })
 }
 
 // Restricting tauri calls to certain files.
