@@ -12,10 +12,36 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 - **Easy-to-use Tools** - Quick and simple interfaces that provide what you need at a glance.
 - **In-Place Debugging** - Set breakpoints and read values in-line with your source.
 
+# Installing
+
+To install Saturn, visit the [releases](https://github.com/1whatleytay/saturn/releases) page.
+There are usually two trains to pick some. If you're not sure, pick the Latest release.
+
+| Train                                                                               | Usage                                          |
+|-------------------------------------------------------------------------------------|------------------------------------------------|
+| [Latest](https://github.com/1whatleytay/saturn/releases/latest) v0.1.7              | Stable, complete release for most users.       |
+| [Pre-Release](https://github.com/1whatleytay/saturn/releases/tag/app-v0.1.8) v0.1.8 | Latest experimental features. Sometimes buggy. |
+
+Trying out the pre-release versions of Saturn helps the project out.
+If you encounter an issue, please [file a bug](https://github.com/1whatleytay/saturn/issues/new).
+We appreciate every report we can get.
+
+Under the releases page, select the release you want to download and open Assets, 
+
+ - On **Windows**, select the file ending in `.msi`.
+ - On **macOS**, select the file ending in `.dmg`.
+ - On **Linux**, select either `.deb` (for Debian supporting distros) or `.AppImage`.
+
+Then follow this instructions in the installer. Saturn should be installed on your system.
+
+[![Saturn Assets](README-Assets.png)](https://github.com/1whatleytay/saturn/releases/latest)
+
 # Building
 
 Saturn is built with Tauri and has a Typescript and Rust component.
-To build, please install the following tools:
+For contribution purposes, you can contribute to the app by building Saturn locally.
+
+First, please install the following tools:
 
  - [Node](https://nodejs.org/en)
  - [Rust](https://www.rust-lang.org)
@@ -35,32 +61,3 @@ To build a binary for your platform, use
 ```shell
 yarn tauri build
 ```
-
-# Required Tasks
-
-- [x] Basic Editor
-- [x] Basic Interpreter
-- [x] Basic Debugger
-- [x] Basic Assembler
-- [x] Syntax Highlighting
-- [x] Bitmap Display
-- [x] Console Events
-- [x] Syscall Handling
-- [x] Assembler Breakpoint Information
-- [x] Compile Assembly In-Editor
-- [x] Breakpoint Assembly In-Editor
-- [x] Keyboard Input
-- [x] File Loading
-
-# Important Tasks
-
-- [x] Memory Editing and Copying
-- [x] Register Editing and Copying
-- [x] Finding Text (Cmd + F)
-- [x] Finished Execution State
-- [x] Editor Performance (Smooth Cmd + A @ 4000 lines)
-- [ ] Floating Point Co-processor
-- [x] MIDI and Other Syscalls
-- [x] Variable Name Suggestions
-- [x] Improve Bitmap Display
-- [x] Add Time Travel
