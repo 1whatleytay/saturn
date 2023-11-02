@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use notify::event::ModifyKind;
@@ -110,10 +110,6 @@ impl AccessManager {
     ) -> Option<RecommendedWatcher> {
         notify::recommended_watcher(move |event: Result<notify::Event, notify::Error>| {
             let Ok(event) = event else { return };
-
-            let Some(path) = event.paths.first() else {
-                return
-            };
 
             let mut details = details.get_silent();
 
@@ -221,6 +217,12 @@ impl AccessManager {
             });
 
         Self::new(app, config)
+    }
+
+    pub fn watch(&self, path: &Path) {
+        if let Some(watcher) = &self.watcher {
+            watcher.lock().unwrap().watch(path, RecursiveMode::NonRecursive).ok();
+        }
     }
 
     pub fn sync(&self, items: HashSet<PathBuf>) {
@@ -349,7 +351,12 @@ pub fn access_write_text(
 
     state.state.get_silent().dismiss.insert(path.clone());
 
-    fs::write(&path, content).map_err(|_| AccessError::NotFound(path))
+    fs::write(&path, content).map_err(|_| AccessError::NotFound(path.clone()))?;
+
+    // Initial watch from select_open may fail because the file does not exist.
+    state.watch(&path);
+
+    Ok(())
 }
 
 #[tauri::command]
