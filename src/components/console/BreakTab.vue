@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm flex flex-col grow overflow-clip content-start overflow-y-scroll">
+  <div class="text-sm flex flex-col grow overflow-hidden content-start overflow-y-scroll">
     <div class="text-2xl font-bold w-full px-8 py-4">
       {{ consoleData.mode ?? 'Debug' }}
     </div>
