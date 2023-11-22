@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm flex flex-col grow overflow-clip content-start">
+  <div class="text-sm flex flex-col grow overflow-hidden content-start">
     <div
       class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full"
     >
