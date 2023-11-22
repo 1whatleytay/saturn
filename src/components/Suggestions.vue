@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="suggestions.state.results.length"
-    class="w-80 h-40 text-sm font-mono overflow-clip rounded-lg mt-6 p-2 overflow-y-clip bg-neutral-900 border border-neutral-800 absolute mx-[-0.08rem] z-20"
+    class="w-80 h-40 text-sm font-mono overflow-hidden rounded-lg mt-6 p-2 bg-neutral-900 border border-neutral-800 absolute mx-[-0.08rem] z-20"
     :style="{
       left: `${position.offsetX}px`,
       top: `${position.offsetY}px`,
