@@ -3,6 +3,13 @@ The bitmap tab contains a visualization of the data stored in the designated add
 
 ![image](https://github.com/YahyaElgabra/saturn/assets/114133351/7fcbe627-4461-445e-9986-069ea79327a9)
 
+As you can see, there is a multitude of settings to change:
+**Display Width**: pixel width of the screen.
+**Display Height**: pixel height of the screen.
+**Address**: The starting address where the pixel data is stored, normally `0x10008000 ($gp)`
+
+There is also the unit settings next to the width and height, and these numbers represent how many pixels make up an unit.
+
 Below is example code to help you play around with the display.
 
 The result of running the code should look like the display above.
