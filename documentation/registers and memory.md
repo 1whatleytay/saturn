@@ -4,6 +4,8 @@ When working with a MIPS simulator, two of the essential interfaces you'll inter
 
 ## Registers Tab
 
+![Registers Image](../coreImages/Registers.jpg)
+
 The Registers tab displays the current values in the CPU's registers. These are categorized into several sections:
 
 - **System**: Special registers like the program counter (`pc`) and the `hi` and `lo` registers for multiplication and division operations.
@@ -20,6 +22,8 @@ The Registers tab displays the current values in the CPU's registers. These are 
 - **When Values are Available**: Register values are available and updated while the program is running. It's important to have the simulator in 'Running' mode to see the current register values.
 
 ## Memory Tab
+
+![Memory Image](../coreImages/Memory.jpg)
 
 The Memory tab provides a view into the simulated machine's memory, showing contents at different addresses.
 

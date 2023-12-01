@@ -26,13 +26,12 @@ Here's an example of using a syscall to print an integer:
 
 ```assembly
 .data
-number: .word 100    # Example number to print
 
 .text
 main:
-    lw $a0, number   # Load integer into $a0
-    li $v0, 1        # Load wanted syscall
-    syscall          # Execute syscall
+    li $v0, 10          # Load syscall number for exit (10) into $v0
+    syscall             # Make the syscall to exit
+    j main              # despite trying to go back to main, we already exited the program
 ```
 
 # MIPS Syscalls List
