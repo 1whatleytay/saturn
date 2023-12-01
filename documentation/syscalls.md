@@ -68,18 +68,18 @@ Service 8 - Follows semantics of UNIX 'fgets'. For specified length n, string ca
 
 Service 11 - Prints ASCII character corresponding to contents of low-order byte.
 
-Service 13 - Saturn implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append. It ignores mode. The returned file descriptor will be negative if the operation failed. The underlying file I/O implementation uses java.io.FileInputStream.read() to read and java.io.FileOutputStream.write() to write. Saturn maintains file descriptors internally and allocates them starting with 3. File descriptors 0, 1 and 2 are always open for: reading from standard input, writing to standard output, and writing to standard error, respectively.
+Service 13 - Saturn implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append. It ignores mode. The returned file descriptor will be negative if the operation failed. The underlying file I/O implementation uses Rust's read and write to inputstreams. 
 
-Service 30 - System time comes from java.util.Date.getTime() as milliseconds since 1 January 1970.
+Service 30 - System time is obtained using Rust's std::time::SystemTime and std::time::UNIX_EPOCH, which provide the number of milliseconds since 1 January 1970.
 
-Services 31,33 - Simulate MIDI output through sound card. Details below.
+Services 31,33 - Simulate MIDI output through MIDI.js. Details below.
 
-Services 40-42 use underlying Java pseudorandom number generators provided by the java.util.Random class. Each stream (identified by $a0 contents) is modeled by a different Random object. There are no default seed values, so use the Set Seed service (40) if replicated random sequences are desired.
+Services 40-42 use underlying Rust pseudorandom number generators, analogous to those provided by the rand crate. Each stream (identified by $a0 contents) is modeled by a different Random object. There are no default seed values, so use the Set Seed service (40) if replicated random sequences are desired.
 
 
 
 ## Using SYSCALL system services 31 and 33: MIDI output
-These system services provide a means of producing sound. MIDI output is simulated by your system sound card, and the simulation is provided by the javax.sound.midi package.
+These system services provide a means of producing sound. MIDI output is played back through MIDI.js.
 Service 31 will generate the tone then immediately return. Service 33 will generate the tone then sleep for the tone's duration before returning. Thus it essentially combines services 31 and 32.
 
 This service requires four parameters as follows:
@@ -120,10 +120,14 @@ The 128 available patches are divided into instrument families of 8:
 40-47	Strings	104-111	Ethnic
 48-55	Ensemble	112-119	Percussion
 56-63	Brass	120-127	Sound Effects
-Note that outside of Java, General MIDI usually refers to patches 1-128. When referring to a list of General MIDI patches, 1 must be subtracted to play the correct patch. For a full list of General MIDI instruments, see www.midi.org/about-midi/gm/gm1sound.shtml. The General MIDI channel 10 percussion key map is not relevant to the toneGenerator method because it always defaults to MIDI channel 1.
+Note that General MIDI usually refers to patches 1-128. When referring to a list of General MIDI patches, 1 must be subtracted to play the correct patch. For a full list of General MIDI instruments, see https://fmslogo.sourceforge.io/manual/midi-instrument.html. The General MIDI channel 10 percussion key map is not relevant to the toneGenerator method because it always defaults to MIDI channel 1.
 
 volume ($a3)
 Accepts a positive byte value (0-127) where 127 is the loudest and 0 is silent. This value denotes MIDI velocity which refers to the initial attack of the tone.
 If the parameter value is outside this range, it applies a default value 100.
 MIDI velocity measures how hard a note on (or note off) message is played, perhaps on a MIDI controller like a keyboard. Most MIDI synthesizers will translate this into volume on a logarithmic scale in which the difference in amplitude decreases as the velocity value increases.
 Note that velocity value on more sophisticated synthesizers can also affect the timbre of the tone (as most instruments sound different when they are played louder or softer).
+
+Note: since the files for MIDI sounds are not included when Saturn is first installed, the first time you try to play a MIDI sound, Saturn will try to download these files (it will print an orange info message in the console when it tries to do this), this means you have to have an internet connection the first time you try to play a MIDI sound.
+
+Saturn may occasionally have to reload the MIDI sound files into memory, so its encouraged for you to play a sound of duration 0 (totally silent) when your app starts to give the indication to Saturn that you're going to be playing MIDI files.
