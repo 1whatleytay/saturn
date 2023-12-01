@@ -14,7 +14,7 @@ This document provides an overview of several different important buttons in Sat
 
 ### 1. Play
 
-The Play functionality allows you to run a program or execute a specific code snippet. By clicking the Play button, you can start the execution of your code and see the output or behavior of your program.
+The Play functionality allows you to run a program or execute a specific code snippet. By clicking the Play button, you can start the execution of your code and see the output or behavior of your program. Note that the play button will only execute code up until the first breakpoint is encountered. At this point, program execution will automatically pause. Pressing the play button again will continue program execution after this breakpoint.
 
 ### 2. Pause
 
@@ -43,12 +43,12 @@ The Breakpoint functionality allows you to set a marker in your code for debuggi
 
 In MIPS Assembly, you can print values using the following methods:
 
-1. **Print Integer**: To print an integer value, you can use the `li` (load immediate) instruction to load the value into a register, and then use the `syscall` instruction with the appropriate system call number to print the value.
+1. **Print Integer**: To print an integer value, you can use the `li` (load immediate) instruction to load the value into the register `a0`, and then use the `add` instruction with register `v0` to ensure this register has the value 1 (for system call number 1). Then, include the `syscall` instruction immediately afterwards.
 
-2. **Print String**: To print a string, you can load the address of the string into a register using the `la` (load address) instruction, and then use the `syscall` instruction with the appropriate system call number to print the string.
+2. **Print String**: To print a string, you can load the address of the string into the register `a0` (argument register) using the `la` (load address) instruction, and then use the `add` instruction with register `v0` to ensure this register has the value 4 (for system call number 4). Then, include the `syscall` instruction immediately afterwards.
 
-3. **Print Character**: To print a single character, you can load the ASCII value of the character into a register, and then use the `syscall` instruction with the appropriate system call number to print the character.
+3. **Print Character**: To print a single ASCII character, you can load the address of the character into the register `a0` (argument register) using the `la` (load address) instruction, and then use the `add` instruction with register `v0` to ensure this register has the value 11 (for system call number 11). Then, include the `syscall` instruction immediately afterwards.
 
-4. **Print Hexadecimal**: To print a value in hexadecimal format, you can convert the value to hexadecimal representation and then print it using the methods mentioned above.
+4. **Print Hexadecimal**: To print an integer in hexidecimal, you can use the `li` (load immediate) instruction to load the value into the register `a0`, and then use the `add` instruction with register `v0` to ensure this register has the value 34 (for system call number 34). Then, include the `syscall` instruction immediately afterwards.
 
-To find the aforementioned system call numbers, you can refer to the documentation at https://courses.missouristate.edu/kenvollmar/mars/help/syscallhelp.html.
+To find more information about the system calls, you can refer to the MIPS system call documentation at https://courses.missouristate.edu/kenvollmar/mars/help/syscallhelp.html.
