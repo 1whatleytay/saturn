@@ -228,7 +228,7 @@ pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, Asse
     (Some(out), result)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct HexRegion {
     pub name: String,
     pub data: String // base64 encoded
