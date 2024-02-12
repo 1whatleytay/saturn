@@ -192,7 +192,7 @@ async function exportRegions() {
         postBuildMessage(result.result)
 
         consoleData.tab = DebugTab.Console
-        pushConsole(`Hex regions written to ${destination.path}`, ConsoleType.Info)
+        pushConsole(`Regions data written to ${destination.path}`, ConsoleType.Info)
 
         break
       }
