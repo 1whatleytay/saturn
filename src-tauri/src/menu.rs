@@ -113,7 +113,7 @@ impl MenuOptions {
             MenuOptions::Disassemble => "Disassemble Elf",
             MenuOptions::Assemble => "Assemble Elf",
             MenuOptions::Export => "Export Elf",
-            MenuOptions::ExportHex => "Export Hex Regions",
+            MenuOptions::ExportHex => "Export Regions",
             MenuOptions::Build => "Build",
             MenuOptions::Run => "Run",
             MenuOptions::Step => "Step",
