@@ -282,7 +282,7 @@ impl AccessManager {
         value.access.extend(paths);
     }
 
-    async fn dispatch_select<F: FnOnce(Sender<Option<PathBuf>>)>(&self, f: F) -> Option<PathBuf> {
+    async fn dispatch_select<F: FnOnce(Sender<Option<PathBuf>>)>(&self, f: F, permit: bool) -> Option<PathBuf> {
         self.lock(async {
             let (sender, receiver) = oneshot::channel();
 
@@ -290,24 +290,26 @@ impl AccessManager {
 
             let path = receiver.await.ok().flatten()?;
 
-            self.permit(vec![path.clone()]);
+            if permit {
+                self.permit(vec![path.clone()]);
+            }
 
             Some(path)
         }).await.flatten()
     }
 
-    pub async fn select_save(&self, title: &str, filters: &[AccessFilter]) -> Option<PathBuf> {
+    pub async fn select_save(&self, title: &str, filters: &[AccessFilter], permit: bool) -> Option<PathBuf> {
         self.dispatch_select(|sender| {
             Self::builder(title, filters)
                 .save_file(|file| { sender.send(file).ok(); });
-        }).await
+        }, permit).await
     }
 
-    pub async fn select_open(&self, title: &str, filters: &[AccessFilter]) -> Option<PathBuf> {
+    pub async fn select_open(&self, title: &str, filters: &[AccessFilter], permit: bool) -> Option<PathBuf> {
         self.dispatch_select(|sender| {
             Self::builder(title, filters)
                 .pick_file(|file| { sender.send(file).ok(); });
-        }).await
+        }, permit).await
     }
 }
 
@@ -326,7 +328,7 @@ pub fn access_sync(paths: HashSet<PathBuf>, state: tauri::State<AccessManager>) 
 pub async fn access_select_save(
     title: &str, filters: Vec<AccessFilter>, state: tauri::State<'_, AccessManager>
 ) -> Result<Option<AccessFile<()>>, ()> {
-    let Some(path) = state.select_save(title, &filters).await else {
+    let Some(path) = state.select_save(title, &filters, true).await else {
         return Ok(None)
     };
 
@@ -376,7 +378,7 @@ pub async fn access_select_open(
 ) -> Result<Option<AccessFile<AccessFileData>>, ()> {
     let selection = selection.unwrap_or(AccessSelection::AllText);
 
-    let Some(path) = state.select_open(title, &filters).await else {
+    let Some(path) = state.select_open(title, &filters, true).await else {
         return Ok(None)
     };
 

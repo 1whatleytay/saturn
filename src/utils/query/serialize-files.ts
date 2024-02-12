@@ -1,24 +1,19 @@
 import { HexRegion } from '../mips'
 
-import { createDir, writeBinaryFile, writeFile } from '@tauri-apps/api/fs'
-import { join } from '@tauri-apps/api/path'
+import { invoke } from '@tauri-apps/api'
 
-export async function writeHexContents(destination: string, body: string) {
-  const binary = Uint8Array.from(atob(body), c => c.charCodeAt(0))
-
-  await writeBinaryFile(destination, binary)
+export async function exportHexContents(data: string): Promise<string | null> {
+  try {
+    return await invoke('export_hex_contents', { data })
+  } catch {
+    return null
+  }
 }
 
-export async function writeHexRegions(destination: string, regions: HexRegion[]) {
+export async function exportHexRegions(regions: HexRegion[]): Promise<string | null> {
   try {
-    await createDir(destination, {
-      recursive: true
-    })
-  } catch { }
-
-  for (const region of regions) {
-    const path = await join(destination, `${region.name}.txt`)
-
-    await writeHexContents(path, region.data)
+    return await invoke('export_hex_regions', { regions })
+  } catch {
+    return null
   }
 }

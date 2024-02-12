@@ -103,7 +103,7 @@ import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '..
 import { assembleRegions } from '../utils/mips'
 import { collectLines } from '../utils/tabs'
 import { selectSaveDestination } from '../utils/query/access-manager'
-import { writeHexContents, writeHexRegions } from '../utils/query/serialize-files'
+import { exportHexContents, exportHexRegions } from '../utils/query/serialize-files'
 import { postBuildMessage } from '../utils/debug'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { settings } from '../state/state'
@@ -162,37 +162,25 @@ async function exportRegions() {
   if (result.regions) {
     switch (result.regions.type) {
       case 'binary': {
-        let destination = await selectSaveDestination('Save Region File')
-
-        if (!destination) {
-          return
-        }
-
-        await writeHexContents(destination.path, result.regions.value)
+        const destination = await exportHexContents(result.regions.value)
 
         consoleData.showConsole = true
         postBuildMessage(result.result)
 
         consoleData.tab = DebugTab.Console
-        pushConsole(`Continuous hex regions written to ${destination.path}`, ConsoleType.Info)
+        pushConsole(`Continuous regions written to ${destination}`, ConsoleType.Info)
 
         break
       }
 
       case 'split': {
-        let destination = await selectSaveDestination('Save Directory')
-
-        if (!destination) {
-          return
-        }
-
-        await writeHexRegions(destination.path, result.regions.value)
+        const destination = await exportHexRegions(result.regions.value)
 
         consoleData.showConsole = true
         postBuildMessage(result.result)
 
         consoleData.tab = DebugTab.Console
-        pushConsole(`Regions data written to ${destination.path}`, ConsoleType.Info)
+        pushConsole(`Regions data written to ${destination}`, ConsoleType.Info)
 
         break
       }

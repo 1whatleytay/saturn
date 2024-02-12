@@ -17,6 +17,7 @@ mod decode;
 mod hex_format;
 mod access_manager;
 mod watch;
+mod export;
 
 use std::sync::{Arc, Mutex};
 use tauri::{FileDropEvent, Manager};
@@ -31,6 +32,7 @@ use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
 use crate::state::commands::DebuggerBody;
+use crate::export::{export_hex_regions, export_hex_contents};
 
 use crate::state::commands::{resume, rewind, pause, stop, post_key, post_input, wake_sync};
 use crate::testing::{all_tests, run_tests};
@@ -121,6 +123,8 @@ fn main() {
             all_tests,
             run_tests,
             decode_instruction,
+            export_hex_regions,
+            export_hex_contents,
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)
