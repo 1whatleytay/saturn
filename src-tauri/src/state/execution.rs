@@ -170,6 +170,7 @@ pub fn read_display<Mem: Memory>(
 }
 
 pub trait ExecutionRewindable {
+    fn last_pc(&self) -> Option<u32>;
     fn rewind(&self, count: u32) -> ResumeResult;
 }
 
@@ -315,6 +316,10 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
 }
 
 impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Track> {
+    fn last_pc(&self) -> Option<u32> {
+        None
+    }
+
     fn rewind(&self, _: u32) -> ResumeResult {
         let frame = self.debugger.frame();
 
@@ -325,6 +330,16 @@ impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRe
 }
 
 impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, HistoryTracker> {
+    fn last_pc(&self) -> Option<u32> {
+        self.debugger.with_tracker(|tracker| {
+            tracker.last()
+                .as_ref()
+                .map(|entry| {
+                    entry.registers.pc
+                })
+        })
+    }
+
     fn rewind(&self, count: u32) -> ResumeResult {
         for _ in 0 .. count {
             let entry = self.debugger.with_tracker(|tracker| tracker.pop());

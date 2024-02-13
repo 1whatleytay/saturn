@@ -34,7 +34,7 @@ use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
 use crate::state::commands::DebuggerBody;
 use crate::export::{export_hex_regions, export_hex_contents};
 
-use crate::state::commands::{resume, rewind, pause, stop, post_key, post_input, wake_sync};
+use crate::state::commands::{resume, rewind, pause, stop, last_pc, post_key, post_input, wake_sync};
 use crate::testing::{all_tests, run_tests};
 
 use crate::decode::decode_instruction;
@@ -104,6 +104,7 @@ fn main() {
             rewind,             // execution
             pause,              // execution
             stop,               // execution
+            last_pc,            // execution
             read_bytes,         // debug
             write_bytes,        // debug
             set_register,       // debug

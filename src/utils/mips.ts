@@ -317,6 +317,11 @@ export class ExecutionState {
 
     throw new Error()
   }
+
+  // Requires Time Travel
+  public async lastPc(): Promise<number | null> {
+    return await tauri.invoke('last_pc')
+  }
   
   public async rewind(count: number | null): Promise<ExecutionResult | null> {
     return await tauri.invoke('rewind', { count })

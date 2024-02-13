@@ -32,10 +32,10 @@
       class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
       @click="rewind()"
       :class="{
-        'text-gray-300 cursor-default': !allowResume,
-        'text-teal-300 hover:bg-slate-800': allowResume,
+        'text-gray-300 cursor-default': !allowRewind,
+        'text-teal-300 hover:bg-slate-800': allowRewind,
       }"
-      :disabled="!allowResume"
+      :disabled="!allowRewind"
       title="Step Back"
     >
       <ChevronLeftIcon class="w-4 h-4" />
@@ -94,6 +94,11 @@ import {
 } from '@heroicons/vue/24/solid'
 
 const profile = computed(() => tab()?.profile)
+
+const allowRewind = computed(
+  () =>
+    !consoleData.execution || (consoleData.mode !== ExecutionModeType.Running)
+)
 
 const allowResume = computed(
   () =>
