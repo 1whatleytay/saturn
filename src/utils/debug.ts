@@ -233,9 +233,10 @@ export async function rewind() {
 
   const breakpoints = consoleData.execution.breakpoints
 
+  const pc = await consoleData.execution.lastPc()
+
   let skip = 1
-  if (breakpoints && consoleData.registers) {
-    const pc = consoleData.registers.pc - 4
+  if (breakpoints && pc !== null) {
     const group = breakpoints.pcToGroup.get(pc)
 
     if (group) {

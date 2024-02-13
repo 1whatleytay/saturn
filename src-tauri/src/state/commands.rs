@@ -47,6 +47,14 @@ pub fn setup_state<Mem: Memory + Mountable>(state: &mut State<Mem>) {
 }
 
 #[tauri::command]
+pub async fn last_pc(state: tauri::State<'_, DebuggerBody>) -> Result<Option<u32>, ()> {
+    Ok(state.lock().unwrap()
+        .as_ref()
+        .map(|debugger| debugger.last_pc())
+        .and_then(|x| x))
+}
+
+#[tauri::command]
 pub async fn resume(
     count: Option<u32>,
     breakpoints: Option<Vec<u32>>,
