@@ -72,9 +72,7 @@ pub async fn resume(
 
 #[tauri::command]
 pub fn rewind(state: tauri::State<'_, DebuggerBody>, count: u32) -> Option<ResumeResult> {
-    let Some(pointer) = &*state.lock().unwrap() else { return None };
-
-    Some(pointer.rewind(count))
+    Some(state.lock().unwrap().as_ref()?.rewind(count))
 }
 
 #[tauri::command]

@@ -351,6 +351,8 @@ impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, His
                 })
             };
 
+            self.debugger.pause();
+
             self.debugger.with_state(|state| {
                 entry.apply(&mut state.registers, &mut state.memory.backing);
             });
