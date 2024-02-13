@@ -5,8 +5,6 @@ import { convertFileSrc } from '@tauri-apps/api/tauri'
 
 ;(window as any).MIDI = MIDI
 
-const soundfontUrl = convertFileSrc('', 'midi')
-
 const loadedInstruments = new Set<string>()
 
 export interface MidiNote {
@@ -19,6 +17,8 @@ export interface MidiNote {
 }
 
 function loadInstrument(instrument: string): Promise<boolean> {
+  const soundfontUrl = convertFileSrc('', 'midi')
+
   return new Promise((resolve) => {
     MIDI.loadPlugin({
       instrument,
