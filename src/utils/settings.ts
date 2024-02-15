@@ -27,6 +27,7 @@ export interface EditorSettings {
 export enum RegisterFormat {
   Hexadecimal,
   Decimal,
+  Signed,
 }
 
 export interface RegisterSettings {

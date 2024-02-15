@@ -16,7 +16,7 @@
 
     <span
       v-if="state.error"
-      class="absolute top-6 hidden group-hover:block py-2 px-4 w-auto bg-neutral-900 rounded shadow-xl absolute z-30 w-80 text-red-400 font-medium font-sans hidden group-hover:block"
+      class="absolute top-6 py-2 px-4 bg-neutral-900 rounded shadow-xl z-30 w-80 text-red-400 font-medium font-sans hidden group-hover:block"
     >
       {{ state.error }}
     </span>
@@ -30,6 +30,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: number
     hex?: boolean
+    signed?: boolean
     classes?: string
     checker?: (value: number) => string | null
     editable?: boolean
@@ -38,6 +39,7 @@ const props = withDefaults(
   }>(),
   {
     hex: false,
+    signed: false,
     classes: '',
     editable: true,
     cleanOnly: true,
@@ -49,7 +51,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const state = reactive({
   expected: props.modelValue,
-  value: formatHex(props.modelValue, props.hex),
+  value: formatHex(props.modelValue, props.hex, props.signed),
   error: null as string | null,
 })
 
@@ -64,7 +66,7 @@ function clean() {
     emit('update:modelValue', state.expected)
   }
 
-  state.value = formatHex(state.expected, props.hex)
+  state.value = formatHex(state.expected, props.hex, props.signed)
 }
 
 watch(
@@ -72,15 +74,15 @@ watch(
   (value) => {
     if (value !== state.expected) {
       state.expected = value
-      state.value = formatHex(props.modelValue, props.hex)
+      state.value = formatHex(props.modelValue, props.hex, props.signed)
     }
   }
 )
 
 watch(
-  () => props.hex,
+  () => [props.hex, props.signed],
   (value) => {
-    state.value = formatHex(props.modelValue, value)
+    state.value = formatHex(props.modelValue, value[0], value[1])
   }
 )
 
@@ -113,23 +115,31 @@ function parse(leading: string): number | null {
     result = 0x100000000 - result
   }
 
-  result = result & (~0 >> ((4 - props.bytes) * 2))
+  if (props.bytes < 4) {
+    result = result & (~0 >> ((4 - props.bytes) * 8))
+  }
 
   return isNaN(result) ? null : result
 }
 
-function formatHex(value: number, hex: boolean): string {
-  if (props.bytes < 4) {
-    value = value & (0x7fffffff >> ((4 - props.bytes) * 8 - 1))
-  }
-
+function formatHex(value: number, hex: boolean, signed: boolean): string {
   if (hex) {
-    const signed = Math.abs(value).toString(16)
-
-    return `${value < 0 ? '-' : ''}0x${signed}`
-  } else {
-    return value.toString()
+    return `0x${value.toString(16)}`
   }
+
+  const ext = (~0 << (props.bytes * 8))
+
+  if (signed) {
+    const sign = (value & (0x80000000 >> ((4 - props.bytes) * 8))) != 0
+
+    if (sign && props.bytes < 4) {
+      value |= ext;
+    }
+
+    return (value >> 0).toString()
+  }
+
+  return value.toString()
 }
 
 watch(
