@@ -20,6 +20,7 @@
       :checker="checker"
       :editable="props.editable"
       :hex="props.format === RegisterFormat.Hexadecimal"
+      :signed="props.format === RegisterFormat.Signed"
     />
   </div>
 </template>

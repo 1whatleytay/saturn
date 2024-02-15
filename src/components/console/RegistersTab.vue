@@ -37,7 +37,7 @@
     >
       <button
         class="px-3 py-1 transition-colors"
-        :class="buttonClasses(RegisterFormat.Hexadecimal)"
+        :class="[buttonClasses(RegisterFormat.Hexadecimal)]"
         @click="() => (settings.registers.format = RegisterFormat.Hexadecimal)"
       >
         Hex
@@ -45,10 +45,18 @@
 
       <button
         class="px-3 py-1 transition-colors"
-        :class="buttonClasses(RegisterFormat.Decimal)"
+        :class="[buttonClasses(RegisterFormat.Decimal)]"
         @click="() => (settings.registers.format = RegisterFormat.Decimal)"
       >
         Dec
+      </button>
+
+      <button
+        class="px-3 py-1 transition-colors"
+        :class="[buttonClasses(RegisterFormat.Signed)]"
+        @click="() => (settings.registers.format = RegisterFormat.Signed)"
+      >
+        Sig
       </button>
     </div>
   </div>
@@ -66,11 +74,10 @@ import { Registers } from '../../utils/mips'
 import RegisterItem from './RegisterItem.vue'
 
 function buttonClasses(format: RegisterFormat) {
-  const use = settings.registers.format === format
-
-  return {
-    'hover:bg-slate-800 bg-neutral-800': use,
-    'hover:bg-slate-700': !use,
+  if (settings.registers.format === format) {
+    return 'hover:bg-slate-800 bg-neutral-800'
+  } else {
+   return 'hover:bg-slate-700'
   }
 }
 
