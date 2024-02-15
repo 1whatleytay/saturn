@@ -38,11 +38,22 @@ export async function setBreakpoint(line: number, remove: boolean) {
   }
 }
 
+async function postDebugInformationWithPcHint(result: ExecutionResult) {
+  postDebugInformation(result)
+
+  const execution = consoleData.execution
+
+  if (execution && !(execution.breakpoints?.pcToGroup.has(result.registers.pc) ?? true)) {
+    consoleData.hintPc = await execution.lastPc()
+  }
+}
+
 function postDebugInformation(result: ExecutionResult) {
   if (consoleData.mode === ExecutionModeType.Stopped) {
     return
   }
 
+  consoleData.hintPc = null
   consoleData.mode = result.mode.type
   consoleData.registers = result.registers
 
@@ -169,7 +180,7 @@ export async function resume() {
   )
 
   if (result) {
-    postDebugInformation(result)
+    await postDebugInformationWithPcHint(result)
   } else {
     closeExecution()
   }
@@ -198,7 +209,7 @@ export async function stepCount(skip: number) {
   consoleData.showConsole = true
 
   if (result) {
-    postDebugInformation(result)
+    await postDebugInformationWithPcHint(result)
   }
 }
 
@@ -256,7 +267,7 @@ export async function rewind() {
   consoleData.showConsole = true
 
   if (result) {
-    postDebugInformation(result)
+    await postDebugInformationWithPcHint(result)
   }
 }
 

@@ -175,7 +175,11 @@ const stoppedIndex = computed(() => {
   }
 
   // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
-  const point = execution.breakpoints?.pcToGroup.get(registers.pc)?.line
+  let point = execution.breakpoints?.pcToGroup.get(registers.pc)?.line
+
+  if (point === undefined && consoleData.hintPc != null) {
+    point = execution.breakpoints?.pcToGroup.get(consoleData.hintPc)?.line
+  }
 
   return point ?? null
 })
