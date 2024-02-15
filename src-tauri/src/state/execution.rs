@@ -96,7 +96,7 @@ impl From<Registers> for RegistersResult {
 #[derive(Serialize)]
 pub struct ResumeResult {
     mode: ResumeMode,
-    registers: RegistersResult,
+    registers: RegistersResult
 }
 
 impl ResumeResult {

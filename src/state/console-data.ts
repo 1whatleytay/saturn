@@ -41,6 +41,7 @@ interface ConsoleData {
   execution: ExecutionState | null
   mode: ExecutionModeType | null
   registers: Registers | null
+  hintPc: number | null
   tab: DebugTab
   console: string[]
   consoleMeta: Map<number, ConsoleLineMeta> // index in console[] -> Meta
