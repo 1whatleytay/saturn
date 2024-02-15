@@ -5,6 +5,8 @@
     <button
       ref="wrapper"
       @click="focusSelf"
+      @focusin="state.keyboardLive = true"
+      @focusout="state.keyboardLive = false"
       @keydown="(e) => handleKey(e, false)"
       @keyup="(e) => handleKey(e, true)"
       class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 max-w-full"
@@ -20,7 +22,7 @@
     </button>
 
     <div
-      class="p-4 hidden flex flex-col content-center justify-center items-center align-center"
+      class="p-4 flex flex-col content-center justify-center items-center align-center"
       :class="{ 'sm:block': !state.small }"
     >
       <div class="text-base font-bold mb-4 flex items-center">
@@ -90,7 +92,13 @@
         </div>
       </div>
 
-      <div class="text-gray-500 pt-4 flex items-center">
+      <div v-if="state.keyboardLive" class="text-gray-500 mt-4 flex items-center">
+        <ArrowLeftIcon class="w-4 h-4 mr-2" />
+
+        Start typing to send keyboard events to the application.
+      </div>
+
+      <div v-else class="text-gray-500 mt-4 flex items-center">
         <ArrowLeftIcon class="w-4 h-4 mr-2" />
 
         To connect the keyboard, click on the display.
@@ -124,7 +132,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { ArrowLeftIcon } from '@heroicons/vue/24/solid'
-import { ExclamationCircleIcon } from '@heroicons/vue/24/outline'
+import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { consoleData } from '../../state/console-data'
 
 import { settings } from '../../state/state'
@@ -147,6 +155,7 @@ const state = reactive({
   interval: null as number | null,
   small: false as boolean,
   useProtocol: true,
+  keyboardLive: false
 })
 
 function memoryCheck(value: number): string | null {
