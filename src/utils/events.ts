@@ -24,7 +24,7 @@ import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
-import { writeBinaryFile } from '@tauri-apps/api/fs'
+import { exportBinaryContents } from './query/serialize-files'
 
 export enum PromptType {
   NeverPrompt,
@@ -203,16 +203,10 @@ export async function setupEvents() {
       binary = result.binary
     }
 
-    let destination: AccessFile<undefined> | null = null
+    let destination: string | null = null
 
     if (binary !== null) {
-      destination = await selectSaveDestination('Save File', elfFilter)
-
-      if (!destination) {
-        return
-      }
-
-      await writeBinaryFile(destination.path, binary)
+      destination = await exportBinaryContents(binary.buffer, elfFilter)
     }
 
     consoleData.showConsole = true
@@ -222,7 +216,7 @@ export async function setupEvents() {
     }
 
     if (destination !== null) {
-      pushConsole(`ELF file written to ${destination.path}`, ConsoleType.Info)
+      pushConsole(`ELF file written to ${destination}`, ConsoleType.Info)
     }
   })
 
