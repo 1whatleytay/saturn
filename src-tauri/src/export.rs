@@ -1,13 +1,22 @@
 use std::fs;
 use std::path::Path;
 use base64::Engine;
-use crate::access_manager::AccessManager;
+use crate::access_manager::{AccessFilter, AccessManager};
 use crate::build::HexRegion;
 
 fn write_region_contents(destination: &Path, contents: &str) {
     let Ok(value) = base64::engine::general_purpose::STANDARD.decode(contents) else { return };
 
     fs::write(destination, value).ok();
+}
+
+#[tauri::command]
+pub async fn export_binary_contents(data: Vec<u8>, filters: Vec<AccessFilter>, state: tauri::State<'_, AccessManager>) -> Result<String, ()> {
+    let destination = state.select_save("Save File", &filters, false).await.ok_or(())?;
+
+    fs::write(&destination, data).map_err(|_| ())?;
+
+    Ok(destination.to_string_lossy().to_string())
 }
 
 #[tauri::command]

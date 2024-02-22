@@ -32,7 +32,7 @@ use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
 use crate::state::commands::DebuggerBody;
-use crate::export::{export_hex_regions, export_hex_contents};
+use crate::export::{export_hex_regions, export_hex_contents, export_binary_contents};
 
 use crate::state::commands::{resume, rewind, pause, stop, last_pc, post_key, post_input, wake_sync};
 use crate::testing::{all_tests, run_tests};
@@ -127,6 +127,7 @@ fn main() {
             detailed_disassemble,
             export_hex_regions,
             export_hex_contents,
+            export_binary_contents,
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)

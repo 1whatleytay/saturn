@@ -8,7 +8,9 @@ import {
 } from '../state/console-data'
 import {
   AssemblerResult,
-  assembleText, assembleWithBinary, disassemblyDetails,
+  assembleText,
+  assembleWithBinary,
+  disassemblyDetails,
   ExecutionModeType,
   ExecutionResult,
   ExecutionState
