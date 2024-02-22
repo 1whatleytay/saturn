@@ -1,6 +1,9 @@
+use std::io::Cursor;
 use serde::Serialize;
 use titan::unit::instruction::{InstructionDecoder, InstructionParameter};
 use num::ToPrimitive;
+use titan::elf::Elf;
+use titan::execution::elf::detailed_inspection::{make_inspection_lines, InspectionLine};
 
 #[derive(Serialize)]
 #[serde(tag="type", content="value")]
@@ -13,29 +16,69 @@ pub enum ParameterItem {
 
 #[derive(Serialize)]
 pub struct InstructionDetails {
+    pc: u32,
+    instruction: u32,
     name: &'static str,
     parameters: Vec<ParameterItem>
 }
 
+fn parameter_to_item(parameter: InstructionParameter) -> ParameterItem {
+    match parameter {
+        InstructionParameter::Register(name) => ParameterItem::Register(name.to_u32().unwrap()),
+        InstructionParameter::Immediate(imm) => ParameterItem::Immediate(imm),
+        InstructionParameter::Address(address) => ParameterItem::Address(address),
+        InstructionParameter::Offset(offset, register) =>
+            ParameterItem::Offset { offset, register: register.to_u32().unwrap() }
+    }
+}
+
 #[tauri::command]
 pub fn decode_instruction(pc: u32, instruction: u32) -> Option<InstructionDetails> {
-    let Some(instruction) = InstructionDecoder::decode(pc, instruction) else {
+    let Some(inst) = InstructionDecoder::decode(pc, instruction) else {
         return None
     };
 
     Some(InstructionDetails {
-        name: instruction.name(),
-        parameters: instruction.parameters()
+        pc,
+        instruction,
+        name: inst.name(),
+        parameters: inst.parameters()
             .into_iter()
-            .map(|x| {
-                match x {
-                    InstructionParameter::Register(name) => ParameterItem::Register(name.to_u32().unwrap()),
-                    InstructionParameter::Immediate(imm) => ParameterItem::Immediate(imm),
-                    InstructionParameter::Address(address) => ParameterItem::Address(address),
-                    InstructionParameter::Offset(offset, register) =>
-                        ParameterItem::Offset { offset, register: register.to_u32().unwrap() }
-                }
-            })
+            .map(parameter_to_item)
             .collect(),
     })
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type")]
+pub enum InspectionItem {
+    Instruction { details: InstructionDetails },
+    Blank,
+    Comment { message: String },
+    Label { name: String },
+}
+
+#[tauri::command]
+pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<Vec<InspectionItem>, String> {
+    let elf = Elf::read(&mut Cursor::new(bytes)).map_err(|e| e.to_string())?;
+
+    Ok(make_inspection_lines(&elf)
+        .into_iter()
+        .map(|line| match line {
+            InspectionLine::Instruction(inst) => InspectionItem::Instruction {
+                details: InstructionDetails {
+                    pc: inst.pc,
+                    instruction: inst.instruction,
+                    name: inst.name,
+                    parameters: inst.parameters
+                        .into_iter()
+                        .map(parameter_to_item)
+                        .collect()
+                }
+            },
+            InspectionLine::Blank => InspectionItem::Blank,
+            InspectionLine::Comment(value) => InspectionItem::Comment { message: value },
+            InspectionLine::Label(value) => InspectionItem::Label { name: value }
+        })
+        .collect())
 }

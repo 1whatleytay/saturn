@@ -248,12 +248,42 @@ export interface ParameterItemOffset {
 export type ParameterItem = ParameterItemRegular | ParameterItemOffset
 
 export interface InstructionDetails {
+  pc: number,
+  instruction: number,
   name: string,
   parameters: ParameterItem[]
 }
 
 export async function decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null> {
   return await invoke('decode_instruction', { pc, instruction }) ?? null
+}
+
+export interface InstructionLineInstruction {
+  type: 'Instruction',
+  details: InstructionDetails
+}
+
+export interface InstructionLineBlank {
+  type: 'Blank'
+}
+
+export interface InstructionLineComment {
+  type: 'Comment',
+  message: string
+}
+
+export interface InstructionLineLabel {
+  type: 'Label',
+  name: string
+}
+
+export type InstructionLine = InstructionLineInstruction
+  | InstructionLineBlank
+  | InstructionLineComment
+  | InstructionLineLabel;
+
+export async function disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
+  return await invoke('detailed_disassemble', { bytes: Array.from(new Uint8Array(bytes)) })
 }
 
 export async function lastDisplay(): Promise<LastDisplay> {
