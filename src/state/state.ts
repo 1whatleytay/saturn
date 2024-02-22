@@ -11,6 +11,7 @@ import { GotoMessage, useGoto } from '../utils/goto'
 import { useSymbolHighlight } from '../utils/symbol-highlight'
 import { ref, watch } from 'vue'
 import { findToken } from '../utils/languages/suggestions'
+import { InstructionLine } from '../utils/mips'
 
 export const settings = useSettings()
 
@@ -108,3 +109,5 @@ export const {
   suggestions,
   showSuggestionsAt
 )
+
+export const buildLines = ref(null as InstructionLine[] | null)

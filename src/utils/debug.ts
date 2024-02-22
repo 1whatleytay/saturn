@@ -8,12 +8,12 @@ import {
 } from '../state/console-data'
 import {
   AssemblerResult,
-  assembleText,
+  assembleText, assembleWithBinary, disassemblyDetails,
   ExecutionModeType,
   ExecutionResult,
-  ExecutionState,
+  ExecutionState
 } from './mips'
-import { tab, settings } from '../state/state'
+import { tab, settings, buildLines } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
@@ -143,7 +143,16 @@ export async function build() {
 
   const current = tab()
 
-  const result = await assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
+  const {
+    binary,
+    result
+  } = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+
+  if (binary !== null) {
+    console.log(`setting ${binary} and ${typeof binary.buffer}`)
+
+    buildLines.value = await disassemblyDetails(binary.buffer)
+  }
 
   consoleData.showConsole = true
   consoleData.tab = DebugTab.Console

@@ -37,7 +37,7 @@ use crate::export::{export_hex_regions, export_hex_contents};
 use crate::state::commands::{resume, rewind, pause, stop, last_pc, post_key, post_input, wake_sync};
 use crate::testing::{all_tests, run_tests};
 
-use crate::decode::decode_instruction;
+use crate::decode::{decode_instruction, detailed_disassemble};
 
 #[tauri::command]
 fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
@@ -124,6 +124,7 @@ fn main() {
             all_tests,
             run_tests,
             decode_instruction,
+            detailed_disassemble,
             export_hex_regions,
             export_hex_contents,
         ])
