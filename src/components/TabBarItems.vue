@@ -1,6 +1,14 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
     <button
+      class="w-10 h-10 hover:bg-slate-800 shrink-0 flex items-center justify-center font-black text-pink-300"
+      @click="interact()"
+      title="Interact WASM"
+    >
+      <PlayIcon class="w-4 h-4" />
+    </button>
+
+    <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
       class="w-10 h-10 hover:bg-slate-800 shrink-0 flex items-center justify-center font-black text-sky-300"
       @click="build()"
@@ -83,6 +91,7 @@ import { consoleData } from '../state/console-data'
 import { build, pause, resume, step, rewind, stop } from '../utils/debug'
 import { ExecutionModeType } from '../utils/mips'
 import { tab } from '../state/state'
+import { interact } from '../utils/interact-wasm'
 
 import {
   ArrowDownIcon,
