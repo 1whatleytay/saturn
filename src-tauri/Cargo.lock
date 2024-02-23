@@ -3222,16 +3222,12 @@ dependencies = [
 name = "saturn"
 version = "0.1.8"
 dependencies = [
- "async-trait",
  "base64 0.21.7",
- "byteorder",
  "futures",
  "hex",
  "notify",
- "num",
  "percent-encoding",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
+ "saturn_backend",
  "serde",
  "serde_json",
  "sha2",
@@ -3239,8 +3235,23 @@ dependencies = [
  "tauri-build",
  "titan",
  "tokio",
- "tokio-util",
  "uuid",
+]
+
+[[package]]
+name = "saturn_backend"
+version = "0.1.8"
+dependencies = [
+ "async-trait",
+ "base64 0.21.7",
+ "byteorder",
+ "num",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "serde",
+ "titan",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]

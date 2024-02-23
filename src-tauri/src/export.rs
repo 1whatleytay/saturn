@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 use base64::Engine;
 use crate::access_manager::{AccessFilter, AccessManager};
-use crate::build::HexRegion;
+use saturn_backend::regions::HexRegion;
 
 fn write_region_contents(destination: &Path, contents: &str) {
     let Ok(value) = base64::engine::general_purpose::STANDARD.decode(contents) else { return };

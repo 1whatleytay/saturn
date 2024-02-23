@@ -104,7 +104,6 @@ async fn download_file(
             );
 
             return None;
-        } else {
         }
     }
 
