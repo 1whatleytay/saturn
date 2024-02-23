@@ -10,8 +10,7 @@ import { CursorState, useTabs } from '../utils/tabs'
 import { GotoMessage, useGoto } from '../utils/goto'
 import { useSymbolHighlight } from '../utils/symbol-highlight'
 import { ref, watch } from 'vue'
-import { findToken } from '../utils/languages/suggestions'
-import { InstructionLine } from '../utils/mips'
+import { InstructionLine } from '../utils/mips/mips'
 
 export const settings = useSettings()
 

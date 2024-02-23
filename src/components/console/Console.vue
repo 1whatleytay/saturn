@@ -81,7 +81,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { consoleData, DebugTab } from '../../state/console-data'
 
 import { XMarkIcon } from '@heroicons/vue/24/solid'
-import { ExecutionModeType } from '../../utils/mips'
+import { ExecutionModeType } from '../../utils/mips/mips'
 import Tab from '../Tab.vue'
 import RegistersTab from './RegistersTab.vue'
 import MemoryTab from './MemoryTab.vue'

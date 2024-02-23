@@ -112,14 +112,13 @@
 </template>
 
 <script setup lang="ts">
-import { consoleData } from '../../state/console-data'
+import { backend, consoleData } from '../../state/console-data'
 import { computed, onMounted, reactive, watch } from 'vue'
 import {
   Breakpoints,
-  decodeInstruction, ExecutionModeType,
-  ExecutionState,
-  InstructionDetails
-} from '../../utils/mips'
+  ExecutionModeType,
+  InstructionDetails, MipsExecution
+} from '../../utils/mips/mips'
 import { setRegister, stepCount } from '../../utils/debug'
 import { ChevronRightIcon } from '@heroicons/vue/24/solid'
 import RegisterItem from './RegisterItem.vue'
@@ -233,14 +232,14 @@ function instructionGroup(breakpoints: Breakpoints | null, pc: number): Instruct
   }
 }
 
-async function instructionAtAddress(state: ExecutionState, address: number): Promise<InstructionDetails | null> {
+async function instructionAtAddress(state: MipsExecution, address: number): Promise<InstructionDetails | null> {
   const data = await state.memoryAt(address, 4)
 
   if (data === null) {
     return null
   }
 
-  return await decodeInstruction(address, combine(data))
+  return await backend.decodeInstruction(address, combine(data))
 }
 
 interface CurrentInstructions {

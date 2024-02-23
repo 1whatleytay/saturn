@@ -3,16 +3,16 @@ import { computed, ComputedRef, reactive, ref, Ref, watch } from 'vue'
 import { v4 as uuid } from 'uuid'
 import {
   AssemblyExecutionProfile,
-  disassembleElf,
   ElfExecutionProfile,
   ExecutionProfile,
-} from './mips'
+} from './mips/mips'
 import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
 import { splitLines } from './split-lines'
 import { accessReadText, accessSync } from './query/access-manager'
+import { backend } from '../state/console-data'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -351,7 +351,7 @@ export function useTabs(): TabsResult {
   }
 
   async function loadElf(named: string, elf: ArrayBuffer) {
-    const value = await disassembleElf(named, elf)
+    const value = await backend.disassembleElf(named, elf)
 
     const bytes = new Uint8Array(elf)
     let binary = ''

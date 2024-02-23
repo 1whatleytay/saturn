@@ -3,9 +3,9 @@ import { Editor } from './editor'
 import { collectLines, EditorTab } from './tabs'
 import { Language, Token } from './languages/language'
 import { MipsHighlighter } from './languages/mips/language'
-import { assembleText } from './mips'
 import { HighlightsInterface } from './highlights'
 import { SuggestionsStorage } from './languages/suggestions'
+import { backend } from '../state/console-data'
 
 export interface StorageState {
   // editor: Editor
@@ -54,7 +54,7 @@ export function useStorage(
   async function checkSyntax() {
     const current = tab()
 
-    const result = await assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
+    const result = await backend.assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
 
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]

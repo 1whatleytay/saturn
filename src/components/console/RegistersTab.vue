@@ -70,7 +70,7 @@ import { setRegister } from '../../utils/debug'
 
 import { Square3Stack3DIcon } from '@heroicons/vue/24/outline'
 import { RegisterFormat } from '../../utils/settings'
-import { Registers } from '../../utils/mips'
+import { Registers } from '../../utils/mips/mips'
 import RegisterItem from './RegisterItem.vue'
 
 function buttonClasses(format: RegisterFormat) {
