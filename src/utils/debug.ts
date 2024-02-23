@@ -1,20 +1,17 @@
 import { collectLines } from './tabs'
 import {
+  backend,
   consoleData,
   ConsoleType,
   DebugTab,
   openConsole,
-  pushConsole,
+  pushConsole
 } from '../state/console-data'
 import {
   AssemblerResult,
-  assembleText,
-  assembleWithBinary,
-  disassemblyDetails,
   ExecutionModeType,
-  ExecutionResult,
-  ExecutionState
-} from './mips'
+  ExecutionResult
+} from './mips/mips'
 import { tab, settings, buildLines } from '../state/state'
 
 import { format } from 'date-fns'
@@ -148,12 +145,12 @@ export async function build() {
   const {
     binary,
     result
-  } = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+  } = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
   if (binary !== null) {
     console.log(`setting ${binary} and ${typeof binary.buffer}`)
 
-    buildLines.value = await disassemblyDetails(binary.buffer)
+    buildLines.value = await backend.disassemblyDetails(binary.buffer)
   }
 
   consoleData.showConsole = true
@@ -178,7 +175,7 @@ export async function resume() {
 
     await saveCurrentTab(PromptType.NeverPrompt)
 
-    consoleData.execution = new ExecutionState(text, path, settings.execution.timeTravel, current.profile)
+    consoleData.execution = await backend.createExecution(text, path, settings.execution.timeTravel, current.profile)
   }
 
   consoleData.showConsole = true
@@ -215,7 +212,7 @@ export async function stepCount(skip: number) {
   clearDebug()
   consoleData.mode = ExecutionModeType.Running
 
-  const result = await consoleData.execution.resume(skip, null)
+  const result = await consoleData.execution.resume(skip, null, () => {})
 
   consoleData.showConsole = true
 

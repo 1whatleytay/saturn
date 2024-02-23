@@ -1,5 +1,7 @@
 import { reactive } from 'vue'
-import { ExecutionModeType, ExecutionState, Registers } from '../utils/mips'
+import { ExecutionModeType, MipsBackend, MipsExecution, Registers } from '../utils/mips/mips'
+import { TauriBackend } from '../utils/mips/tauri-backend'
+import { WasmBackend } from '../utils/mips/wasm-backend'
 
 export enum DebugTab {
   Registers,
@@ -38,7 +40,7 @@ interface ConsoleLineMeta {
 
 interface ConsoleData {
   showConsole: boolean
-  execution: ExecutionState | null
+  execution: MipsExecution | null
   mode: ExecutionModeType | null
   registers: Registers | null
   hintPc: number | null
@@ -50,6 +52,16 @@ interface ConsoleData {
 const editHighlight = { type: ConsoleType.Editing }
 const submitHighlight = { type: ConsoleType.Submitted }
 const secondaryHighlight = { type: ConsoleType.Secondary }
+
+function createBackend(): MipsBackend {
+  if (window.__TAURI__) {
+    return new TauriBackend()
+  } else {
+    return new WasmBackend()
+  }
+}
+
+export const backend = createBackend()
 
 export const consoleData = reactive({
   showConsole: false,

@@ -1,4 +1,4 @@
-import { HexRegion } from '../mips'
+import { HexRegion } from '../mips/mips'
 
 import { invoke } from '@tauri-apps/api'
 import { AccessFilter } from './access-manager'

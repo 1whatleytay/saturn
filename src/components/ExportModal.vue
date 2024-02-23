@@ -99,10 +99,8 @@
 import Modal from './Modal.vue'
 
 import { tab } from '../state/state'
-import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
-import { assembleRegions } from '../utils/mips'
+import { backend, consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
 import { collectLines } from '../utils/tabs'
-import { selectSaveDestination } from '../utils/query/access-manager'
 import { exportHexContents, exportHexRegions } from '../utils/query/serialize-files'
 import { postBuildMessage } from '../utils/debug'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
@@ -157,7 +155,7 @@ async function exportRegions() {
     return
   }
 
-  const result = await assembleRegions(collectLines(current.lines), current.path, state)
+  const result = await backend.assembleRegions(collectLines(current.lines), current.path, state)
 
   if (result.regions) {
     switch (result.regions.type) {

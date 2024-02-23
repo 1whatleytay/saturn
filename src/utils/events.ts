@@ -7,8 +7,8 @@ import {
   AccessFile,
   selectSaveDestination, selectOpenFile, accessWriteText, selectOpenElf
 } from './query/access-manager'
-import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
-import { assembleWithBinary, BinaryResult } from './mips'
+import { backend, consoleData, ConsoleType, pushConsole } from '../state/console-data'
+import { BinaryResult } from './mips/mips'
 import {
   closeTab,
   createTab, editor,
@@ -173,7 +173,7 @@ export async function setupEvents() {
   await listen('assemble', async () => {
     const current = tab()
 
-    const result = await assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+    const result = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
     if (result.binary) {
       const name = tab()?.title
@@ -199,7 +199,7 @@ export async function setupEvents() {
     if (current.profile && current.profile.kind === 'elf') {
       binary = Uint8Array.from(window.atob(current.profile.elf), c => c.charCodeAt(0))
     } else {
-      result = await assembleWithBinary(collectLines(current.lines), current.path)
+      result = await backend.assembleWithBinary(collectLines(current.lines), current.path)
       binary = result.binary
     }
 

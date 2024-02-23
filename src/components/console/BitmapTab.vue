@@ -132,14 +132,14 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { ArrowLeftIcon } from '@heroicons/vue/24/solid'
-import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
-import { consoleData } from '../../state/console-data'
+import { ExclamationCircleIcon } from '@heroicons/vue/24/outline'
+import { backend, consoleData } from '../../state/console-data'
 
 import { settings } from '../../state/state'
 import NumberField from './NumberField.vue'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
-import { ExecutionState, lastDisplay } from '../../utils/mips'
 import { displayConfig } from '../../utils/settings'
+import { MipsExecution } from '../../utils/mips/mips'
 
 const wrapper = ref(null as HTMLElement | null)
 const canvas = ref(null as HTMLCanvasElement | null)
@@ -288,7 +288,7 @@ watch(() => consoleData.execution, checkConnected)
 
 async function renderFrameFallback(
   context: CanvasRenderingContext2D,
-  execution: ExecutionState
+  execution: MipsExecution
 ) {
   const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
 
@@ -352,14 +352,14 @@ async function renderFrameProtocol(context: CanvasRenderingContext2D) {
 }
 
 async function renderLastDisplay(context: CanvasRenderingContext2D) {
-  const last = await lastDisplay()
+  const last = await backend.lastDisplay()
 
   // No data, don't render.
   if (!last.data) {
     return
   }
 
-  await renderOrdered(
+  renderOrdered(
     context,
     last.width,
     last.height,

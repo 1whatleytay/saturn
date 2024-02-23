@@ -81,7 +81,7 @@
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
 import { build, pause, resume, step, rewind, stop } from '../utils/debug'
-import { ExecutionModeType } from '../utils/mips'
+import { ExecutionModeType } from '../utils/mips/mips'
 import { tab } from '../state/state'
 
 import {

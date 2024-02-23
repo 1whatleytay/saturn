@@ -1,5 +1,6 @@
 import { reactive, watch } from 'vue'
-import { BitmapConfig, configureDisplay } from './mips'
+import { BitmapConfig } from './mips/mips'
+import { backend } from '../state/console-data'
 
 const settingsVersion = 6
 
@@ -125,13 +126,13 @@ export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
 export function useSettings(): Settings {
   const state = reactive(fromStorage())
 
-  configureDisplay(displayConfig(state.bitmap)).then(() => {})
+  backend.configureDisplay(displayConfig(state.bitmap)).then(() => {})
 
   watch(
     () => state.bitmap,
     async (bitmap) => {
       // Update tauri backend.
-      await configureDisplay(displayConfig(bitmap))
+      await backend.configureDisplay(displayConfig(bitmap))
     },
     { deep: true }
   )
