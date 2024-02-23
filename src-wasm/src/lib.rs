@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::io::Cursor;
+use wasm_bindgen::prelude::*;
+use saturn_backend::build::assemble_text;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[wasm_bindgen]
+pub fn build(text: &str) -> Option<Vec<u8>> {
+    let mut data = vec![];
+    
+    assemble_text(text, None).ok()?.create_elf().write(&mut Cursor::new(&mut data)).ok()?;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    Some(data)
 }
