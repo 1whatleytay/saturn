@@ -5,7 +5,7 @@ use tokio::sync::mpsc::error::TrySendError::Full;
 use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
 
 struct ByteChannelReceiver {
-    receiver: mpsc::Receiver<Vec<u8>>,
+    receiver: mpsc::Receiver<Vec<u8>>, // this might panic in WASM
     peek: Option<(usize, Vec<u8>)>,
 }
 

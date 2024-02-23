@@ -1,40 +1,26 @@
-use serde::Serialize;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
-use tauri::http::method::Method;
-use tauri::http::Response;
-use tauri::http::{Request, ResponseBuilder};
 use tauri::{AppHandle, Manager, Wry};
-use titan::cpu::Memory;
-use crate::state::commands::DebuggerBody;
-use crate::state::execution::read_display;
+use tauri::http::{Request, Response, ResponseBuilder};
+use tauri::http::method::Method;
+use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
+use crate::state::DebuggerBody;
 
-#[derive(Clone, Serialize)]
-pub struct FlushDisplayState {
-    pub address: u32,
-    pub width: u32,
-    pub height: u32,
-    pub data: Option<Vec<u8>>, // flush should impact this
-}
+#[tauri::command]
+pub fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
+    let mut body = state.lock().unwrap();
 
-impl Default for FlushDisplayState {
-    fn default() -> FlushDisplayState {
-        FlushDisplayState {
-            address: 0x10008000,
-            width: 64,
-            height: 64,
-            data: None,
-        }
+    *body = FlushDisplayState {
+        address,
+        width,
+        height,
+        data: None,
     }
 }
 
-impl FlushDisplayState {
-    pub fn flush<Mem: Memory>(&mut self, memory: &mut Mem) {
-        self.data = read_display(self.address, self.width, self.height, memory);
-    }
+#[tauri::command]
+pub fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
+    state.lock().unwrap().clone()
 }
-
-pub type FlushDisplayBody = Arc<Mutex<FlushDisplayState>>;
 
 pub fn display_protocol(
     app: &AppHandle<Wry>,

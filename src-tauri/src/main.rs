@@ -4,57 +4,37 @@
 )]
 
 mod build;
-mod channels;
 mod debug;
-mod display;
-mod keyboard;
 mod menu;
 mod midi;
-mod syscall;
 mod state;
 mod testing;
-mod decode;
-mod hex_format;
 mod access_manager;
 mod watch;
 mod export;
+mod decode;
+mod display;
 
 use std::sync::{Arc, Mutex};
 use tauri::{FileDropEvent, Manager};
-use tauri::WindowEvent::{FileDrop, Destroyed};
+use tauri::WindowEvent::{Destroyed, FileDrop};
 use crate::access_manager::AccessManager;
 
-use crate::display::{display_protocol, FlushDisplayBody, FlushDisplayState};
+use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
 
 use crate::build::{assemble, assemble_binary, assemble_regions, configure_asm, configure_elf, disassemble};
 use crate::debug::{read_bytes, set_register, swap_breakpoints, write_bytes};
 use crate::menu::platform_shortcuts;
 use crate::midi::{midi_install, midi_protocol, MidiProviderContainer};
-use crate::state::commands::DebuggerBody;
-use crate::export::{export_hex_regions, export_hex_contents, export_binary_contents};
+use crate::export::{export_binary_contents, export_hex_contents, export_hex_regions};
+use crate::state::DebuggerBody;
 
-use crate::state::commands::{resume, rewind, pause, stop, last_pc, post_key, post_input, wake_sync};
+use crate::state::{last_pc, pause, post_input, post_key, resume, rewind, stop, wake_sync};
 use crate::testing::{all_tests, run_tests};
 
 use crate::decode::{decode_instruction, detailed_disassemble};
-
-#[tauri::command]
-fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
-    let mut body = state.lock().unwrap();
-
-    *body = FlushDisplayState {
-        address,
-        width,
-        height,
-        data: None,
-    }
-}
-
-#[tauri::command]
-fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
-    state.lock().unwrap().clone()
-}
+use crate::display::{configure_display, last_display, display_protocol};
 
 #[tauri::command]
 fn is_debug() -> bool {

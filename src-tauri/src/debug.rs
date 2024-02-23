@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use crate::state::commands::DebuggerBody;
+use crate::state::DebuggerBody;
 
 #[tauri::command]
 pub fn swap_breakpoints(breakpoints: Vec<u32>, state: tauri::State<'_, DebuggerBody>) {
