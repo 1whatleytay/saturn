@@ -35,9 +35,20 @@ export async function selectSaveDestination(
 }
 
 export async function selectOpenElf(): Promise<AccessFile<Uint8Array> | null> {
-  return await invoke('access_select_open', {
+  const result = (await invoke('access_select_open', {
     title: 'Select ELF', filters: elfFilter, selection: 'all_binary'
-  })
+  })) as AccessFile<number[]> | null
+
+  if (result !== null) {
+    console.log(result)
+
+    return {
+      ...result,
+      data: Uint8Array.from(result.data)
+    }
+  } else {
+    return null
+  }
 }
 
 export async function selectOpenFile(
@@ -54,6 +65,19 @@ export async function accessWriteText(path: string, content: string): Promise<vo
 
 export async function accessReadText(path: string): Promise<string> {
   return await invoke('access_read_text', { path })
+}
+
+export async function accessReadFile(path: string): Promise<AccessFile<string | Uint8Array>> {
+  const value = await invoke('access_read_file', { path }) as AccessFile<string | number[]>
+
+  if (typeof value.data == 'string') {
+    return value as AccessFile<string>
+  } else {
+    return {
+      ...value,
+      data: Uint8Array.from(value.data)
+    }
+  }
 }
 
 export async function accessSync(paths: string[]) {

@@ -5,7 +5,6 @@ use titan::cpu::Memory;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::elf::Elf;
-use titan::elf::program::ProgramHeaderFlags;
 use titan::execution::Executor;
 use titan::execution::trackers::empty::EmptyTracker;
 use titan::execution::trackers::history::HistoryTracker;

@@ -276,7 +276,6 @@ pub fn create_menu() -> Menu {
         Menu::new()
             .add_native_item(MenuItem::Minimize)
             .add_item(MenuOptions::ToggleConsole.make_item())
-            .add_native_item(MenuItem::CloseWindow),
     ));
 
     menu

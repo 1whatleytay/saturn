@@ -19,6 +19,13 @@ use crate::watch::Watch;
 const ACCESS_CONFIG_VERSION: u32 = 1;
 const ACCESS_CONFIG_FILENAME: &str = "save-state.json";
 
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum FileContent {
+    Text(String),
+    Data(Vec<u8>)
+}
+
 #[derive(Debug, Serialize)]
 pub enum AccessError {
     NotFound(PathBuf),
@@ -148,34 +155,39 @@ impl AccessManager {
         }).ok()
     }
 
-    fn config_path(config: &Config) -> Option<PathBuf> {
+    fn create_config_path(config: &Config) -> Option<PathBuf> {
         let mut path = tauri::api::path::app_data_dir(config)?;
+
+        fs::create_dir_all(&path).ok()?;
 
         path.push(ACCESS_CONFIG_FILENAME);
 
         Some(path)
     }
 
-    fn read_config(config: &Config) -> Option<AccessManagerState> {
-        let value = fs::read_to_string(Self::config_path(config)?).ok()?;
+    fn read_config(path: &Path) -> Option<AccessManagerState> {
+        let value = fs::read_to_string(path).ok()?;
 
         serde_json::from_str(&value).ok()
             .filter(|state: &AccessManagerState| state.version == ACCESS_CONFIG_VERSION)
     }
 
-    fn write_config(config: &Config, state: &AccessManagerState) -> Option<()> {
+    fn write_config(path: &Path, state: &AccessManagerState) -> Option<()> {
         let value = serde_json::to_string(state).ok()?;
 
-        fs::write(Self::config_path(config)?, value).ok()
+        fs::write(path, value).ok()
     }
 
     fn new(app: AppHandle, state: AccessManagerState) -> Self {
-        let app_clone = app.clone();
-
+        let config_path = Self::create_config_path(&app.config());
         let watch = Watch::new(state);
 
+        let config_path_clone = config_path.clone();
+
         watch.listen(move |state, _| {
-            Self::write_config(&app_clone.config(), state);
+            if let Some(path) = &config_path_clone {
+                Self::write_config(path, state);
+            }
         });
 
         let state = Arc::new(watch);
@@ -208,7 +220,11 @@ impl AccessManager {
     }
 
     pub fn load(app: AppHandle) -> Self {
-        let config = Self::read_config(&app.config())
+        // Create Config Path is also called in new()
+        let config_path = Self::create_config_path(&app.config());
+
+        let config = config_path
+            .and_then(|path| Self::read_config(&path))
             .unwrap_or(AccessManagerState {
                 version: ACCESS_CONFIG_VERSION,
                 locked: false,
@@ -370,6 +386,38 @@ pub fn access_read_text(
     }
 
     fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path))
+}
+
+#[tauri::command]
+pub fn access_read_file(
+    path: PathBuf, state: tauri::State<'_, AccessManager>
+) -> Result<AccessFile<FileContent>, AccessError> {
+    if !state.has_access(&path) {
+        return Err(AccessError::AccessDenied(path))
+    }
+
+    let name = make_string(path.file_name());
+    let extension = make_string(path.extension());
+
+    if extension == Some("elf".to_string()) {
+        let data = fs::read(&path).map_err(|_| AccessError::NotFound(path.clone()))?;
+
+        Ok(AccessFile {
+            name,
+            extension,
+            path,
+            data: FileContent::Data(data)
+        })
+    } else {
+        let data = fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path.clone()))?;
+
+        Ok(AccessFile {
+            name,
+            extension,
+            path,
+            data: FileContent::Text(data)
+        })
+    }
 }
 
 #[tauri::command]

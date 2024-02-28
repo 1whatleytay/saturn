@@ -3,16 +3,22 @@ import { listen } from '@tauri-apps/api/event'
 import { collectLines, EditorTab } from './tabs'
 import { build, pause, postBuildMessage, resume, step, stop } from './debug'
 import {
-  assemblyFilter, elfFilter,
+  assemblyFilter,
+  elfFilter,
   AccessFile,
-  selectSaveDestination, selectOpenFile, accessWriteText, selectOpenElf
+  selectSaveDestination,
+  selectOpenFile,
+  accessWriteText,
+  selectOpenElf,
+  accessReadFile
 } from './query/access-manager'
 import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
 import { backend } from '../state/backend'
 import { BinaryResult } from './mips/mips'
 import {
   closeTab,
-  createTab, editor,
+  createTab,
+  editor,
   find,
   loadElf,
   showExportRegionsDialog,
@@ -201,7 +207,7 @@ export async function setupEvents() {
       binary = Uint8Array.from(window.atob(current.profile.elf), c => c.charCodeAt(0))
     } else {
       result = await backend.assembleWithBinary(collectLines(current.lines), current.path)
-      console.log({ result })
+
       binary = result.binary
     }
 
@@ -315,7 +321,7 @@ export async function setupEvents() {
   await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {
       for (const item of event.payload.paths) {
-        const file = await selectOpenFile(item)
+        const file = await accessReadFile(item)
 
         if (!file) {
           continue

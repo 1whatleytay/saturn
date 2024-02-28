@@ -95,7 +95,7 @@
       <div v-if="state.keyboardLive" class="text-gray-500 mt-4 flex items-center">
         <ArrowLeftIcon class="w-4 h-4 mr-2" />
 
-        Start typing to send keyboard events to the application.
+        Press keys now to create keyboard events.
       </div>
 
       <div v-else class="text-gray-500 mt-4 flex items-center">
