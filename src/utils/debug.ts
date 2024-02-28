@@ -1,12 +1,12 @@
 import { collectLines } from './tabs'
 import {
-  backend,
   consoleData,
   ConsoleType,
   DebugTab,
   openConsole,
   pushConsole
 } from '../state/console-data'
+import { backend } from '../state/backend'
 import {
   AssemblerResult,
   ExecutionModeType,
@@ -147,9 +147,9 @@ export async function build() {
     result
   } = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
-  if (binary !== null) {
-    console.log(`setting ${binary} and ${typeof binary.buffer}`)
+  console.log({ binary, result })
 
+  if (binary !== null) {
     buildLines.value = await backend.disassemblyDetails(binary.buffer)
   }
 

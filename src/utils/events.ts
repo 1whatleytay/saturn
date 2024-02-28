@@ -7,7 +7,8 @@ import {
   AccessFile,
   selectSaveDestination, selectOpenFile, accessWriteText, selectOpenElf
 } from './query/access-manager'
-import { backend, consoleData, ConsoleType, pushConsole } from '../state/console-data'
+import { consoleData, ConsoleType, pushConsole } from '../state/console-data'
+import { backend } from '../state/backend'
 import { BinaryResult } from './mips/mips'
 import {
   closeTab,
@@ -200,6 +201,7 @@ export async function setupEvents() {
       binary = Uint8Array.from(window.atob(current.profile.elf), c => c.charCodeAt(0))
     } else {
       result = await backend.assembleWithBinary(collectLines(current.lines), current.path)
+      console.log({ result })
       binary = result.binary
     }
 

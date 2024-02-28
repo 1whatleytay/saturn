@@ -1,6 +1,6 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig } from './mips/mips'
-import { backend } from '../state/console-data'
+import { backend } from '../state/backend'
 
 const settingsVersion = 6
 

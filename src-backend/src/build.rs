@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use titan::assembler::binary::Binary;
+use titan::assembler::binary::{Binary, RegionFlags};
 use titan::assembler::line_details::LineDetails;
 use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::{Mountable, Region};
@@ -11,6 +11,7 @@ use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::{Memory, State};
 use titan::execution::elf::inspection::Inspection;
 use titan::elf::Elf;
+use titan::elf::program::ProgramHeaderFlags;
 use crate::keyboard::{KeyboardHandler, KeyboardState, KEYBOARD_SELECTOR};
 
 pub const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
@@ -38,6 +39,24 @@ pub enum AssemblerResult {
     Success {
         breakpoints: Vec<Breakpoint>,
     },
+}
+
+pub fn get_elf_finished_pcs(elf: &Elf) -> Vec<u32> {
+    elf
+        .program_headers
+        .iter()
+        .filter(|header| header.flags.contains(ProgramHeaderFlags::EXECUTABLE))
+        .map(|header| header.virtual_address + header.data.len() as u32)
+        .collect()
+}
+
+pub fn get_binary_finished_pcs(binary: &Binary) -> Vec<u32> {
+    binary
+        .regions
+        .iter()
+        .filter(|region| region.flags.contains(RegionFlags::EXECUTABLE))
+        .map(|region| region.address + region.data.len() as u32)
+        .collect()
 }
 
 impl AssemblerResult {

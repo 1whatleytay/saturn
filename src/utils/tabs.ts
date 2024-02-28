@@ -12,7 +12,7 @@ import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
 import { splitLines } from './split-lines'
 import { accessReadText, accessSync } from './query/access-manager'
-import { backend } from '../state/console-data'
+import { backend } from '../state/backend'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null

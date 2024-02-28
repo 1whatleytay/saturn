@@ -188,7 +188,7 @@ export class TauriBackend implements MipsBackend {
     const value = (await tauri.invoke('assemble_regions', {
       text, path, options
     })) as [
-        AssembledRegions | null,
+      AssembledRegions | null,
       AssemblerResult
     ]
 
@@ -208,7 +208,7 @@ export class TauriBackend implements MipsBackend {
 
   async assembleWithBinary(text: string, path: string | null): Promise<BinaryResult> {
     const result = (await tauri.invoke('assemble_binary', { text, path })) as [
-        number[] | null,
+      number[] | null,
       AssemblerResult
     ]
 

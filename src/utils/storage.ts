@@ -5,7 +5,7 @@ import { Language, Token } from './languages/language'
 import { MipsHighlighter } from './languages/mips/language'
 import { HighlightsInterface } from './highlights'
 import { SuggestionsStorage } from './languages/suggestions'
-import { backend } from '../state/console-data'
+import { backend } from '../state/backend'
 
 export interface StorageState {
   // editor: Editor

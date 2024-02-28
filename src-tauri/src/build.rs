@@ -10,7 +10,7 @@ use titan::execution::Executor;
 use titan::execution::trackers::empty::EmptyTracker;
 use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
-use saturn_backend::build::{assemble_text, AssemblerResult, configure_keyboard, create_elf_state, DisassembleResult, PrintPayload, TIME_TRAVEL_HISTORY_SIZE};
+use saturn_backend::build::{assemble_text, AssemblerResult, configure_keyboard, create_elf_state, DisassembleResult, get_binary_finished_pcs, get_elf_finished_pcs, PrintPayload, TIME_TRAVEL_HISTORY_SIZE};
 use saturn_backend::device::{ExecutionState, setup_state, state_from_binary};
 use saturn_backend::execution::RewindableDevice;
 use saturn_backend::keyboard::KeyboardState;
@@ -92,13 +92,8 @@ pub fn configure_elf(
 ) -> bool {
     let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else { return false };
 
-    let finished_pcs = elf
-        .program_headers
-        .iter()
-        .filter(|header| header.flags.contains(ProgramHeaderFlags::EXECUTABLE))
-        .map(|header| header.virtual_address + header.data.len() as u32)
-        .collect();
-
+    let finished_pcs = get_elf_finished_pcs(&elf);
+    
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
@@ -151,12 +146,7 @@ pub fn configure_asm(
 
     let Some(binary) = binary else { return result };
 
-    // No EXECUTABLE marked regions from assembler yet.
-    let finished_pcs = binary
-        .regions
-        .iter()
-        .map(|region| region.address + region.data.len() as u32)
-        .collect();
+    let finished_pcs = get_binary_finished_pcs(&binary);
 
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));

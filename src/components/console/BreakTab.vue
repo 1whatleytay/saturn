@@ -112,7 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { backend, consoleData } from '../../state/console-data'
+import { consoleData } from '../../state/console-data'
+import { backend } from '../../state/backend'
 import { computed, onMounted, reactive, watch } from 'vue'
 import {
   Breakpoints,

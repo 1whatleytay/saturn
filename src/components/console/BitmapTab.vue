@@ -133,7 +133,8 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { ArrowLeftIcon } from '@heroicons/vue/24/solid'
 import { ExclamationCircleIcon } from '@heroicons/vue/24/outline'
-import { backend, consoleData } from '../../state/console-data'
+import { consoleData } from '../../state/console-data'
+import { backend } from '../../state/backend'
 
 import { settings } from '../../state/state'
 import NumberField from './NumberField.vue'
