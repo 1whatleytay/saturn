@@ -99,7 +99,8 @@
 import Modal from './Modal.vue'
 
 import { tab } from '../state/state'
-import { backend, consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
+import { consoleData, ConsoleType, DebugTab, openConsole, pushConsole } from '../state/console-data'
+import { backend } from '../state/backend'
 import { collectLines } from '../utils/tabs'
 import { exportHexContents, exportHexRegions } from '../utils/query/serialize-files'
 import { postBuildMessage } from '../utils/debug'

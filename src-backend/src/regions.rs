@@ -11,14 +11,14 @@ pub struct HexRegion {
     pub data: String // base64 encoded
 }
 
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all="snake_case")]
 pub enum AssembleRegionsKind {
     Plain,
     HexV3
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct AssembleRegionsOptions {
     pub kind: AssembleRegionsKind,
     pub continuous: bool,

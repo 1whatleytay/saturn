@@ -5,16 +5,16 @@ use saturn_backend::execution::{ResumeResult, RewindableDevice};
 pub type DebuggerBody = Mutex<Option<Arc<dyn RewindableDevice>>>;
 
 #[tauri::command]
-pub async fn last_pc(state: tauri::State<'_, DebuggerBody>) -> Result<Option<u32>, ()> {
-    Ok(state.lock().unwrap()
+pub fn last_pc(state: tauri::State<'_, DebuggerBody>) -> Option<u32> {
+    state.lock().unwrap()
         .as_ref()
         .map(|debugger| debugger.last_pc())
-        .and_then(|x| x))
+        .and_then(|x| x)
 }
 
 #[tauri::command]
 pub async fn resume(
-    count: Option<u32>,
+    count: Option<usize>,
     breakpoints: Option<Vec<u32>>,
     state: tauri::State<'_, DebuggerBody>,
     display: tauri::State<'_, FlushDisplayBody>,

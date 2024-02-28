@@ -1,8 +1,8 @@
 use std::cmp::min;
 use byteorder::ByteOrder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all="snake_case")]
 pub enum HexEncoding {
     Byte,

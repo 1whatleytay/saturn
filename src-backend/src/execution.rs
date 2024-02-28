@@ -153,7 +153,7 @@ pub trait RewindableDevice: ExecutionDevice + ExecutionRewindable { }
 pub trait ExecutionDevice: Send + Sync {
     async fn resume(
         &self,
-        count: Option<u32>,
+        count: Option<usize>,
         breakpoints: Option<Vec<u32>>,
         display: Option<FlushDisplayBody>
     ) -> Result<ResumeResult, ()>;
@@ -177,7 +177,7 @@ pub trait ExecutionDevice: Send + Sync {
 impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for ExecutionState<Mem, Track> {
     async fn resume(
         &self,
-        count: Option<u32>,
+        count: Option<usize>,
         breakpoints: Option<Vec<u32>>,
         display: Option<FlushDisplayBody>
     ) -> Result<ResumeResult, ()> {
@@ -200,6 +200,7 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
 
         let (frame, result) = {
             if let Some(count) = count {
+                // Taylor: Why did I split the last iteration out?
                 for _ in 0..count - 1 {
                     delegate.cycle(&debugger).await;
                 }
