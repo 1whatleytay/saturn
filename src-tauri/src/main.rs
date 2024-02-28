@@ -98,6 +98,7 @@ fn main() {
             access_manager::access_select_open,
             access_manager::access_read_text,
             access_manager::access_write_text,
+            access_manager::access_read_file,
             midi_install,
             is_debug,
             wake_sync,

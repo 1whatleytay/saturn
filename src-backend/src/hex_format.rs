@@ -15,7 +15,15 @@ fn read_with_encoding<T: Into<u64>, F: FnMut(&[u8]) -> T>(data: &[u8], mut f: F)
         .map(|i| {
             let slice = &data[i .. min(i + 4, data.len())];
 
-            f(slice).into()
+            if slice.len() < 4 {
+                let mut slice = slice.to_vec();
+                
+                slice.extend(std::iter::repeat(0).take(4 - slice.len()));
+                
+                f(&slice).into()
+            } else {
+                f(slice).into()
+            }
         }).collect()
 }
 

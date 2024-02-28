@@ -147,8 +147,6 @@ export async function build() {
     result
   } = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
-  console.log({ binary, result })
-
   if (binary !== null) {
     buildLines.value = await backend.disassemblyDetails(binary.buffer)
   }
