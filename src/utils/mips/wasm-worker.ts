@@ -1,3 +1,4 @@
+/*
 import * as backend from './wasm/saturn_wasm'
 import { ExportRegionsOptions } from '../settings'
 import {
@@ -139,3 +140,6 @@ async function handleMessage(event: MessageEvent) {
 }
 
 onmessage = handleMessage
+*/
+
+export { }
