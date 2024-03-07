@@ -39,8 +39,6 @@ export async function playNote(note: MidiNote) {
 
   if (!loadedInstruments.has(note.name)) {
     if (!(await loadInstrument(note.name))) {
-      console.error(`Failed to load instrument ${note.name}`)
-
       return await wake()
     }
   }

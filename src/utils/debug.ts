@@ -143,13 +143,16 @@ export async function build() {
   const current = tab()
 
   const {
-    binary,
     result
   } = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
 
-  if (binary !== null) {
-    buildLines.value = await backend.disassemblyDetails(binary.buffer)
-  }
+  // if (binary !== null) {
+  //   try {
+  //     buildLines.value = await backend.disassemblyDetails(binary.buffer)
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }
 
   consoleData.showConsole = true
   consoleData.tab = DebugTab.Console
