@@ -40,8 +40,6 @@ export async function selectOpenElf(): Promise<AccessFile<Uint8Array> | null> {
   })) as AccessFile<number[]> | null
 
   if (result !== null) {
-    console.log(result)
-
     return {
       ...result,
       data: Uint8Array.from(result.data)

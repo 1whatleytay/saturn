@@ -129,7 +129,14 @@ export function useSymbolHighlight(
       const line = i + start
 
       if (!lines[line]) {
-        lines[line] = matchingTokens(storage.storage.highlights[line], line)
+        const highlights = storage.storage.highlights
+
+        // Weird temporary case where highlights change.
+        if (line < highlights.length) {
+          lines[line] = matchingTokens(highlights[line], line)
+        } else {
+          lines[line] = []
+        }
       }
 
       result[i] = lines[line]
