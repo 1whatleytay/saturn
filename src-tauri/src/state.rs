@@ -25,7 +25,11 @@ pub async fn resume(
         pointer.clone()
     };
 
-    context.resume(count, breakpoints, Some(display.inner().clone())).await
+    let display = display.inner().clone();
+    
+    tokio::spawn(async move {
+        context.resume(count, breakpoints, Some(display)).await 
+    }).await.map_err(|_| ())?
 }
 
 #[tauri::command]
