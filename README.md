@@ -38,26 +38,6 @@ Then follow this instructions in the installer. Saturn should be installed on yo
 
 # Building
 
-Saturn is built with Tauri and has a Typescript and Rust component.
-For contribution purposes, you can contribute to the app by building Saturn locally.
-
-First, please install the following tools:
-
- - [Node](https://nodejs.org/en)
- - [Rust](https://www.rust-lang.org)
- - [Yarn (Classic)](https://yarnpkg.com)
-
-Before development, install dependencies using
-```
-yarn install
-```
-
-To run for development, use
-```shell
-yarn tauri dev
-```
-
-To build a binary for your platform, use
-```shell
-yarn tauri build
-```
+For instructions on building Saturn from source, see [BUILD.md](BUILD.md).
+Typically, you'd want to build Saturn from source if you're trying to develop, add features, or support a new platform.
+Otherwise, you should see the Installation section to install a prebuilt binary.
