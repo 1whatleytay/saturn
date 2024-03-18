@@ -1,28 +1,9 @@
 <template>
   <div
-    class="text-sm overflow-auto flex whitespace-pre content-start p-2 h-full"
+    class="text-sm overflow-auto flex whitespace-pre content-start p-2 w-full h-full"
   >
-    <button
-      ref="wrapper"
-      @click="focusSelf"
-      @focusin="state.keyboardLive = true"
-      @focusout="state.keyboardLive = false"
-      @keydown="(e) => handleKey(e, false)"
-      @keyup="(e) => handleKey(e, true)"
-      class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 max-w-full"
-      :style="{ width: `${correctedWidth}px` }"
-      :class="{ 'mx-auto sm:mx-0': !state.small, 'mx-auto': state.small }"
-    >
-      <canvas
-        ref="canvas"
-        class="w-full h-full bitmap-display rounded"
-        :width="config.width"
-        :height="config.height"
-      />
-    </button>
-
     <div
-      class="p-4 flex flex-col content-center justify-center items-center align-center"
+      class="p-4 flex flex-col content-center mr-auto"
       :class="{ 'sm:block': !state.small }"
     >
       <div class="text-base font-bold mb-4 flex items-center">
@@ -125,6 +106,25 @@
         </div>
       </div>
     </div>
+
+    <button
+      ref="wrapper"
+      @click="focusSelf"
+      @focusin="state.keyboardLive = true"
+      @focusout="state.keyboardLive = false"
+      @keydown="(e) => handleKey(e, false)"
+      @keyup="(e) => handleKey(e, true)"
+      class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 max-w-3/4 self-end"
+      :style="{ width: `${correctedWidth}px` }"
+      :class="{ 'mx-auto sm:mx-0': !state.small, 'mx-auto': state.small }"
+    >
+      <canvas
+        ref="canvas"
+        class="w-full h-full bitmap-display rounded"
+        :width="config.width"
+        :height="config.height"
+      />
+    </button>
   </div>
 </template>
 
