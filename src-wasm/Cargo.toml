@@ -21,4 +21,4 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 getrandom = { version = "0.2.12", features = ["js"] }
 
 saturn_backend = { path = "../src-backend" }
-titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+titan = { git = "https://github.com/1whatleytay/titan.git", branch = "lock-test" }
