@@ -33,8 +33,8 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Saturn v__VERSION__'
+          tagName: app-v0.1.9a # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Saturn v0.1.9a'
           releaseBody: 'See attached builds.'
           releaseDraft: true
           prerelease: false
