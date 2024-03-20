@@ -26,7 +26,7 @@ notify = "6.1.1"
 base64 = "0.21.5"
 
 saturn_backend = { path = "../src-backend" }
-titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+titan = { git = "https://github.com/1whatleytay/titan.git", branch = "lock-test" }
 
 [features]
 default = [ "custom-protocol" ]

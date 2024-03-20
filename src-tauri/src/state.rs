@@ -27,8 +27,8 @@ pub async fn resume(
 
     let display = display.inner().clone();
     
-    tokio::spawn(async move {
-        context.resume(count, breakpoints, Some(display)).await 
+    tokio::task::spawn_blocking(move || {
+        context.resume(count, breakpoints, Some(display))
     }).await.map_err(|_| ())?
 }
 

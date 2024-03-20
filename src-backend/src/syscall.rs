@@ -23,6 +23,7 @@ use titan::execution::Executor;
 use titan::execution::trackers::Tracker;
 use tokio::select;
 use tokio::sync::Notify;
+use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 
 pub struct MidiRequest {
@@ -734,7 +735,7 @@ impl SyscallDelegate {
         }
     }
 
-    async fn handle_frame<Mem: Memory, Track: Tracker<Mem>>(
+    fn handle_frame<Mem: Memory, Track: Tracker<Mem>>(
         &self,
         debugger: &Executor<Mem, Track>,
         frame: DebugFrame,
@@ -743,7 +744,7 @@ impl SyscallDelegate {
             Invalid(CpuSyscall) => {
                 // $v0
                 let code = debugger.with_state(|s| s.registers.line[V0_REG]);
-                let result = self.dispatch(debugger, code).await;
+                let result = Handle::current().block_on(self.dispatch(debugger, code));
 
                 (
                     match result {
@@ -761,12 +762,12 @@ impl SyscallDelegate {
         }
     }
 
-    pub async fn run<Mem: Memory, Track: Tracker<Mem>>(
+    pub fn run<Mem: Memory, Track: Tracker<Mem>>(
         &self, debugger: &Executor<Mem, Track>
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
             let frame = debugger.run();
-            let (frame, result) = self.handle_frame(debugger, frame).await;
+            let (frame, result) = self.handle_frame(debugger, frame);
 
             if let Some(frame) = frame {
                 return (frame, result);
@@ -781,14 +782,14 @@ impl SyscallDelegate {
         }
     }
 
-    pub async fn cycle<Mem: Memory + Send, Track: Tracker<Mem> + Send>(
+    pub fn cycle<Mem: Memory + Send, Track: Tracker<Mem> + Send>(
         &self,
         debugger: &Executor<Mem, Track>,
     ) -> (DebugFrame, Option<SyscallResult>) {
         let frame = debugger.cycle(true);
 
         let (frame, result) = if let Some(frame) = frame {
-            self.handle_frame(debugger, frame).await
+            self.handle_frame(debugger, frame)
         } else {
             (None, None)
         };

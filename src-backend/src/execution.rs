@@ -2,7 +2,6 @@ use crate::display::{FlushDisplayBody, read_display};
 use crate::syscall::{SyscallDelegate, SyscallResult};
 use serde::Serialize;
 use std::collections::HashSet;
-use async_trait::async_trait;
 use titan::cpu::error::Error::{CpuTrap, MemoryAlign, MemoryUnmapped};
 use titan::cpu::{Memory, State};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
@@ -149,9 +148,8 @@ pub trait ExecutionRewindable {
 
 pub trait RewindableDevice: ExecutionDevice + ExecutionRewindable { }
 
-#[async_trait]
 pub trait ExecutionDevice: Send + Sync {
-    async fn resume(
+    fn resume(
         &self,
         count: Option<usize>,
         breakpoints: Option<Vec<u32>>,
@@ -173,9 +171,8 @@ pub trait ExecutionDevice: Send + Sync {
     fn post_input(&self, text: String);
 }
 
-#[async_trait]
 impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for ExecutionState<Mem, Track> {
-    async fn resume(
+    fn resume(
         &self,
         count: Option<usize>,
         breakpoints: Option<Vec<u32>>,
@@ -202,16 +199,16 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
             if let Some(count) = count {
                 // Taylor: Why did I split the last iteration out?
                 for _ in 0..count - 1 {
-                    delegate.cycle(&debugger).await;
+                    delegate.cycle(&debugger);
                 }
 
                 if count > 0 {
-                    delegate.cycle(&debugger).await
+                    delegate.cycle(&debugger)
                 } else {
                     return Err(());
                 }
             } else {
-                delegate.run(&debugger).await
+                delegate.run(&debugger)
             }
         };
 
