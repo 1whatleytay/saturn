@@ -30,9 +30,9 @@ dependencies = [
 
 [[package]]
 name = "autocfg"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
 
 [[package]]
 name = "backtrace"
@@ -352,7 +352,7 @@ dependencies = [
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#654add173430371f20df685b7956b7276813fa37"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#92135bb94b90ee639b51cff6f2cf96404d289266"
 dependencies = [
  "bitflags",
  "byteorder",
