@@ -1,11 +1,12 @@
 import { tauri } from '@tauri-apps/api'
 
-import * as MIDI from 'midicube'
+import { Soundfont } from "smplr";
 import { convertFileSrc } from '@tauri-apps/api/tauri'
 
-;(window as any).MIDI = MIDI
+const context = new AudioContext();
+const soundfontUrl = convertFileSrc('', 'midi')
 
-const loadedInstruments = new Set<string>()
+const loadedInstruments = new Map<string, Soundfont>()
 
 export interface MidiNote {
   sync: boolean
@@ -16,38 +17,33 @@ export interface MidiNote {
   volume: number
 }
 
-function loadInstrument(instrument: string): Promise<boolean> {
-  const soundfontUrl = convertFileSrc('', 'midi')
+async function loadInstrument(instrument: string): Promise<void> {
+  const sf = new Soundfont(context, { instrumentUrl: `${soundfontUrl}/${instrument}-mp3.js` });
 
-  return new Promise((resolve) => {
-    MIDI.loadPlugin({
-      instrument,
-      soundfontUrl,
-      targetFormat: 'mp3',
-      onerror: () => resolve(false),
-      onsuccess: () => {
-        loadedInstruments.add(instrument)
+  loadedInstruments.set(instrument, sf);
 
-        resolve(true)
-      },
-    })
-  })
+  await sf.load;
 }
 
 export async function playNote(note: MidiNote) {
   const wake = async () => await tauri.invoke('wake_sync')
 
   if (!loadedInstruments.has(note.name)) {
-    if (!(await loadInstrument(note.name))) {
+    try {
+      await loadInstrument(note.name)
+    } catch (e) {
       return await wake()
     }
   }
 
+  const sf = loadedInstruments.get(note.name)
   if (note.duration > 0) {
-    MIDI.setVolume(0, note.volume)
-    MIDI.programChange(0, note.instrument)
-    MIDI.noteOn(0, note.note, 127, 0)
-    MIDI.noteOff(0, note.note, note.duration)
+    sf?.start({
+      note: note.note,
+      duration: note.duration,
+      velocity: 127,
+      // volume
+    })
   }
 
   if (note.sync) {
