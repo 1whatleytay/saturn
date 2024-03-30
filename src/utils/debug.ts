@@ -12,7 +12,7 @@ import {
   ExecutionModeType,
   ExecutionResult
 } from './mips/mips'
-import { tab, settings, buildLines } from '../state/state'
+import { tab, settings } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
@@ -144,7 +144,7 @@ export async function build() {
 
   const {
     result
-  } = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+  } = await backend.assembleWithBinary(current?.state.doc.toString() ?? '', current?.path ?? null)
 
   // if (binary !== null) {
   //   try {
@@ -171,7 +171,7 @@ export async function resume() {
   const usedBreakpoints = current.breakpoints ?? []
 
   if (!consoleData.execution) {
-    const text = collectLines(current.lines ?? [])
+    const text = current.state.doc.toString()
     const path = current.path
 
     await saveCurrentTab(PromptType.NeverPrompt)

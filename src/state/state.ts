@@ -21,7 +21,6 @@ function widthQuery(text: string) {
 export const {
   tabsState,
   tab,
-  tabBody,
   createTab,
   closeTab,
   loadElf,
@@ -29,20 +28,8 @@ export const {
   showSettings
 } = useTabs()
 
-export const find = useFind(() => tabBody.value, widthQuery)
-
 export const errorHighlights = useHighlights(widthQuery)
 export const gotoHighlights = useHighlights<GotoMessage>(widthQuery)
-
-function cursorState(): CursorState {
-  return tab()?.cursor ?? { line: 0, index: 0, highlight: null }
-}
-
-function cursorIndex(): SelectionIndex {
-  const state = cursorState()
-
-  return { line: state.line, index: state.index }
-}
 
 
 const storageResult = useStorage(errorHighlights, tab, onDirty)
@@ -55,19 +42,16 @@ export const {
 } = useSymbolHighlight(storageResult, widthQuery)
 
 function onDirty(line: number, deleted: number, insert: string[]) {
-  find.dirty(line, deleted, insert)
-  gotoHighlights.shiftHighlight(line, deleted, insert.length)
-  updateCursorSymbol(cursorState())
+ 
 }
+// watch(() => {
+//   // const cursor = cursorIndex()
+//   // const line = tab()?.lines[cursor.line]
 
-watch(() => {
-  const cursor = cursorIndex()
-  const line = tab()?.lines[cursor.line]
+//   // const index = line ? Math.min(line.length, cursor.index) : cursor.index
 
-  const index = line ? Math.min(line.length, cursor.index) : cursor.index
-
-  return { line: cursor.line, index }
-}, updateCursorSymbol)
+//   // return { line: cursor.line, index }
+// }, updateCursorSymbol)
 
 export const goto = useGoto(gotoHighlights, storageResult)
 
@@ -85,28 +69,3 @@ function showSuggestionsAt(cursor: SelectionIndex) {
 }
 
 export const showExportRegionsDialog = ref(false)
-
-export const {
-  range,
-  position,
-  jump,
-  lineStart,
-  getSelection,
-  dropSelection,
-  pasteText,
-  dropCursor,
-  dragTo,
-  cursorCoordinates,
-  handleKey,
-  applyMergeSuggestion,
-} = useCursor(
-  () => editor.value,
-  cursorState,
-  settings.editor,
-  regular,
-  24,
-  suggestions,
-  showSuggestionsAt
-)
-
-export const buildLines = ref(null as InstructionLine[] | null)

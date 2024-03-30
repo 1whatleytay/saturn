@@ -19,7 +19,6 @@ import {
   closeTab,
   createTab,
   editor,
-  find,
   loadElf,
   showExportRegionsDialog,
   showSettings,
@@ -57,9 +56,7 @@ export async function openTab(file: AccessFile<string | Uint8Array>) {
 
   switch (typeof data) {
     case 'string':
-      const split = splitLines(data)
-
-      createTab(name, split.length ? split : [''], path)
+      createTab(name, data, path)
       break
 
     default:
@@ -89,7 +86,7 @@ export async function saveTab(
     current.path = path
   }
 
-  const data = collectLines(current.lines)
+  const data = current.state.doc.toString()
 
   await accessWriteText(current.path, data)
 
@@ -124,7 +121,7 @@ export async function setupEvents() {
   })
 
   await listen('new-tab', () => {
-    createTab('Untitled', [''])
+    createTab('Untitled', '')
   })
 
   await listen('open-file', async () => {
@@ -171,16 +168,11 @@ export async function setupEvents() {
     await stop()
   })
 
-  await listen('find', () => {
-    find.state.show = true
-    find.state.focus = true // send focus event
-    suggestions.dismissSuggestions()
-  })
 
   await listen('assemble', async () => {
     const current = tab()
 
-    const result = await backend.assembleWithBinary(collectLines(current?.lines ?? []), current?.path ?? null)
+    const result = await backend.assembleWithBinary(current?.state?.doc?.toString() ?? '', current?.path ?? null)
 
     if (result.binary) {
       const name = tab()?.title
@@ -206,7 +198,7 @@ export async function setupEvents() {
     if (current.profile && current.profile.kind === 'elf') {
       binary = Uint8Array.from(window.atob(current.profile.elf), c => c.charCodeAt(0))
     } else {
-      result = await backend.assembleWithBinary(collectLines(current.lines), current.path)
+      result = await backend.assembleWithBinary(current.state.doc.toString(), current.path)
 
       binary = result.binary
     }

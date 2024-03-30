@@ -1,4 +1,4 @@
-import { computed, ComputedRef, reactive, ref, Ref, watch } from 'vue'
+import { computed, reactive, ref, Ref, watch, markRaw, Raw } from 'vue'
 
 import { v4 as uuid } from 'uuid'
 import {
@@ -10,9 +10,11 @@ import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType, saveTab } from './events'
 import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
-import { splitLines } from './split-lines'
 import { accessReadText, accessSync } from './query/access-manager'
 import { backend } from '../state/backend'
+import { EditorState } from '@codemirror/state'
+import { EditorView, basicSetup } from 'codemirror'
+import { breakpointGutter } from './breakpoints'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -51,9 +53,8 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
 export interface EditorTab {
   uuid: string
   title: string
-  lines: string[]
+  state: Raw<EditorState>
   removed: boolean
-  cursor: CursorState
   breakpoints: number[]
   path: string | null
   writable: boolean
@@ -63,6 +64,24 @@ export interface EditorTab {
 
 export function collectLines(lines: string[]): string {
   return lines.join('\n')
+}
+
+function createState(editor: Tabs, uuid: string, doc: string) {
+  return EditorState.create({
+    doc,
+    extensions: [
+      breakpointGutter,
+      basicSetup,
+      EditorView.updateListener.of((update) => {
+        const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
+        tab.state = markRaw(update.state)
+      }),
+      EditorView.theme({
+        "&.cm-editor": {height: "100%", width: "100%"},
+        ".cm-scroller": {overflow: "auto"}
+      })
+    ],
+  })
 }
 
 export interface Tabs {
@@ -75,7 +94,7 @@ export interface TabsInterface {
   closeTab(uuid: string): boolean
   createTab(
     named: string,
-    content: string[],
+    content: string,
     path?: string,
     profile?: ExecutionProfile
   ): void
@@ -84,8 +103,7 @@ export interface TabsInterface {
 
 export type TabsResult = TabsInterface & {
   tabsState: Tabs
-  tabBody: ComputedRef<string[]>
-  saveModal: SaveModalResult,
+  saveModal: SaveModalResult
   showSettings: Ref<boolean>
 }
 
@@ -116,14 +134,14 @@ interface TabsRestoreState {
 }
 
 export function useTabs(): TabsResult {
-  const editor = reactive({
+  const editor = reactive<Tabs>({
     tabs: [],
     selected: null,
-  } as Tabs)
+  })
 
   function pushEmpty() {
     if (!editor.tabs.length) {
-      createTab('Untitled', [''])
+      createTab('Untitled', '')
     }
   }
 
@@ -152,7 +170,11 @@ export function useTabs(): TabsResult {
         try {
           data = await accessReadText(tab.path)
         } catch (e) {
-          console.error(`Could not resume tab ${tab.path ?? 'Untitled'} (${tab.uuid}) with error`)
+          console.error(
+            `Could not resume tab ${tab.path ?? 'Untitled'} (${
+              tab.uuid
+            }) with error`
+          )
           console.error(e)
 
           // Discard tab.
@@ -166,19 +188,18 @@ export function useTabs(): TabsResult {
         continue
       }
 
-      const lines = splitLines(data)
+      const state = markRaw(createState(editor, tab.uuid, data))
 
       editor.tabs.push({
         uuid: tab.uuid,
         title,
-        cursor: { line: 0, index: 0, highlight: null },
         path: tab.path,
         removed: false,
         breakpoints: tab.breakpoints,
         writable: tab.writable,
         marked: tab.marked,
         profile: tab.profile,
-        lines,
+        state,
       })
     }
 
@@ -189,9 +210,8 @@ export function useTabs(): TabsResult {
       editor.selected = hasSelected ? state.selected : editor.tabs[0].uuid
     }
 
-    await accessSync(editor.tabs
-      .map(x => x.path)
-      .filter((x): x is string => x !== null)
+    await accessSync(
+      editor.tabs.map((x) => x.path).filter((x): x is string => x !== null)
     )
   }
 
@@ -239,7 +259,7 @@ export function useTabs(): TabsResult {
       } as RestoreTab
 
       if (!tab.path) {
-        const collect = collectLines(tab.lines)
+        const collect = tab.state.doc.toString()
 
         if (collect.length <= maxBackupLength) {
           map.set(tab.uuid, collect)
@@ -265,8 +285,6 @@ export function useTabs(): TabsResult {
 
     return null
   })
-
-  const tabBody = computed(() => tab.value?.lines ?? ['Nothing yet.'])
 
   async function discardTab(uuid: string) {
     const index = editor.tabs.findIndex((tab) => tab.uuid === uuid)
@@ -323,7 +341,7 @@ export function useTabs(): TabsResult {
 
   function createTab(
     named: string,
-    content: string[],
+    content: string,
     path: string | null = null,
     profile: ExecutionProfile | null = defaultAssemblyProfile(),
     writable: boolean = true
@@ -333,14 +351,9 @@ export function useTabs(): TabsResult {
     editor.tabs.push({
       uuid: id,
       title: named,
-      lines: content,
+      state: markRaw(createState(editor, id, content)),
       removed: false,
       breakpoints: [],
-      cursor: {
-        line: 0,
-        index: 0,
-        highlight: null,
-      },
       path,
       writable,
       marked: false,
@@ -357,7 +370,7 @@ export function useTabs(): TabsResult {
     let binary = ''
     bytes.forEach((byte) => (binary += String.fromCharCode(byte)))
 
-    const lines = value.error ? [value.error] : value.lines
+    const lines = value.error ? value.error : value.lines.join('\n')
     const profile = {
       kind: 'elf',
       elf: window.btoa(binary),
@@ -369,12 +382,11 @@ export function useTabs(): TabsResult {
 
   return {
     tabsState: editor,
-    tabBody,
     tab: () => tab.value,
     closeTab,
     createTab,
     loadElf,
     saveModal,
-    showSettings
+    showSettings,
   }
 }

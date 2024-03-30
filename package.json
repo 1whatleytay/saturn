@@ -11,8 +11,11 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.26.1",
     "@heroicons/vue": "^2.0.13",
     "@tauri-apps/api": "^1.1.0",
+    "codemirror": "^6.0.1",
     "date-fns": "^2.29.3",
     "fuse.js": "^6.6.2",
     "midicube": "^0.6.2",

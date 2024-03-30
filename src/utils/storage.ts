@@ -54,7 +54,7 @@ export function useStorage(
   async function checkSyntax() {
     const current = tab()
 
-    const result = await backend.assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
+    const result = await backend.assembleText(current?.state.doc.toString() ?? '', current?.path ?? null)
 
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]
@@ -130,8 +130,8 @@ export function useStorage(
     const current = tab()
 
     return new Editor(
-      current?.lines ?? ['Nothing yet.'],
-      current?.cursor ?? { line: 0, index: 0 },
+      current?.state.doc.toString().split("\n") ?? ['Nothing yet.'],
+      { line: 0, index: 0 },
       handleDirty,
       current?.writable ?? false ? undefined : () => false // weird
     )

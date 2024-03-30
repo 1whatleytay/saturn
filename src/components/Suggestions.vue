@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { applyMergeSuggestion, position, suggestions } from '../state/state'
+import { suggestions } from '../state/state'
 import { ref, watch } from 'vue'
 import {
   suggestionLetter,
@@ -93,7 +93,7 @@ function merge(index: number) {
   const suggestion = suggestions.mergeSuggestion()
 
   if (suggestion) {
-    applyMergeSuggestion(suggestion)
+    // applyMergeSuggestion(suggestion)
   }
 }
 
