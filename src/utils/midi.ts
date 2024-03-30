@@ -18,7 +18,10 @@ export interface MidiNote {
 }
 
 async function loadInstrument(instrument: string): Promise<void> {
-  const sf = new Soundfont(context, { instrumentUrl: `${soundfontUrl}/${instrument}-mp3.js` });
+  const sf = new Soundfont(context, { 
+    volumeToGain: (volume: number) => volume,
+    instrumentUrl: `${soundfontUrl}/${instrument}-mp3.js`
+  });
 
   loadedInstruments.set(instrument, sf);
 
@@ -41,8 +44,7 @@ export async function playNote(note: MidiNote) {
     sf?.start({
       note: note.note,
       duration: note.duration,
-      velocity: 127,
-      // volume
+      velocity: note.volume / 20 + 2,
     })
   }
 
