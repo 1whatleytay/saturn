@@ -15,6 +15,7 @@ import { backend } from '../state/backend'
 import { EditorState } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
+import { Mips } from './lezer-mips'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -70,6 +71,7 @@ function createState(editor: Tabs, uuid: string, doc: string) {
   return EditorState.create({
     doc,
     extensions: [
+      Mips(),
       breakpointGutter,
       basicSetup,
       EditorView.updateListener.of((update) => {
