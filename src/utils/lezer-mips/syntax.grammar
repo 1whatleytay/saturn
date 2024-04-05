@@ -3,7 +3,7 @@
 @skip { space | LineComment | "," }
 
 @precedence {
-  label
+  label @cut
 }
 
 expression {
