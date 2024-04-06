@@ -72,7 +72,6 @@ function createState(editor: Tabs, uuid: string, doc: string) {
     doc,
     extensions: [
       Mips(),
-      breakpointGutter,
       basicSetup,
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
@@ -80,7 +79,6 @@ function createState(editor: Tabs, uuid: string, doc: string) {
       }),
       EditorView.theme({
         "&.cm-editor": {height: "100%", width: "100%"},
-        ".cm-scroller": {overflow: "auto"}
       })
     ],
   })

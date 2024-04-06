@@ -167,6 +167,6 @@ onUnmounted(() => {
 })
 
 function create() {
-  createTab('Untitled', [''])
+  createTab('Untitled', '')
 }
 </script>

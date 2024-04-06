@@ -41,6 +41,20 @@ onMounted(() => {
     parent: code.value!,
   })
 
+  // https://gist.github.com/shimondoodkin/1081133
+  if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
+    view.contentDOM.addEventListener('blur', (): void => {
+      var editableFix = document.createElement('input')
+      editableFix.style = 'width:1px;height:1px;border:none;margin:0;padding:0;'
+      editableFix.tabIndex = -1
+      view.contentDOM.appendChild(editableFix)
+      editableFix.focus();
+      editableFix.setSelectionRange(0, 0);
+      editableFix.blur();
+      editableFix.remove();
+    }, false);
+  }
+
   watch(
     () => tab()?.state,
     (state) => {
