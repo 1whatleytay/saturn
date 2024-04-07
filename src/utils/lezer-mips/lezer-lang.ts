@@ -3,7 +3,7 @@ import {
   LRLanguage,
   LanguageSupport,
   foldNodeProp,
-  foldInside,
+  indentNodeProp,
 } from '@codemirror/language'
 import { styleTags, tags as t } from '@lezer/highlight'
 import { CompletionContext } from '@codemirror/autocomplete'
@@ -12,7 +12,13 @@ const MipsLanguage = LRLanguage.define({
   parser: parser.configure({
     props: [
       foldNodeProp.add({
-        Application: foldInside,
+        LabelGroup: (node) => {
+          let first = node.firstChild
+          return first && first.to ? {from: first.to, to: node.to} : null
+        },
+      }),
+      indentNodeProp.add({
+        LabelGroup: context => context.column(context.node.from) + context.unit
       }),
       styleTags({
         Identifier: t.variableName,

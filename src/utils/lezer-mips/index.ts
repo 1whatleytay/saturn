@@ -1,6 +1,6 @@
 import { tags as t } from '@lezer/highlight'
-import {  autocompletion } from '@codemirror/autocomplete'
-import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
+import { autocompletion } from '@codemirror/autocomplete'
+import { syntaxHighlighting, HighlightStyle, foldGutter } from '@codemirror/language'
 import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view'
 import { lang } from './lezer-lang'
@@ -61,6 +61,7 @@ export function Mips() {
   return [
     syntaxHighlighting(twHighlightStyle),
     darkTheme,
+    foldGutter(),
     lang,
     autocompletion({ activateOnTyping: true }),
     highlightedLineState,
