@@ -16,6 +16,7 @@ import { EditorState } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
 import { Mips } from './lezer-mips'
+import { showMinimap } from '@replit/codemirror-minimap'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -73,6 +74,14 @@ function createState(editor: Tabs, uuid: string, doc: string) {
     extensions: [
       Mips(),
       basicSetup,
+      showMinimap.compute(['doc'], (state) => {
+        return {
+          create: (v: EditorView) => {
+            const dom = document.createElement('div')
+            return { dom }
+          },
+        }
+      }),
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
         if (update.docChanged) {
@@ -81,8 +90,8 @@ function createState(editor: Tabs, uuid: string, doc: string) {
         tab.state = markRaw(update.state)
       }),
       EditorView.theme({
-        "&.cm-editor": {height: "100%", width: "100%"},
-      })
+        '&.cm-editor': { height: '100%', width: '100%' },
+      }),
     ],
   })
 }
