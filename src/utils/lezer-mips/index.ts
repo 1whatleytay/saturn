@@ -61,7 +61,6 @@ export function Mips() {
   return [
     syntaxHighlighting(twHighlightStyle),
     darkTheme,
-    foldGutter(),
     lang,
     autocompletion({ activateOnTyping: true }),
     highlightedLineState,
