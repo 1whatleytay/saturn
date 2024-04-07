@@ -1,51 +1,9 @@
-import { parser } from './syntax.grammar'
-import {
-  LRLanguage,
-  LanguageSupport,
-  foldNodeProp,
-  foldInside,
-} from '@codemirror/language'
-import { styleTags, tags as t } from '@lezer/highlight'
-import { CompletionContext, autocompletion } from '@codemirror/autocomplete'
+import { tags as t } from '@lezer/highlight'
+import {  autocompletion } from '@codemirror/autocomplete'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view'
-
-export const MipsLanguage = LRLanguage.define({
-  parser: parser.configure({
-    props: [
-      foldNodeProp.add({
-        Application: foldInside,
-      }),
-      styleTags({
-        Identifier: t.variableName,
-        Label: t.attributeName,
-        //args: t.bool,
-        Register: t.typeName,
-        Number: t.number,
-        String: t.string,
-        Op: t.keyword,
-        Macro: t.macroName,
-        LineComment: t.lineComment,
-      }),
-    ],
-  }),
-  languageData: {
-    commentTokens: { line: ';' },
-    autocomplete: function myCompletions(context: CompletionContext) {
-      let word = context.matchBefore(/\w*/)!
-      if (word.from == word.to && !context.explicit) return null
-      return {
-        from: word.from,
-        options: [
-          { label: 'match', type: 'keyword' },
-          { label: 'hello', type: 'variable', info: '(World)' },
-          { label: 'magic', type: 'text', apply: '⠁⭒*.✩.*⭒⠁', detail: 'macro' },
-        ],
-      }
-    },
-  },
-})
+import { lang } from './lezer-lang'
 
 export const clearHighlightedLine = StateEffect.define<null>()
 export const setHighlightedLine = StateEffect.define<number>()
@@ -103,7 +61,7 @@ export function Mips() {
   return [
     syntaxHighlighting(twHighlightStyle),
     darkTheme,
-    new LanguageSupport(MipsLanguage),
+    lang,
     autocompletion({ activateOnTyping: true }),
     highlightedLineState,
   ]
