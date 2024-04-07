@@ -75,6 +75,9 @@ function createState(editor: Tabs, uuid: string, doc: string) {
       basicSetup,
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
+        if (update.docChanged) {
+          tab.marked = true
+        }
         tab.state = markRaw(update.state)
       }),
       EditorView.theme({
