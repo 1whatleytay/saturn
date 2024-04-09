@@ -1,8 +1,8 @@
 <template>
   <button
-    class="hover:bg-neutral-800 text-slate-300 flex items-center transition-[border-color] duration-200 space-x-4 h-10 px-6 text-xs font-medium border-b-2"
+    class="dark:hover:bg-neutral-700 hover:bg-neutral-300 dark:text-slate-300 text-slate-800 flex items-center transition-[border-color] duration-200 space-x-4 h-10 px-6 text-xs font-medium border-b-2"
     :class="{
-      'border-orange-400 bg-neutral-800': props.selected,
+      'border-orange-400 dark:bg-neutral-800 bg-neutral-300': props.selected,
       'border-transparent': !props.selected,
     }"
   >
@@ -16,7 +16,7 @@
       class="ml-3 translate-x-1 w-4 h-4 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center group"
     >
       <span
-        class="w-2 h-2 block rounded-full bg-gray-300 mx-auto"
+        class="w-2 h-2 block rounded-full dark:bg-gray-300 bg-gray-700 mx-auto"
         :class="{ 'block group-hover:hidden': marked, hidden: !marked }"
       />
       <XMarkIcon

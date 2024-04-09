@@ -1,7 +1,7 @@
 <template>
   <div
-    ref="code"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
+    ref="scroll"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900 pt-2"
   >
 
       <Suggestions />

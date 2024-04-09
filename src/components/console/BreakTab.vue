@@ -5,7 +5,7 @@
     </div>
 
     <div class="flex">
-      <div v-if="!state.instructions && !state.stack" class="px-8 text-neutral-500">
+      <div v-if="!state.instructions && !state.stack" class="px-8 dark:text-neutral-500 text-neutral-800">
         To view debug information, set breakpoints or pause during execution.
       </div>
 
@@ -19,8 +19,8 @@
               @click="stepOne()"
               title="Step One"
               :class="{
-                'text-gray-300 cursor-default': !allowResume,
-                'text-sky-300 hover:bg-slate-800': allowResume,
+                'dark:text-gray-300 text-gray-800 cursor-default': !allowResume,
+                'dark:text-sky-300 text-sky-800 dark:hover:bg-slate-800 hover:bg-slate-400': allowResume,
               }"
               :disabled="!allowResume"
             >
@@ -34,7 +34,7 @@
               :class="{'opacity-0': state.instructions.currentIndex !== index}"
             />
 
-            <span class="text-sky-400 font-bold">
+            <span class="dark:text-sky-400 text-sky-600 font-bold">
               {{ instruction?.name || 'unk' }}
             </span>
 
@@ -79,7 +79,7 @@
           Stack
         </span>
 
-        <div class="flex items-center text-neutral-500 border-b border-gray-700 p-2">
+        <div class="flex items-center dark:text-neutral-500 text-neutral-800 border-b border-gray-700 p-2">
           <div class="w-10">
 
           </div>
@@ -94,15 +94,15 @@
         </div>
 
         <div v-for="value in state.stack.elements" class="flex items-center font-mono my-1">
-          <div class="w-10 text-xs text-purple-300">
+          <div class="w-10 text-xs dark:text-purple-300 text-purple-700">
             {{ value.address === state.stack?.sp ? '$sp' : '' }}
           </div>
 
-          <div class="w-28 px-2 py-1 text-neutral-400 hover:bg-neutral-800 rounded">
+          <div class="w-28 px-2 py-1 text-neutral-400 dark:hover:bg-neutral-800 hover:bg-neutral-300 rounded">
             0x{{ value.address.toString(16).padStart(8, '0') }}
           </div>
 
-          <div class="w-32 px-2 py-1 select-all hover:bg-neutral-800 rounded">
+          <div class="w-32 px-2 py-1 select-all dark:hover:bg-neutral-800 hover:bg-neutral-300 rounded">
             0x{{ value.value.toString(16).padStart(8, '0') }}
           </div>
         </div>
@@ -131,10 +131,10 @@ const allowResume = computed(
       consoleData.mode !== ExecutionModeType.Running)
 )
 
-const systemColor = 'text-purple-300'
-const valueColor = 'text-red-300'
-const temporaryColor = 'text-cyan-300'
-const savedColor = 'text-green-300'
+const systemColor = 'dark:text-purple-300 text-purple-700'
+const valueColor = 'dark:text-red-300 text-red-700'
+const temporaryColor = 'dark:text-cyan-300 text-cyan-700'
+const savedColor = 'dark:text-green-300 text-green-700'
 
 const registers = [
   { name: '$zero', color: systemColor },

@@ -1,7 +1,7 @@
 <template>
   <Modal :show="!!props.dialog.state.tab">
     <div
-      class="max-w-lg bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow"
+      class="max-w-lg dark:bg-neutral-900 bg-neutral-200 rounded-xl px-8 py-6 mx-auto flex flex-col shadow"
     >
       <div>Would you like to save changes made to this file?</div>
 
@@ -14,7 +14,7 @@
           @click="props.dialog.selectSave()"
           ref="saveButton"
           id="save-modal-save"
-          class="mr-4 mt-4 w-24 bg-slate-800 hover:bg-slate-700 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-4 mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
         >
           Save
         </button>
@@ -23,7 +23,7 @@
           @click="props.dialog.selectDiscard()"
           ref="discardButton"
           id="save-modal-discard"
-          class="mr-8 mt-4 w-28 bg-neutral-800 hover:bg-neutral-700 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-8 mt-4 w-28 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
         >
           Don't Save
         </button>
@@ -32,7 +32,7 @@
           @click="props.dialog.selectDismiss()"
           ref="dismissButton"
           id="save-modal-dismiss"
-          class="mt-4 w-24 bg-neutral-800 hover:bg-neutral-700 transition-colors duration-150 px-4 py-2 rounded"
+          class="mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
         >
           Cancel
         </button>

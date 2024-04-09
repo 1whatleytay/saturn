@@ -29,7 +29,7 @@
         Bitmap Display
       </div>
 
-      <div class="text-neutral-300 ml-2">
+      <div class="dark:text-neutral-300 text-neutral-700 ml-2">
         <div class="py-1">
           <label class="inline-block font-bold pr-4 w-32">Display Width</label>
 
@@ -82,8 +82,8 @@
           <button
             class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 active:bg-slate-700"
             :class="{
-              'bg-slate-800': settings.bitmap.address === gp,
-              'hover:bg-slate-800': settings.bitmap.address !== gp,
+              'dark:bg-slate-800 bg-slate:300': settings.bitmap.address === gp,
+              'dark:hover:bg-slate-800 bg-slate:300': settings.bitmap.address !== gp,
             }"
             @click="settings.bitmap.address = gp"
           >
