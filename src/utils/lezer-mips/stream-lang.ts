@@ -364,9 +364,7 @@ const sl = StreamLanguage.define({
     if (!item) {
       return null
     }
-    if (item.type !== TokenType.Label) {
-      state.initial = false
-    }
+    state.initial = item.type === TokenType.Label
     return typeToTag(item.type)
   },
   languageData: {
