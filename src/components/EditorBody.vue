@@ -3,7 +3,6 @@
     ref="code"
     class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900"
   >
-    <Suggestions />
     <GotoOverlay
       v-if="gotoHighlights.state.highlight"
       @click="jumpGoto"
@@ -29,7 +28,6 @@ import {
 
 import GotoOverlay from './GotoOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
-import Suggestions from './Suggestions.vue'
 
 import { EditorView } from 'codemirror'
 import { darkTheme, editorTheme, lightTheme } from '../utils/lezer-mips'

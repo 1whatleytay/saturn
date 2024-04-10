@@ -16,6 +16,7 @@ import { tab, settings } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
+import { getBreakpoints } from './breakpoints'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -24,16 +25,8 @@ export async function setBreakpoint(line: number, remove: boolean) {
     return
   }
 
-  if (remove) {
-    currentTab.breakpoints = currentTab.breakpoints.filter(
-      (point) => point !== line
-    )
-  } else if (!currentTab.breakpoints.includes(line)) {
-    currentTab.breakpoints.push(line)
-  }
-
   if (consoleData.execution) {
-    await consoleData.execution.setBreakpoints(currentTab.breakpoints)
+    await consoleData.execution.setBreakpoints(getBreakpoints(currentTab.state))
   }
 }
 
@@ -168,7 +161,7 @@ export async function resume() {
     return
   }
 
-  const usedBreakpoints = current.breakpoints ?? []
+  const usedBreakpoints = getBreakpoints(current.state)
 
   if (!consoleData.execution) {
     const text = current.state.doc.toString()

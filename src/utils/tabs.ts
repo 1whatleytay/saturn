@@ -16,7 +16,6 @@ import { EditorState } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
 import { Mips } from './lezer-mips'
-import { showMinimap } from '@replit/codemirror-minimap'
 import { minimap, minimapCompartment, vimCompartment } from './lezer-mips/modes'
 
 export type CursorState = SelectionIndex & {
@@ -58,7 +57,6 @@ export interface EditorTab {
   title: string
   state: Raw<EditorState>
   removed: boolean
-  breakpoints: number[]
   path: string | null
   writable: boolean
   marked: boolean // needs saving
@@ -203,7 +201,6 @@ export function useTabs(): TabsResult {
         title,
         path: tab.path,
         removed: false,
-        breakpoints: tab.breakpoints,
         writable: tab.writable,
         marked: tab.marked,
         profile: tab.profile,
@@ -260,7 +257,6 @@ export function useTabs(): TabsResult {
         uuid: tab.uuid,
         title: tab.title,
         path: tab.path,
-        breakpoints: tab.breakpoints,
         writable: tab.writable,
         marked: tab.marked,
         profile: tab.profile,
@@ -361,7 +357,6 @@ export function useTabs(): TabsResult {
       title: named,
       state: markRaw(createState(editor, id, content)),
       removed: false,
-      breakpoints: [],
       path,
       writable,
       marked: false,

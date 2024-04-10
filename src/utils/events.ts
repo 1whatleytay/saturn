@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event'
 
-import { collectLines, EditorTab } from './tabs'
+import { EditorTab } from './tabs'
 import { build, pause, postBuildMessage, resume, step, stop } from './debug'
 import {
   assemblyFilter,
@@ -22,14 +22,12 @@ import {
   loadElf,
   showExportRegionsDialog,
   showSettings,
-  suggestions,
   tab,
   tabsState
 } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
-import { splitLines } from './split-lines'
 import { exportBinaryContents } from './query/serialize-files'
 
 export enum PromptType {

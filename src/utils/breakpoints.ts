@@ -1,4 +1,4 @@
-import {StateField, StateEffect, RangeSet} from "@codemirror/state"
+import {StateField, StateEffect, RangeSet, EditorState} from "@codemirror/state"
 import {Decoration, EditorView, gutter, gutterLineClass, GutterMarker, lineNumbers} from "@codemirror/view"
 import { setBreakpoint } from "./debug";
 
@@ -53,10 +53,14 @@ function toggleBreakpoint(view: EditorView, pos: number) {
   view.dispatch({
     effects: breakpointEffect.of({pos, on: !hasBreakpoint})
   })
-  const index = view.state.doc.lineAt(pos).number-1
-  setBreakpoint(index, hasBreakpoint)
 }
 
+export function getBreakpoints(state: EditorState) {
+  let breakpoints = state.field(breakpointState)
+  let result: number[] = []
+  breakpoints.between(0, state.doc.length, from => {result.push(state.doc.lineAt(from).number-1)})
+  return result
+}
 const breakpointMarker = new class extends GutterMarker {
   elementClass = "cm-breakpoint"
 }
