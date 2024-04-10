@@ -1,8 +1,10 @@
-import { LanguageSupport, StreamLanguage, StringStream } from "@codemirror/language";
-
-import { getStyle, HighlightResult, Token, TokenType } from '../languages/language'
-import { Tag, tags as t } from "@lezer/highlight";
-import { myCompletions } from "./autocomplete";
+import {
+  LanguageSupport,
+  StreamLanguage,
+  StringStream,
+} from '@codemirror/language'
+import { TokenType } from '../languages/language'
+import { myCompletions } from './autocomplete'
 
 enum ItemSuggestionMarker {
   Macro,
@@ -68,7 +70,7 @@ const knownDirectives = new Set([
   'eqv',
   'macro',
   'end_macro',
-  'include'
+  'include',
 ])
 
 const knownInstructions = new Set([
@@ -169,8 +171,8 @@ function isWhitespace(c: string): boolean {
 }
 
 function takeName(input: StringStream): string {
-  let out = ""
-  let c;
+  let out = ''
+  let c
   do {
     c = input.eat((c) => !allHard.has(c) && !isWhitespace(c))!
     out += c
@@ -179,14 +181,13 @@ function takeName(input: StringStream): string {
 }
 
 function spaceThenColon(input: StringStream) {
-  return input.match(/^\s*:/, false)!;
+  return input.match(/^\s*:/, false)!
 }
 function takeSpace(input: StringStream): string {
   return input.eat(isWhitespace)!
 }
 
 function takeStringBody(input: StringStream, quote: string): void {
-
   while (true) {
     const c = input.next()!
 
@@ -198,9 +199,9 @@ function takeStringBody(input: StringStream, quote: string): void {
   }
 }
 
-function readItem(line: StringStream, initial: boolean): Item {
-   initial ||= line.sol()
-  line.eatWhile(isWhitespace);
+function readItem(line: StringStream, initial: boolean): Item | undefined {
+  initial ||= line.sol()
+  line.eatWhile(isWhitespace)
 
   const first = line.next()!
 
@@ -295,7 +296,6 @@ function readItem(line: StringStream, initial: boolean): Item {
       const body = takeName(line)
 
       if (/\d/.test(first)) {
-
         // digit
         return {
           type: TokenType.Numeric,
@@ -336,25 +336,25 @@ function readItem(line: StringStream, initial: boolean): Item {
 
 function typeToTag(type: TokenType): string {
   const x = {
-    [TokenType.Comment]: "lineComment",
-    [TokenType.Hard]: "separator",
-    [TokenType.BracketOpen]: "paren",
-    [TokenType.BracketClose]: "paren",
-    [TokenType.Label]: "attributeName",
-    [TokenType.Directive]: "macroName",
-    [TokenType.Parameter]: "typeName",
-    [TokenType.Instruction]: "keyword",
-    [TokenType.Register]: "typeName",
-    [TokenType.Numeric]: "number",
-    [TokenType.Symbol]: "variableName",
-    [TokenType.Text]: "string",
-    [TokenType.Nothing]: "invalid",
+    [TokenType.Comment]: 'lineComment',
+    [TokenType.Hard]: 'separator',
+    [TokenType.BracketOpen]: 'paren',
+    [TokenType.BracketClose]: 'paren',
+    [TokenType.Label]: 'attributeName',
+    [TokenType.Directive]: 'macroName',
+    [TokenType.Parameter]: 'typeName',
+    [TokenType.Instruction]: 'keyword',
+    [TokenType.Register]: 'typeName',
+    [TokenType.Numeric]: 'number',
+    [TokenType.Symbol]: 'variableName',
+    [TokenType.Text]: 'string',
+    [TokenType.Nothing]: 'invalid',
   }
   return x[type]
 }
 const sl = StreamLanguage.define({
-  name: "mips",
-  startState(indentUnit) {
+  name: 'mips',
+  startState() {
     return {
       initial: true,
     }
@@ -368,9 +368,9 @@ const sl = StreamLanguage.define({
     return typeToTag(item.type)
   },
   languageData: {
-    commentTokens: {line: "#"},
-    autocomplete: myCompletions
-  }
+    commentTokens: { line: '#' },
+    autocomplete: myCompletions,
+  },
 })
 
 export const lang = new LanguageSupport(sl)
