@@ -17,6 +17,7 @@ import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
 import { Mips } from './lezer-mips'
 import { showMinimap } from '@replit/codemirror-minimap'
+import { minimap, minimapCompartment, vimCompartment } from './lezer-mips/modes'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -75,14 +76,8 @@ function createState(editor: Tabs, uuid: string, doc: string) {
       Mips(),
       breakpointGutter,
       basicSetup,
-      showMinimap.compute(['doc'], (state) => {
-        return {
-          create: (v: EditorView) => {
-            const dom = document.createElement('div')
-            return { dom }
-          },
-        }
-      }),
+      minimapCompartment.of(minimap),
+      vimCompartment.of([]),
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
         if (update.docChanged) {

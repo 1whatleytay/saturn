@@ -82,11 +82,8 @@
         />
       </div>
 
-
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">
-          Dark Mode
-        </div>
+        <div class="font-bold uppercase text-sm">Dark Mode</div>
 
         <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
           When disabled, use light mode.
@@ -98,9 +95,35 @@
           v-model="settings.editor.darkMode"
         />
       </div>
-    </div>
 
-    
+      <div class="mt-8">
+        <div class="font-bold uppercase text-sm">Show minimap</div>
+
+        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+          When enabled, a minimap will be shown on the right side of the editor.
+        </div>
+
+        <ToggleField
+          class="my-2"
+          title="Show minimap"
+          v-model="settings.editor.showMinimap"
+        />
+      </div>
+
+      <div class="mt-8">
+        <div class="font-bold uppercase text-sm">VIM Mode</div>
+
+        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+          When enabled, use VIM keybindings.
+        </div>
+
+        <ToggleField
+          class="my-2"
+          title="Use VIM Mode"
+          v-model="settings.editor.vimMode"
+        />
+      </div>
+    </div>
   </Modal>
 </template>
 

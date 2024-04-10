@@ -3,17 +3,17 @@
     ref="code"
     class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900"
   >
-      <Suggestions />
-      <GotoOverlay
-        v-if="gotoHighlights.state.highlight"
-        @click="jumpGoto"
-        :highlight="gotoHighlights.state.highlight"
-      />
-      <ErrorOverlay
-        v-if="errorHighlights.state.highlight"
-        :highlight="errorHighlights.state.highlight"
-      />
-    </div>
+    <Suggestions />
+    <GotoOverlay
+      v-if="gotoHighlights.state.highlight"
+      @click="jumpGoto"
+      :highlight="gotoHighlights.state.highlight"
+    />
+    <ErrorOverlay
+      v-if="errorHighlights.state.highlight"
+      :highlight="errorHighlights.state.highlight"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -31,11 +31,12 @@ import GotoOverlay from './GotoOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
 import Suggestions from './Suggestions.vue'
 
-import { EditorView} from "codemirror"
+import { EditorView } from 'codemirror'
 import { darkTheme, editorTheme, lightTheme } from '../utils/lezer-mips'
 import { consoleData } from '../state/console-data'
 import { setBreakpoint } from '../utils/debug'
 import { setHighlightedLine } from '../utils/lezer-mips'
+import { setMinimap, setVim } from '../utils/lezer-mips/modes'
 
 const code = ref(null as HTMLElement | null)
 
@@ -45,26 +46,42 @@ onMounted(() => {
     parent: code.value!,
   })
 
-  watch(() => settings.editor.darkMode, (theme) => {
-    view.dispatch({
-      effects: [
-        editorTheme.reconfigure(theme?darkTheme:lightTheme)
-      ],
-    })
-  })
+  watch(
+    () => settings.editor.darkMode,
+    (theme) => {
+      view.dispatch({
+        effects: [editorTheme.reconfigure(theme ? darkTheme : lightTheme)],
+      })
+    },
+  )
+
+  watch(
+    () => settings.editor.vimMode,
+    (vimMode: boolean) => view.dispatch({ effects: [setVim(vimMode)] }),
+  )
+
+  watch(
+    () => settings.editor.showMinimap,
+    (minimap: boolean) => view.dispatch({ effects: [setMinimap(minimap)] }),
+  )
 
   // https://gist.github.com/shimondoodkin/1081133
   if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
-    view.contentDOM.addEventListener('blur', (): void => {
-      var editableFix = document.createElement('input')
-      editableFix.style = 'width:1px;height:1px;border:none;margin:0;padding:0;'
-      editableFix.tabIndex = -1
-      view.contentDOM.appendChild(editableFix)
-      editableFix.focus();
-      editableFix.setSelectionRange(0, 0);
-      editableFix.blur();
-      editableFix.remove();
-    }, false);
+    view.contentDOM.addEventListener(
+      'blur',
+      (): void => {
+        var editableFix = document.createElement('input')
+        editableFix.style =
+          'width:1px;height:1px;border:none;margin:0;padding:0;'
+        editableFix.tabIndex = -1
+        view.contentDOM.appendChild(editableFix)
+        editableFix.focus()
+        editableFix.setSelectionRange(0, 0)
+        editableFix.blur()
+        editableFix.remove()
+      },
+      false,
+    )
   }
 
   watch(
@@ -74,7 +91,7 @@ onMounted(() => {
         console.log(state, view.state)
         view.setState(state!)
       }
-    }
+    },
   )
 
   const stoppedIndex = computed(() => {
@@ -96,20 +113,14 @@ onMounted(() => {
     return point ?? null
   })
 
-  watch(
-    stoppedIndex,
-    (index) => {
-      if (index !== null) {
-        const pos = view.state.doc.line(index + 1).from;
-        view.dispatch({
-          effects: [
-            setHighlightedLine.of(pos),
-            EditorView.scrollIntoView(pos)
-          ],
-        })
-      }
+  watch(stoppedIndex, (index) => {
+    if (index !== null) {
+      const pos = view.state.doc.line(index + 1).from
+      view.dispatch({
+        effects: [setHighlightedLine.of(pos), EditorView.scrollIntoView(pos)],
+      })
     }
-  )
+  })
 })
 
 function jumpGoto() {
@@ -124,5 +135,4 @@ function jumpGoto() {
   //   cursor.highlight = null
   // }
 }
-
 </script>
