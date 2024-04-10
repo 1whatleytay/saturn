@@ -163,9 +163,11 @@ export function useSettings(): Settings {
     { deep: true }
   )
 
-  watch(() => state.editor.darkMode, (darkMode) => {
-    document.body.classList.toggle('dark', darkMode)
-  })
+  watch(
+    () => state.editor.darkMode,
+    (darkMode) => document.body.classList.toggle('dark', darkMode),
+    { immediate: true },
+  )
 
   return state
 }
