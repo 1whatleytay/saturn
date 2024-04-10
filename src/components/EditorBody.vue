@@ -34,7 +34,6 @@ import Suggestions from './Suggestions.vue'
 import { EditorView } from 'codemirror'
 import { darkTheme, editorTheme, lightTheme } from '../utils/lezer-mips'
 import { consoleData } from '../state/console-data'
-import { setBreakpoint } from '../utils/debug'
 import { setHighlightedLine } from '../utils/lezer-mips'
 import { setMinimap, setVim } from '../utils/lezer-mips/modes'
 
@@ -48,16 +47,20 @@ onMounted(() => {
 
   watch(
     () => settings.editor.darkMode,
-    (theme) => {
-      view.dispatch({
-        effects: [editorTheme.reconfigure(theme ? darkTheme : lightTheme)],
-      })
+    (theme: boolean) => {
+      setTimeout(() => {
+        view.dispatch({
+          effects: [editorTheme.reconfigure(theme ? darkTheme : lightTheme)],
+        })
+      }, 0)
     },
+    { immediate: true }
   )
 
   watch(
     () => settings.editor.vimMode,
     (vimMode: boolean) => view.dispatch({ effects: [setVim(vimMode)] }),
+    { immediate: true }
   )
 
   watch(
