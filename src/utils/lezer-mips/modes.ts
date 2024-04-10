@@ -1,14 +1,15 @@
-import { Compartment } from "@codemirror/state";
-import { showMinimap } from "@replit/codemirror-minimap";
-import { vim as vimSetup, Vim } from "@replit/codemirror-vim"
-import { EditorView } from "codemirror";
+import { Compartment } from '@codemirror/state'
+import { showMinimap } from '@replit/codemirror-minimap'
+import { vim as vimSetup, Vim } from '@replit/codemirror-vim'
+import { EditorView } from 'codemirror'
 
-export const vimCompartment = new Compartment();
-export const minimapCompartment = new Compartment();
+export const vimCompartment = new Compartment()
+export const minimapCompartment = new Compartment()
 
-export const vim = vimSetup();
+export const vim = vimSetup()
 
-export const setVim = (value: boolean) => vimCompartment.reconfigure(value ? vim: []);
+export const setVim = (value: boolean) =>
+  vimCompartment.reconfigure(value ? vim : [])
 
 export const minimap = showMinimap.compute(['doc'], (state) => {
   return {
@@ -17,6 +18,7 @@ export const minimap = showMinimap.compute(['doc'], (state) => {
       return { dom }
     },
   }
-});
+})
 
-export const setMinimap = (value: boolean) => minimapCompartment.reconfigure(value? minimap: []);
+export const setMinimap = (value: boolean) =>
+  minimapCompartment.reconfigure(value ? minimap : [])

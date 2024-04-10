@@ -48,6 +48,7 @@ onMounted(() => {
   watch(
     () => settings.editor.darkMode,
     (theme: boolean) => {
+      // A strange bug in codemirror made launching in the opposite theme fail without a timeout.
       setTimeout(() => {
         view.dispatch({
           effects: [editorTheme.reconfigure(theme ? darkTheme : lightTheme)],
