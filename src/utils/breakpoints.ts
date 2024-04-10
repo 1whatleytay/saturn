@@ -1,12 +1,19 @@
 import {StateField, StateEffect, RangeSet} from "@codemirror/state"
-import {EditorView, gutter, GutterMarker} from "@codemirror/view"
+import {Decoration, EditorView, gutter, gutterLineClass, GutterMarker, lineNumbers} from "@codemirror/view"
+import { setBreakpoint } from "./debug";
 
 const breakpointEffect = StateEffect.define<{pos: number, on: boolean}>({
   map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
 })
 
+const breakpointedLine = Decoration.line({
+  attributes: {
+    class: 'dark:bg-breakpoint-neutral bg-breakpoint-neutral-light',
+  },
+});
+
 const breakpointState = StateField.define<RangeSet<GutterMarker>>({
-  create() { return RangeSet.empty },
+  create: () => RangeSet.empty,
   update(set, transaction) {
     set = set.map(transaction.changes)
     for (let e of transaction.effects) {
@@ -21,6 +28,24 @@ const breakpointState = StateField.define<RangeSet<GutterMarker>>({
   }
 })
 
+const breakpointLines = StateField.define<RangeSet<Decoration>>({
+  create: () => Decoration.none,
+  update(set, transaction) {
+    set = set.map(transaction.changes)
+    for (let e of transaction.effects) {
+      if (e.is(breakpointEffect)) {
+        if (e.value.on)
+          set = set.update({add: [breakpointedLine.range(e.value.pos)] })
+        else
+          set = set.update({filter: from => from != e.value.pos})
+      }
+    }
+    return set
+  },
+  provide: f => EditorView.decorations.from(f)
+})
+
+
 function toggleBreakpoint(view: EditorView, pos: number) {
   let breakpoints = view.state.field(breakpointState)
   let hasBreakpoint = false
@@ -28,18 +53,37 @@ function toggleBreakpoint(view: EditorView, pos: number) {
   view.dispatch({
     effects: breakpointEffect.of({pos, on: !hasBreakpoint})
   })
+  const index = view.state.doc.lineAt(pos).number-1
+  setBreakpoint(index, hasBreakpoint)
 }
 
 const breakpointMarker = new class extends GutterMarker {
-  toDOM() { return document.createTextNode("●") }
+  elementClass = "cm-breakpoint"
 }
 
 export const breakpointGutter = [
   breakpointState,
-  gutter({
-    class: "cm-breakpoint-gutter",
-    markers: v => v.state.field(breakpointState),
-    initialSpacer: () => breakpointMarker,
+  breakpointLines,
+  EditorView.baseTheme({
+    ".cm-lineNumbers .cm-gutterElement": {
+      "padding-left": "0.75em",
+      "position": "relative",
+    },
+    ".cm-lineNumbers .cm-gutterElement:hover::before": {
+      opacity: 0.5,
+    },
+    ".cm-lineNumbers .cm-breakpoint::before, .cm-lineNumbers .cm-breakpoint:hover::before": {
+      opacity: 1,
+    },
+    ".cm-lineNumbers .cm-breakpoint::before, .cm-lineNumbers .cm-gutterElement:hover::before": {
+      content: '"●"',
+      color: "red",
+      cursor: "pointer",
+      position: "absolute",
+      left: "0.125em"
+    },
+  }),
+  lineNumbers({
     domEventHandlers: {
       mousedown(view, line) {
         toggleBreakpoint(view, line.from)
@@ -47,11 +91,5 @@ export const breakpointGutter = [
       }
     }
   }),
-  EditorView.baseTheme({
-    ".cm-breakpoint-gutter .cm-gutterElement": {
-      color: "red",
-      paddingLeft: "5px",
-      cursor: "default"
-    }
-  })
+  gutterLineClass.from(breakpointState),
 ]

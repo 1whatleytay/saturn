@@ -73,6 +73,7 @@ function createState(editor: Tabs, uuid: string, doc: string) {
     doc,
     extensions: [
       Mips(),
+      breakpointGutter,
       basicSetup,
       showMinimap.compute(['doc'], (state) => {
         return {

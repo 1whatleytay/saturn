@@ -1,9 +1,8 @@
 <template>
   <div
-    ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900 pt-2"
+    ref="code"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900"
   >
-
       <Suggestions />
       <GotoOverlay
         v-if="gotoHighlights.state.highlight"
@@ -18,13 +17,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import {
   goto,
   gotoHighlights,
   errorHighlights,
   tab,
+  settings,
 } from '../state/state'
 
 import GotoOverlay from './GotoOverlay.vue'
@@ -32,6 +32,10 @@ import ErrorOverlay from './ErrorOverlay.vue'
 import Suggestions from './Suggestions.vue'
 
 import { EditorView} from "codemirror"
+import { darkTheme, editorTheme, lightTheme } from '../utils/lezer-mips'
+import { consoleData } from '../state/console-data'
+import { setBreakpoint } from '../utils/debug'
+import { setHighlightedLine } from '../utils/lezer-mips'
 
 const code = ref(null as HTMLElement | null)
 
@@ -39,6 +43,14 @@ onMounted(() => {
   const view = new EditorView({
     state: tab()?.state,
     parent: code.value!,
+  })
+
+  watch(() => settings.editor.darkMode, (theme) => {
+    view.dispatch({
+      effects: [
+        editorTheme.reconfigure(theme?darkTheme:lightTheme)
+      ],
+    })
   })
 
   // https://gist.github.com/shimondoodkin/1081133
@@ -64,8 +76,41 @@ onMounted(() => {
       }
     }
   )
-})
 
+  const stoppedIndex = computed(() => {
+    const profile = tab()?.profile
+    const registers = consoleData.registers
+    const execution = consoleData.execution
+
+    if (!profile || !registers || !execution) {
+      return null
+    }
+
+    // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
+    let point = execution.breakpoints?.pcToGroup.get(registers.pc)?.line
+
+    if (point === undefined && consoleData.hintPc != null) {
+      point = execution.breakpoints?.pcToGroup.get(consoleData.hintPc)?.line
+    }
+
+    return point ?? null
+  })
+
+  watch(
+    stoppedIndex,
+    (index) => {
+      if (index !== null) {
+        const pos = view.state.doc.line(index + 1).from;
+        view.dispatch({
+          effects: [
+            setHighlightedLine.of(pos),
+            EditorView.scrollIntoView(pos)
+          ],
+        })
+      }
+    }
+  )
+})
 
 function jumpGoto() {
   const index = goto.jump()
