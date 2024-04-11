@@ -2,7 +2,7 @@
   <button
     class="dark:hover:bg-neutral-700 hover:bg-neutral-300 dark:text-slate-300 text-slate-800 flex items-center transition-[border-color] duration-200 space-x-4 h-10 px-6 text-xs font-medium border-b-2"
     :class="{
-      'border-orange-400 dark:bg-neutral-800 bg-neutral-300': props.selected,
+      'border-orange-400 dark:bg-neutral-800': props.selected,
       'border-transparent': !props.selected,
     }"
   >
