@@ -1,12 +1,12 @@
 <template>
   <div
     ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-200 dark:bg-neutral-900 pt-2"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex bg-neutral-200 dark:bg-neutral-900 pt-2"
     @scroll="handleScroll"
     @resize="updateBounds"
   >
     <div
-      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0"
+      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0 pt-2"
       @click.self
       @wheel.stop
       :style="{ top: `${state.lineOffset}px` }"
