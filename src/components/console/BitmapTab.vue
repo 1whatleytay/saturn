@@ -80,10 +80,10 @@
           />
 
           <button
-            class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 active:bg-slate-700"
+            class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 dark:active:bg-slate-700 active:bg-slate-300"
             :class="{
-              'dark:bg-slate-800 bg-slate:300': settings.bitmap.address === gp,
-              'dark:hover:bg-slate-800 bg-slate:300': settings.bitmap.address !== gp,
+              'dark:bg-slate-800 bg-slate-200': settings.bitmap.address === gp,
+              'dark:hover:bg-slate-800 bg-slate-200': settings.bitmap.address !== gp,
             }"
             @click="settings.bitmap.address = gp"
           >

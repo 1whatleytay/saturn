@@ -7,7 +7,7 @@
         <DocumentArrowUpIcon class="w-7 h-7 mr-3 shrink-0" /> Export Regions
 
         <button
-          class="w-8 h-8 ml-auto rounded hover:bg-slate-800 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
+          class="w-8 h-8 ml-auto rounded dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
           @click="emit('close')"
         >
           <XMarkIcon class="w-4 h-4" />
