@@ -9,7 +9,6 @@ import { backend } from '../state/backend'
 
 export interface StorageState {
   // editor: Editor
-  language: Language
   highlights: Token[][]
   debounce: number | null
 }
@@ -32,7 +31,6 @@ export function useStorage(
 ): StorageResult {
   const storage = reactive({
     editor: createEditor(),
-    language: createLanguage(),
     highlights: [] as Token[][],
     debounce: null as number | null,
   } as StorageState)
@@ -61,7 +59,6 @@ export function useStorage(
 
       error.setHighlight(
         result.marker.line,
-        tokens,
         result.marker.offset,
         result.message
       )
@@ -141,33 +138,22 @@ export function useStorage(
     return createEditor()
   })
 
-  function createLanguage(): Language {
-    return new MipsHighlighter()
-  }
-
-  function highlightAll(current: EditorTab | null) {
+  function highlightAll() {
     // Might need to look at tab file extension to pick languages
     // storage.editor = createEditor()
-    storage.language = createLanguage()
     storage.highlights = [] // needs highlighting here
 
-    suggestions = new SuggestionsStorage()
 
     dispatchCheckSyntax()
 
     error.dismissHighlight()
 
-    if (current && current.lines) {
-      highlight(0, 0, current.lines)
-    }
   }
 
-  highlightAll(tab())
   watch(
-    () => tab(),
-    (tab) => {
-      highlightAll(tab)
-    }
+    () => tab()?.doc,
+    (tab) => highlightAll(),
+    {immediate: true}
   )
 
   return {

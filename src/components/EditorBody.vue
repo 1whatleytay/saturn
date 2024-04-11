@@ -34,6 +34,7 @@ import { darkTheme, editorTheme, lightTheme } from '../utils/lezer-mips'
 import { consoleData } from '../state/console-data'
 import { setHighlightedLine } from '../utils/lezer-mips'
 import { setMinimap, setVim } from '../utils/lezer-mips/modes'
+import {Diagnostic, setDiagnostics} from '@codemirror/lint'
 
 const code = ref(null as HTMLElement | null)
 
@@ -95,6 +96,31 @@ onMounted(() => {
       }
     },
   )
+
+  watch(() => errorHighlights.state.highlight, (highlight) => {
+    const diagnostics: Diagnostic[] = []
+    if (highlight) {
+      let lineI = highlight.line;
+      let line;
+      do {
+        line = view.state.doc.line(lineI);
+        lineI++
+      } while (/^\s*$/.test(line.text));
+
+      let offset = highlight.offset;
+      while (/\s/.test(line.text[offset])) offset++;
+      let end = offset;
+      while (/[a-zA-Z_\-0-9$.%]/.test(line.text[end]) && end < line.text.length) end++;
+
+      diagnostics.push({
+        from: line.from + offset,
+        to: line.from + end,
+        message: highlight.message,
+        severity: 'error'
+      })
+    }
+    view.dispatch(setDiagnostics(view.state, diagnostics))
+  })
 
   const stoppedIndex = computed(() => {
     const profile = tab()?.profile

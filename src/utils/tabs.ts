@@ -55,6 +55,7 @@ export function selectionRange(cursor: CursorState): SelectionRange | null {
 export interface EditorTab {
   uuid: string
   title: string
+  doc: string
   state: Raw<EditorState>
   removed: boolean
   path: string | null
@@ -79,6 +80,7 @@ function createState(editor: Tabs, uuid: string, doc: string) {
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
         if (update.docChanged) {
+          tab.doc = update.state.doc.toString()
           tab.marked = true
         }
         tab.state = markRaw(update.state)
@@ -199,6 +201,7 @@ export function useTabs(): TabsResult {
       editor.tabs.push({
         uuid: tab.uuid,
         title,
+        doc: data,
         path: tab.path,
         removed: false,
         writable: tab.writable,
@@ -355,6 +358,7 @@ export function useTabs(): TabsResult {
     editor.tabs.push({
       uuid: id,
       title: named,
+      doc: content,
       state: markRaw(createState(editor, id, content)),
       removed: false,
       path,
