@@ -68,6 +68,10 @@ export function collectLines(lines: string[]): string {
   return lines.join('\n')
 }
 
+let syncing = false
+export function isSyncing(): boolean {
+  return syncing
+}
 function createState(editor: Tabs, uuid: string, doc: string) {
   return EditorState.create({
     doc,
@@ -79,11 +83,13 @@ function createState(editor: Tabs, uuid: string, doc: string) {
       vimCompartment.of([]),
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)!
+        syncing = true
         if (update.docChanged) {
-          tab.doc = update.state.doc.toString()
           tab.marked = true
+          tab.doc = update.state.doc.toString()
         }
         tab.state = markRaw(update.state)
+        syncing = false
       }),
       EditorView.theme({
         '&.cm-editor': { height: '100%', width: '100%' },

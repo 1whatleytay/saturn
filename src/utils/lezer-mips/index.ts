@@ -6,7 +6,7 @@ import {
 } from '@codemirror/language'
 import { Compartment, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view'
-import { lang } from './lezer-lang'
+import { lang } from './stream-lang'
 
 export const clearHighlightedLine = StateEffect.define<null>()
 export const setHighlightedLine = StateEffect.define<number>()

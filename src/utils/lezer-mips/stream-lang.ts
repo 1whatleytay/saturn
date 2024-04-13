@@ -11,13 +11,6 @@ enum ItemSuggestionMarker {
   Eqv,
 }
 
-interface Item {
-  type: TokenType
-  known: boolean
-  marker?: ItemSuggestionMarker
-  body?: string // for suggestions
-}
-
 // Port of https://github.com/1whatleytay/titan/blob/main/src/assembler/lexer.rs
 const allHard = new Set([
   ':',
@@ -173,10 +166,13 @@ function isWhitespace(c: string): boolean {
 function takeName(input: StringStream): string {
   let out = ''
   let c
-  do {
+  while (true) {
     c = input.eat((c) => !allHard.has(c) && !isWhitespace(c))!
-    out += c
-  } while (c)
+    if (c) out += c
+    else {
+      break
+    }
+  }
   return out
 }
 
@@ -194,28 +190,28 @@ function takeStringBody(input: StringStream, quote: string): void {
     if (c == quote) {
       break
     } else if (c == '\\') {
-      input.next
+      input.next()
     }
   }
 }
 
-function readItem(line: StringStream, initial: boolean): Item | undefined {
+function readItem(line: StringStream, initial: boolean): TokenType | undefined {
   initial ||= line.sol()
   line.eatWhile(isWhitespace)
 
-  const first = line.next()!
+  const first = line.peek()!
 
   switch (first) {
     case '#': {
-      line.eatWhile((c) => c != '\n')
+      line.next()
+      line.skipToEnd()
+      // line.eatWhile((c) => c != '\n')
 
-      return {
-        type: TokenType.Comment,
-        known: false,
-      }
+      return TokenType.Comment
     }
 
     case '.': {
+      line.next()
       const body = takeName(line)
 
       let marker: ItemSuggestionMarker | undefined = undefined
@@ -230,77 +226,55 @@ function readItem(line: StringStream, initial: boolean): Item | undefined {
           break
       }
 
-      return {
-        type: TokenType.Directive,
-        known: knownDirectives.has(body),
-        marker,
-      }
+      return TokenType.Directive
     }
 
     case '%': {
+      line.next()
       takeName(line)
 
-      return {
-        type: TokenType.Parameter,
-        known: false,
-        // next: start + 1 + count,
-      }
+      return TokenType.Parameter
     }
 
     case '$': {
+      line.next()
       takeName(line)
 
-      return {
-        type: TokenType.Register,
-        known: false,
-      }
+      return TokenType.Register
     }
 
     case '(':
-      return {
-        type: TokenType.BracketOpen,
-        known: false,
-      }
+      line.next()
+      return TokenType.BracketOpen
 
     case ')':
-      return {
-        type: TokenType.BracketClose,
-        known: false,
-      }
+      line.next()
+      return TokenType.BracketClose
 
     case ',':
     case '+':
     case '-':
     case ':':
-      return {
-        type: TokenType.Hard,
-        known: false,
-      }
+      line.next()
+      return TokenType.Hard
 
     case "'":
     case '"': {
+      line.next()
       takeStringBody(line, first)
 
-      return {
-        type: TokenType.Text,
-        known: false,
-      }
+      return TokenType.Text
     }
 
     case undefined:
       return undefined
 
     default: {
-      line.backUp(1)
-
       const body = takeName(line)
 
       if (/\d/.test(first)) {
         // digit
-        return {
-          type: TokenType.Numeric,
-          known: false,
-        }
+        return TokenType.Numeric
       } else {
         // Check for color for labels
         const nextUp = spaceThenColon(line)
@@ -309,49 +283,36 @@ function readItem(line: StringStream, initial: boolean): Item | undefined {
           takeSpace(line)
           line.next()
 
-          return {
-            type: TokenType.Label,
-            known: false,
-            body,
-          }
+          return TokenType.Label
         }
 
         // It's an instruction!
         if (initial) {
-          return {
-            type: TokenType.Instruction,
-            known: knownInstructions.has(body),
-          }
+          return TokenType.Instruction
         }
 
-        return {
-          type: TokenType.Symbol,
-          known: false,
-          body,
-        }
+        return TokenType.Symbol
       }
     }
   }
 }
 
-function typeToTag(type: TokenType): string {
-  const x = {
-    [TokenType.Comment]: 'lineComment',
-    [TokenType.Hard]: 'separator',
-    [TokenType.BracketOpen]: 'paren',
-    [TokenType.BracketClose]: 'paren',
-    [TokenType.Label]: 'attributeName',
-    [TokenType.Directive]: 'macroName',
-    [TokenType.Parameter]: 'typeName',
-    [TokenType.Instruction]: 'keyword',
-    [TokenType.Register]: 'typeName',
-    [TokenType.Numeric]: 'number',
-    [TokenType.Symbol]: 'variableName',
-    [TokenType.Text]: 'string',
-    [TokenType.Nothing]: 'invalid',
-  }
-  return x[type]
+const typeToTag = {
+  [TokenType.Comment]: 'lineComment',
+  [TokenType.Hard]: 'separator',
+  [TokenType.BracketOpen]: 'paren',
+  [TokenType.BracketClose]: 'paren',
+  [TokenType.Label]: 'attributeName',
+  [TokenType.Directive]: 'macroName',
+  [TokenType.Parameter]: 'typeName',
+  [TokenType.Instruction]: 'keyword',
+  [TokenType.Register]: 'typeName',
+  [TokenType.Numeric]: 'number',
+  [TokenType.Symbol]: 'variableName',
+  [TokenType.Text]: 'string',
+  [TokenType.Nothing]: 'invalid',
 }
+
 const sl = StreamLanguage.define({
   name: 'mips',
   startState() {
@@ -364,8 +325,8 @@ const sl = StreamLanguage.define({
     if (!item) {
       return null
     }
-    state.initial = item.type === TokenType.Label
-    return typeToTag(item.type)
+    state.initial = item === TokenType.Label
+    return typeToTag[item]
   },
   languageData: {
     commentTokens: { line: '#' },

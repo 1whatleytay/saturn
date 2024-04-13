@@ -25,7 +25,7 @@ import {
   tab,
   settings,
 } from '../state/state'
-
+import { isSyncing } from '../utils/tabs'
 import GotoOverlay from './GotoOverlay.vue'
 import ErrorOverlay from './ErrorOverlay.vue'
 
@@ -35,6 +35,7 @@ import { consoleData } from '../state/console-data'
 import { setHighlightedLine } from '../utils/lezer-mips'
 import { setMinimap, setVim } from '../utils/lezer-mips/modes'
 import {Diagnostic, setDiagnostics} from '@codemirror/lint'
+import { ensureSyntaxTree, forceParsing } from '@codemirror/language'
 
 const code = ref(null as HTMLElement | null)
 
@@ -43,6 +44,19 @@ onMounted(() => {
     state: tab()?.state,
     parent: code.value!,
   })
+  forceParsing(view, view.state.doc.length, 100)
+
+
+  watch(
+    () => tab()?.state,
+    (state) => {
+      if (!isSyncing()) {
+        view.setState(state!)
+        forceParsing(view, view.state.doc.length, 100)
+      }
+    },
+    { flush: 'sync' }
+  )
 
   watch(
     () => settings.editor.darkMode,
@@ -72,7 +86,9 @@ onMounted(() => {
   if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
     view.contentDOM.addEventListener(
       'blur',
-      (): void => {
+      (e): void => {
+        if (e.relatedTarget) return
+
         var editableFix = document.createElement('input')
         editableFix.style =
           'width:1px;height:1px;border:none;margin:0;padding:0;'
@@ -86,16 +102,6 @@ onMounted(() => {
       false,
     )
   }
-
-  watch(
-    () => tab()?.state,
-    (state) => {
-      if (state != view.state) {
-        console.log(state, view.state)
-        view.setState(state!)
-      }
-    },
-  )
 
   watch(() => errorHighlights.state.highlight, (highlight) => {
     const diagnostics: Diagnostic[] = []
