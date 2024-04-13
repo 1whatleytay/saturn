@@ -4,7 +4,6 @@ import {
   consumeSpace,
 } from './query/alt-consume'
 import { grabWhitespace } from './languages/language'
-import { splitLines } from './split-lines'
 
 export interface SelectionIndex {
   line: number
@@ -36,6 +35,10 @@ type Step = { frame: Frame; cursor: SelectionIndex }
 interface MergeResult {
   commit?: Frame
   merged: Frame
+}
+
+function splitLines(text: string): string[] {
+  return text.split(/\r?\n/)
 }
 
 function collides(s1: number, e1: number, s2: number, e2: number) {

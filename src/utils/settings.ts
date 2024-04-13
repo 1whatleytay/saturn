@@ -23,6 +23,9 @@ export interface EditorSettings {
   fontSize: number
   consoleFontSize: number
   enterAutocomplete: boolean
+  darkMode: boolean
+  showMinimap: boolean
+  vimMode: boolean
 }
 
 export enum RegisterFormat {
@@ -67,7 +70,10 @@ function defaultSettings(): Settings {
       tabSize: 4,
       fontSize: 22,
       consoleFontSize: 16,
-      enterAutocomplete: true
+      enterAutocomplete: true,
+      darkMode: true,
+      showMinimap: true,
+      vimMode: false,
     },
     bitmap: {
       displayWidth: 64,
@@ -102,6 +108,12 @@ function fromStorage(): Settings {
     const object = JSON.parse(value) as Settings // Just cast and hope.
 
     if (object.version === settingsVersion) {
+      if (object.editor.darkMode === undefined) {
+        object.editor.darkMode = true
+      }
+      if (object.editor.showMinimap === undefined) {
+        object.editor.showMinimap = true
+      }
       return object
     }
   }
@@ -149,6 +161,12 @@ export function useSettings(): Settings {
       debounce = window.setTimeout(() => toStorage(settings), 1000)
     },
     { deep: true }
+  )
+
+  watch(
+    () => state.editor.darkMode,
+    (darkMode) => document.body.classList.toggle('dark', darkMode),
+    { immediate: true },
   )
 
   return state

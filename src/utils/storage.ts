@@ -9,7 +9,6 @@ import { backend } from '../state/backend'
 
 export interface StorageState {
   // editor: Editor
-  language: Language
   highlights: Token[][]
   debounce: number | null
 }
@@ -32,7 +31,6 @@ export function useStorage(
 ): StorageResult {
   const storage = reactive({
     editor: createEditor(),
-    language: createLanguage(),
     highlights: [] as Token[][],
     debounce: null as number | null,
   } as StorageState)
@@ -54,14 +52,13 @@ export function useStorage(
   async function checkSyntax() {
     const current = tab()
 
-    const result = await backend.assembleText(collectLines(current?.lines ?? []), current?.path ?? null)
+    const result = await backend.assembleText(current?.state.doc.toString() ?? '', current?.path ?? null)
 
     if (result.status === 'Error' && result.marker) {
       const tokens = storage.highlights[result.marker.line]
 
       error.setHighlight(
         result.marker.line,
-        tokens,
         result.marker.offset,
         result.message
       )
@@ -130,8 +127,8 @@ export function useStorage(
     const current = tab()
 
     return new Editor(
-      current?.lines ?? ['Nothing yet.'],
-      current?.cursor ?? { line: 0, index: 0 },
+      current?.state.doc.toString().split("\n") ?? ['Nothing yet.'],
+      { line: 0, index: 0 },
       handleDirty,
       current?.writable ?? false ? undefined : () => false // weird
     )
@@ -141,33 +138,22 @@ export function useStorage(
     return createEditor()
   })
 
-  function createLanguage(): Language {
-    return new MipsHighlighter()
-  }
-
-  function highlightAll(current: EditorTab | null) {
+  function highlightAll() {
     // Might need to look at tab file extension to pick languages
     // storage.editor = createEditor()
-    storage.language = createLanguage()
     storage.highlights = [] // needs highlighting here
 
-    suggestions = new SuggestionsStorage()
 
     dispatchCheckSyntax()
 
     error.dismissHighlight()
 
-    if (current && current.lines) {
-      highlight(0, 0, current.lines)
-    }
   }
 
-  highlightAll(tab())
   watch(
-    () => tab(),
-    (tab) => {
-      highlightAll(tab)
-    }
+    () => tab()?.doc,
+    (tab) => highlightAll(),
+    {immediate: true}
   )
 
   return {

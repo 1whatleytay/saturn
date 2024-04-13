@@ -1,13 +1,13 @@
 <template>
   <Modal :show="props.show" @close="emit('close')">
     <div
-      class="max-w-2xl bg-neutral-900 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
+      class="max-w-2xl dark:bg-neutral-900 bg-neutral-200 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
     >
-      <div class="text-2xl font-semibold flex items-center bg-neutral-900 w-full my-2 shrink-0">
+      <div class="text-2xl font-semibold flex items-center dark:bg-neutral-900 bg-neutral-200 w-full my-2 shrink-0">
         <DocumentArrowUpIcon class="w-7 h-7 mr-3 shrink-0" /> Export Regions
 
         <button
-          class="w-8 h-8 ml-auto rounded hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
+          class="w-8 h-8 ml-auto rounded hover:bg-slate-800 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
           @click="emit('close')"
         >
           <XMarkIcon class="w-4 h-4" />
@@ -19,7 +19,7 @@
           Output Format
         </div>
 
-        <div class="text-gray-300 text-sm mt-1">
+        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
           Plain format will export binary,
           while HexV3 is designed for use with Logism Evolution.
         </div>
@@ -40,7 +40,7 @@
           Bit Encoding
         </div>
 
-        <div class="text-gray-300 text-sm mt-1">
+        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
           Encoding type for HexV3 export.
           For 32-bit memory modules, try using 32-bit Little Endian.
         </div>
@@ -68,7 +68,7 @@
           Continuous Export
         </div>
 
-        <div class="text-gray-300 text-sm mt-1">
+        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
           A continuous export will create one large file with all regions back to back.
         </div>
 
