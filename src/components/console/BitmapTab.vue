@@ -74,13 +74,13 @@
       </div>
 
       <div v-if="state.keyboardLive" class="text-gray-500 mt-4 flex items-center">
-        <ArrowLeftIcon class="w-4 h-4 mr-2" />
+        <ArrowRightIcon class="w-4 h-4 mr-2" />
 
         Press keys now to create keyboard events.
       </div>
 
       <div v-else class="text-gray-500 mt-4 flex items-center">
-        <ArrowLeftIcon class="w-4 h-4 mr-2" />
+        <ArrowRightIcon class="w-4 h-4 mr-2" />
 
         To connect the keyboard, click on the display.
       </div>
@@ -131,7 +131,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
-import { ArrowLeftIcon } from '@heroicons/vue/24/solid'
+import { ArrowRightIcon } from '@heroicons/vue/24/solid'
 import { ExclamationCircleIcon } from '@heroicons/vue/24/outline'
 import { consoleData } from '../../state/console-data'
 import { backend } from '../../state/backend'
