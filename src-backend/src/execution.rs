@@ -194,7 +194,7 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         let debugger_clone = debugger.clone();
 
         // Ensure the cancel token hasn't been set previously.
-        state.lock().unwrap().renew();
+        state.lock().unwrap().clear_cancelled();
 
         let delegate = SyscallDelegate::new(state);
 
@@ -208,7 +208,7 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
                 if count > 0 {
                     delegate.cycle(&debugger).await
                 } else {
-                    return Err(());
+                    return Err(())
                 }
             } else {
                 delegate.run(&debugger).await
@@ -277,7 +277,9 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
     }
 
     fn wake_sync(&self) {
-        self.delegate.lock().unwrap().sync_wake.notify_one();
+        if let Some(sender) = self.delegate.lock().unwrap().sync_wake.take() {
+            sender.send(()).ok();
+        }
     }
 
     fn post_key(&self, key: char, up: bool) {

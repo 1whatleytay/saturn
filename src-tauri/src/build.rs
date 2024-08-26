@@ -14,9 +14,10 @@ use saturn_backend::device::{ExecutionState, setup_state, state_from_binary};
 use saturn_backend::execution::RewindableDevice;
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::regions::{AssembledRegions, AssembleRegionsOptions};
-use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState};
+use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use crate::midi::ForwardMidi;
 use crate::state::DebuggerBody;
+use crate::time::TokioTimeHandler;
 
 struct ForwardPrinter {
     app: tauri::AppHandle<Wry>,
@@ -30,7 +31,7 @@ impl ConsoleHandler for ForwardPrinter {
     }
 }
 
-fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send> {
+fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send + Sync> {
     Box::new(ForwardPrinter { app })
 }
 
@@ -39,15 +40,16 @@ pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemo
     debugger: Executor<SectionMemory<Listen>, Track>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
-    console: Box<dyn ConsoleHandler + Send>,
-    midi: Box<dyn MidiHandler + Send>,
+    console: Box<dyn ConsoleHandler + Send + Sync>,
+    midi: Box<dyn MidiHandler + Send + Sync>,
+    time: Box<dyn TimeHandler + Send + Sync>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
     }
 
     let wrapped = Arc::new(debugger);
-    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
     // Drop should cancel the last process and kill the other thread.
     *pointer = Some(Arc::new(ExecutionState {
@@ -63,15 +65,16 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
     debugger: Executor<WatchedMemory<Mem>, HistoryTracker>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
-    console: Box<dyn ConsoleHandler + Send>,
-    midi: Box<dyn MidiHandler + Send>,
+    console: Box<dyn ConsoleHandler + Send + Sync>,
+    midi: Box<dyn MidiHandler + Send + Sync>,
+    time: Box<dyn TimeHandler + Send + Sync>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
     }
 
     let wrapped = Arc::new(debugger);
-    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
     // Drop should cancel the last process and kill the other thread.
     *pointer = Some(Arc::new(ExecutionState {
@@ -95,6 +98,7 @@ pub fn configure_elf(
     
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));
+    let time = Box::new(TokioTimeHandler::new());
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
     let mut memory = SectionMemory::new();
@@ -113,6 +117,7 @@ pub fn configure_elf(
             keyboard,
             console,
             midi,
+            time,
         );
     } else {
         let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
@@ -125,6 +130,7 @@ pub fn configure_elf(
             keyboard,
             console,
             midi,
+            time,
         );
     }
 
@@ -149,6 +155,7 @@ pub fn configure_asm(
 
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));
+    let time = Box::new(TokioTimeHandler::new());
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
     let mut memory = SectionMemory::new();
@@ -167,6 +174,7 @@ pub fn configure_asm(
             keyboard,
             console,
             midi,
+            time,
         );
     } else {
         let mut cpu_state = state_from_binary(binary, 0x100000, memory);
@@ -179,6 +187,7 @@ pub fn configure_asm(
             keyboard,
             console,
             midi,
+            time,
         );
     }
 

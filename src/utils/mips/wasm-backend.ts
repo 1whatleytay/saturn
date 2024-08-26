@@ -7,7 +7,7 @@ import {
   MipsBackend,
   MipsExecution
 } from './mips'
-// import WasmWorker from './wasm-worker?worker'
+import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
 
 interface RequestResponder {
@@ -110,7 +110,7 @@ export class WasmBackend implements MipsBackend {
   }
 
   constructor() {
-    this.worker = null as unknown as Worker // new WasmWorker()
+    this.worker = new WasmWorker()
 
     this.worker.onmessage = event => this.handleMessage(event)
   }

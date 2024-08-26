@@ -1,5 +1,6 @@
 mod console;
 mod midi;
+mod time;
 
 use std::io::Cursor;
 use std::rc::Rc;
@@ -19,9 +20,10 @@ use saturn_backend::device::{ExecutionState, setup_state, state_from_binary};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
 use saturn_backend::execution::RewindableDevice;
 use saturn_backend::keyboard::KeyboardState;
-use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState};
+use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use crate::console::WasmConsole;
 use crate::midi::WasmMidi;
+use crate::time::WasmTime;
 
 // noinspection RsTraitObligations
 #[wasm_bindgen]
@@ -85,15 +87,16 @@ impl Runner {
         debugger: Executor<SectionMemory<Listen>, Track>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
-        console: Box<dyn ConsoleHandler + Send>,
-        midi: Box<dyn MidiHandler + Send>,
+        console: Box<dyn ConsoleHandler + Send + Sync>,
+        midi: Box<dyn MidiHandler + Send + Sync>,
+        time: Box<dyn TimeHandler + Send + Sync>,
     ) {
         if let Some(device) = &self.device {
             device.pause()
         }
 
         let wrapped = Arc::new(debugger);
-        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
         self.device = Some(Rc::new(ExecutionState {
             debugger: wrapped,
@@ -108,15 +111,16 @@ impl Runner {
         debugger: Executor<WatchedMemory<Mem>, HistoryTracker>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
-        console: Box<dyn ConsoleHandler + Send>,
-        midi: Box<dyn MidiHandler + Send>,
+        console: Box<dyn ConsoleHandler + Send + Sync>,
+        midi: Box<dyn MidiHandler + Send + Sync>,
+        time: Box<dyn TimeHandler + Send + Sync>,
     ) {
         if let Some(device) = &self.device {
             device.pause()
         }
 
         let wrapped = Arc::new(debugger);
-        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi)));
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
         self.device = Some(Rc::new(ExecutionState {
             debugger: wrapped,
@@ -161,6 +165,7 @@ impl Runner {
 
         let console = Box::new(WasmConsole { });
         let midi = Box::new(WasmMidi { });
+        let time = Box::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
@@ -178,6 +183,7 @@ impl Runner {
                 keyboard,
                 console,
                 midi,
+                time,
             );
         } else {
             let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
@@ -189,6 +195,7 @@ impl Runner {
                 keyboard,
                 console,
                 midi,
+                time,
             );
         }
 
@@ -213,6 +220,7 @@ impl Runner {
 
         let console = Box::new(WasmConsole { });
         let midi = Box::new(WasmMidi { });
+        let time = Box::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
@@ -230,6 +238,7 @@ impl Runner {
                 keyboard,
                 console,
                 midi,
+                time,
             );
         } else {
             let mut cpu_state = state_from_binary(binary, 0x100000, memory);
@@ -241,6 +250,7 @@ impl Runner {
                 keyboard,
                 console,
                 midi,
+                time,
             );
         }
 
@@ -272,18 +282,6 @@ impl Runner {
     }
 
     pub async fn resume(&mut self, batch_size: usize) -> JsValue {
-        /*
-         I am so screwed.
-         I will probably have to rewrite the backend to optionally use tokio.
-         Technically Tokio can be the main event queue (if we build our own runtime)
-         This sucks a bit:
-          - The reason we use it in Saturn Backend is to
-            - Get Time
-            - Sync Up Things
-            - Cancellation
-          - First reason probably doesn't work in WASM. Second is not really a concern on WASM.
-          - Last reason is probably the best. 
-         */
         todo!()
     }
 }

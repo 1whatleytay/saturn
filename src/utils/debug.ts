@@ -138,6 +138,8 @@ export function postBuildMessage(result: AssemblerResult): boolean {
 }
 
 export async function build() {
+  console.trace()
+
   await saveCurrentTab(PromptType.NeverPrompt)
 
   const current = tab()

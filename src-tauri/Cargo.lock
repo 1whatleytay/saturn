@@ -3253,13 +3253,12 @@ dependencies = [
  "async-trait",
  "base64 0.21.7",
  "byteorder",
+ "futures",
  "num",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
  "titan",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
