@@ -16,6 +16,7 @@ import { tab, settings, buildLines } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
+import { toRaw } from 'vue'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -138,8 +139,6 @@ export function postBuildMessage(result: AssemblerResult): boolean {
 }
 
 export async function build() {
-  console.trace()
-
   await saveCurrentTab(PromptType.NeverPrompt)
 
   const current = tab()
@@ -184,10 +183,21 @@ export async function resume() {
   consoleData.showConsole = true
   consoleData.mode = ExecutionModeType.Running
 
+  const assemblerResult = await consoleData.execution.configure()
+
+  if (assemblerResult) {
+    postBuildMessage(assemblerResult)
+
+    if (assemblerResult.status === 'Error') {
+      closeExecution()
+
+      return
+    }
+  }
+
   const result = await consoleData.execution.resume(
     null,
-    usedBreakpoints,
-    (result) => postBuildMessage(result)
+    toRaw(usedBreakpoints)
   )
 
   if (result) {
@@ -215,7 +225,9 @@ export async function stepCount(skip: number) {
   clearDebug()
   consoleData.mode = ExecutionModeType.Running
 
-  const result = await consoleData.execution.resume(skip, null, () => {})
+  await consoleData.execution.configure()
+
+  const result = await consoleData.execution.resume(skip, null)
 
   consoleData.showConsole = true
 

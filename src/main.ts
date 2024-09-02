@@ -11,6 +11,8 @@ createApp(App).mount('#app')
 
 setupWindow()
 
-setupShortcuts().then(() => {})
-
-setupEvents().then(() => {})
+if (window.__TAURI__) {
+  // Needs backend tying.
+  setupShortcuts().then(() => {})
+  setupEvents().then(() => {})
+}

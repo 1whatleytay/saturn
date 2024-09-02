@@ -243,6 +243,8 @@ export interface MipsBackend {
   configureDisplay(config: BitmapConfig): Promise<void>
   lastDisplay(): Promise<LastDisplay>
 
+  wakeSync(): Promise<void>
+
   createExecution(
     text: string,
     path: string | null,
@@ -263,7 +265,6 @@ export interface MipsExecution {
   resume(
     count: number | null,
     breakpoints: number[] | null,
-    listen: (result: AssemblerResult) => void
   ): Promise<ExecutionResult | null>
   pause(): Promise<void>
   stop(): Promise<void>

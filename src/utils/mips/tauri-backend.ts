@@ -79,17 +79,12 @@ export class TauriExecution implements MipsExecution {
 
   public async resume(
     count: number | null,
-    breakpoints: number[] | null,
-    listen: (result: AssemblerResult) => void = () => {}
+    breakpoints: number[] | null
   ): Promise<ExecutionResult | null> {
-    const assemblerResult = await this.configure()
+    if (!this.configured) {
+      console.error('Not configured yet, cannot resume.')
 
-    if (assemblerResult) {
-      listen(assemblerResult)
-
-      if (assemblerResult.status === 'Error') {
-        return null
-      }
+      return null
     }
 
     const mappedBreakpoints = breakpoints
@@ -248,6 +243,10 @@ export class TauriBackend implements MipsBackend {
     const result = await tauri.invoke('last_display')
 
     return result as LastDisplay
+  }
+
+  async wakeSync(): Promise<void> {
+    await tauri.invoke('wake_sync')
   }
 
   createExecution(

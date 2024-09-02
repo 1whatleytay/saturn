@@ -79,5 +79,7 @@ export async function accessReadFile(path: string): Promise<AccessFile<string | 
 }
 
 export async function accessSync(paths: string[]) {
-  await invoke('access_sync', { paths })
+  if (window.__TAURI__) {
+    await invoke('access_sync', { paths })
+  }
 }

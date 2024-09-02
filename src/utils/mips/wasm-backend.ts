@@ -1,14 +1,21 @@
 import {
   AssemblerResult,
   BinaryResult,
-  BitmapConfig, Breakpoints, DisassembleResult,
-  ExecutionProfile, ExecutionResult,
-  HexBinaryResult, InstructionDetails, InstructionLine, LastDisplay,
+  BitmapConfig,
+  Breakpoints,
+  DisassembleResult,
+  ExecutionProfile,
+  ExecutionResult,
+  HexBinaryResult,
+  InstructionDetails,
+  InstructionLine,
+  LastDisplay,
   MipsBackend,
   MipsExecution
 } from './mips'
 import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
+import { Message, MessageData, MessageOp, MessageResponse } from './wasm-worker-message'
 
 interface RequestResponder {
   resolve: (arg: any) => void
@@ -32,7 +39,7 @@ export class WasmBackend implements MipsBackend {
 
   pendingRequests = new Map<number, RequestResponder>()
 
-  async sendRequest<T>(op: string, data: any): Promise<T> {
+  async sendRequest<T>(data: MessageData): Promise<T> {
     const requestId = this.requestId++
 
     return new Promise((resolve, reject) => {
@@ -42,42 +49,41 @@ export class WasmBackend implements MipsBackend {
       })
 
       this.worker.postMessage({
-        requestId,
-        op,
+        id: requestId,
         data
-      })
+      } satisfies Message)
     })
   }
 
   handleMessage(event: MessageEvent) {
-    const { requestId, error, data } = event.data
+    const response = event.data as MessageResponse
 
-    const result = this.pendingRequests.get(requestId)
+    const result = this.pendingRequests.get(response.id)
 
     if (result === undefined) {
       return
     }
 
-    if (error !== undefined && error !== null) {
-      result.reject(error)
+    if (response.success) {
+      result.resolve(response.data)
     } else {
-      result.resolve(data)
+      result.reject(response.error)
     }
   }
 
   async assembleRegions(text: string, path: string | null, options: ExportRegionsOptions): Promise<HexBinaryResult> {
-    return  await this.sendRequest<HexBinaryResult>('assemble_regions', { text, path, options })
+    return  await this.sendRequest<HexBinaryResult>({ op: MessageOp.AssembleRegions, text, path, options })
   }
 
   async assembleText(text: string, path: string | null): Promise<AssemblerResult> {
-    return await this.sendRequest<AssemblerResult>('assemble_text', { text, path })
+    return await this.sendRequest<AssemblerResult>({ op: MessageOp.AssembleText, text, path })
   }
 
   async assembleWithBinary(text: string, path: string | null): Promise<BinaryResult> {
     const [binary, assemblerResult] = await this.sendRequest<[
       number[] | null,
       AssemblerResult
-    ]>('assemble_binary', { text, path })
+    ]>({ op: MessageOp.AssembleBinary, text, path })
 
     return {
       binary: binary ? Uint8Array.from(binary) : null,
@@ -86,23 +92,27 @@ export class WasmBackend implements MipsBackend {
   }
 
   async decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null> {
-    return await this.sendRequest<InstructionDetails | null>('decode_instruction', { pc, instruction })
+    return await this.sendRequest<InstructionDetails | null>({ op: MessageOp.DecodeInstruction, pc, instruction })
   }
 
   async disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
-    return await this.sendRequest<DisassembleResult>('disassemble', { named, elf: new Uint8Array(elf) })
+    return await this.sendRequest<DisassembleResult>({ op: MessageOp.Disassemble, named, bytes: new Uint8Array(elf) })
   }
 
   async disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
-    return await this.sendRequest<InstructionLine[]>('detailed_disassemble', { bytes: new Uint8Array(bytes) })
+    return await this.sendRequest<InstructionLine[]>({ op: MessageOp.DetailedDisassemble, bytes: new Uint8Array(bytes) })
   }
 
   async lastDisplay(): Promise<LastDisplay> {
-    return await this.sendRequest<LastDisplay>('last_display', {})
+    return await this.sendRequest<LastDisplay>({ op: MessageOp.LastDisplay })
   }
 
   async configureDisplay(config: BitmapConfig): Promise<void> {
-    await this.sendRequest('configure_display', { config })
+    await this.sendRequest({ op: MessageOp.ConfigureDisplay, config })
+  }
+
+  wakeSync(): Promise<void> {
+    throw new Error()
   }
 
   async createExecution(text: string, path: string | null, timeTravel: boolean, profile: ExecutionProfile): Promise<MipsExecution> {
@@ -136,7 +146,8 @@ export class WasmExecution implements MipsExecution {
           bytes[i] = text.charCodeAt(i)
         }
 
-        const result = await this.backend.sendRequest<boolean>('configure_elf', {
+        const result = await this.backend.sendRequest<boolean>({
+          op: MessageOp.ConfigureElf,
           bytes,
           timeTravel: this.timeTravel
         })
@@ -152,7 +163,8 @@ export class WasmExecution implements MipsExecution {
       }
 
       case 'asm': {
-        const result = await this.backend.sendRequest<AssemblerResult>('configure_asm', {
+        const result = await this.backend.sendRequest<AssemblerResult>({
+          op: MessageOp.ConfigureAsm,
           text: this.text,
           timeTravel: this.timeTravel
         })
@@ -165,10 +177,8 @@ export class WasmExecution implements MipsExecution {
       }
 
       default:
-        break
+        throw new Error()
     }
-
-    throw new Error()
   }
 
   lastPc(): Promise<number | null> {
@@ -199,16 +209,20 @@ export class WasmExecution implements MipsExecution {
     throw new Error()
   }
 
-  pause(): Promise<void> {
-    throw new Error()
+  async pause(): Promise<void> {
+    await this.backend.sendRequest({ op: MessageOp.Pause })
   }
 
-  stop(): Promise<void> {
-    throw new Error()
+  async stop(): Promise<void> {
+    await this.backend.sendRequest({ op: MessageOp.Stop })
   }
 
-  resume(count: number | null, breakpoints: number[] | null, listen: (result: AssemblerResult) => void): Promise<ExecutionResult | null> {
-    throw new Error()
+  async resume(count: number | null, breakpoints: number[] | null): Promise<ExecutionResult | null> {
+    const mappedBreakpoints = breakpoints
+      ? this.breakpoints?.mapLines(breakpoints) ?? []
+      : []
+
+    return await this.backend.sendRequest<ExecutionResult | null>({ op: MessageOp.Resume, count, breakpoints: mappedBreakpoints })
   }
 
   rewind(count: number | null): Promise<ExecutionResult | null> {

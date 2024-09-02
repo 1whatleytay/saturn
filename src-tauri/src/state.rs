@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
+use titan::execution::executor::ExecutorMode;
 use saturn_backend::display::FlushDisplayBody;
-use saturn_backend::execution::{ResumeResult, RewindableDevice};
+use saturn_backend::execution::{BatchOptions, ResumeOptions, ResumeResult, RewindableDevice};
 
 pub type DebuggerBody = Mutex<Option<Arc<dyn RewindableDevice>>>;
 
@@ -28,7 +29,17 @@ pub async fn resume(
     let display = display.inner().clone();
     
     tokio::spawn(async move {
-        context.resume(count, breakpoints, Some(display)).await 
+        //count, breakpoints, Some(display), true
+        context.resume(ResumeOptions {
+            batch: count.map(|count| BatchOptions {
+                count,
+                first_batch: true,
+                allow_interrupt: false
+            }),
+            breakpoints: breakpoints.unwrap_or_default(),
+            display: Some(display),
+            change_state: if count.is_none() { Some(ExecutorMode::Running) } else { None }
+        }).await
     }).await.map_err(|_| ())?
 }
 

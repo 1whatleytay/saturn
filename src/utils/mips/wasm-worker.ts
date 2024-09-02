@@ -1,24 +1,37 @@
 import * as backend from './wasm/saturn_wasm'
-import { ExportRegionsOptions } from '../settings'
 import {
   AssembledRegions,
   AssemblerResult,
-  BinaryResult, BitmapConfig,
+  BinaryResult,
   DisassembleResult,
+  ExecutionModeType,
+  ExecutionResult,
   HexBinaryResult,
-  InstructionDetails, InstructionLine, LastDisplay
+  InstructionDetails,
+  InstructionLine,
+  LastDisplay
 } from './mips'
+import {
+  AssembleBinaryData,
+  AssembleRegionsData,
+  AssembleTextData,
+  ConfigureAsmData,
+  ConfigureDisplayData,
+  ConfigureElfData,
+  DecodeInstructionData,
+  DetailedDisassembleData,
+  DisassembleData,
+  Message,
+  MessageData,
+  MessageOp,
+  MessageResponse,
+  ResumeData
+} from './wasm-worker-message'
 
 // Runner/Execution State (Automatically Freed with the Worker Memory)
 const runner = new backend.Runner();
 
-interface AssembleRegionsInput {
-  text: string
-  path: string | null
-  options: ExportRegionsOptions
-}
-
-function assembleRegions({ text, options }: AssembleRegionsInput): HexBinaryResult {
+function assembleRegions({ text, options }: AssembleRegionsData): HexBinaryResult {
   const [regions, result] = backend.assemble_regions(text, options) as [
     AssembledRegions | null,
     AssemblerResult
@@ -30,55 +43,27 @@ function assembleRegions({ text, options }: AssembleRegionsInput): HexBinaryResu
   }
 }
 
-interface AssembleTextInput {
-  text: string
-  path: string | null
-}
-
-function assembleText({ text }: AssembleTextInput): AssemblerResult {
+function assembleText({ text }: AssembleTextData): AssemblerResult {
   return backend.assemble_text(text) as AssemblerResult
 }
 
-interface AssembleBinaryInput {
-  text: string
-  path: string | null
-}
-
-function assembleBinary({ text }: AssembleBinaryInput): BinaryResult {
+function assembleBinary({ text }: AssembleBinaryData): BinaryResult {
   return backend.assemble_binary(text) as BinaryResult
 }
 
-interface DecodeInstructionInput {
-  pc: number
-  instruction: number
-}
-
-function decodeInstruction({ pc, instruction }: DecodeInstructionInput): InstructionDetails | null {
+function decodeInstruction({ pc, instruction }: DecodeInstructionData): InstructionDetails | null {
   return backend.decode_instruction(pc, instruction) as InstructionDetails | null
 }
 
-interface DisassembleInput {
-  named: string | null
-  bytes: Uint8Array
-}
-
-function disassemble({ named, bytes }: DisassembleInput): DisassembleResult {
+function disassemble({ named, bytes }: DisassembleData): DisassembleResult {
   return backend.disassemble(named ?? undefined, bytes) as DisassembleResult
 }
 
-interface DetailedDisassembleInput {
-  bytes: Uint8Array
-}
-
-function detailedDisassemble({ bytes }: DetailedDisassembleInput): InstructionLine[] {
+function detailedDisassemble({ bytes }: DetailedDisassembleData): InstructionLine[] {
   return backend.detailed_disassemble(bytes) as InstructionLine[]
 }
 
-interface ConfigureDisplayInput {
-  config: BitmapConfig
-}
-
-function configureDisplay({ config }: ConfigureDisplayInput) {
+function configureDisplay({ config }: ConfigureDisplayData) {
   runner.configure_display(config.address, config.width, config.height)
 }
 
@@ -86,55 +71,91 @@ function lastDisplay(): LastDisplay {
   return runner.last_display()
 }
 
-interface ConfigureElfInput {
-  bytes: Uint8Array
-  timeTravel: boolean
+function configureElf({ bytes, timeTravel }: ConfigureElfData): boolean {
+  return runner.configure_elf(bytes, timeTravel)
 }
 
-function configureElf({ bytes, timeTravel }: ConfigureElfInput) {
-  runner.configure_elf(bytes, timeTravel)
+function configureAsm({ text, timeTravel }: ConfigureAsmData): AssemblerResult {
+  return runner.configure_asm(text, timeTravel)
 }
 
-interface ConfigureAsmInput {
-  text: string
-  timeTravel: boolean
+async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResult | null> {
+  const batchSize = 1200 // worth adjusting this batch size
+
+  let instructionsExecuted = 0
+
+  const breaks = breakpoints === null ? undefined : new Uint32Array(breakpoints)
+
+  let result: ExecutionResult | null = null
+
+  let first_run = true
+
+  while (count === null || instructionsExecuted < count) {
+    const instructionsToExecute = count === null ? batchSize : Math.min(count - instructionsExecuted, batchSize)
+
+    result = await runner.resume(instructionsToExecute, breaks, first_run, count !== null) as ExecutionResult | null
+
+    first_run = false
+
+    if (result === null) {
+      return null
+    }
+
+    if (result.mode.type !== ExecutionModeType.Running) {
+      return result
+    }
+
+    instructionsExecuted += batchSize
+
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
+  }
+
+  return result
 }
 
-function configureAsm({ text, timeTravel }: ConfigureAsmInput) {
-  runner.configure_asm(text, timeTravel)
+function stop() {
+  runner.stop()
 }
 
-async function dispatchOp(op: string, data: any): Promise<any> {
-  switch (op) {
-    case 'assemble_regions': return assembleRegions(data as AssembleRegionsInput)
-    case 'assemble_text': return assembleText(data as AssembleTextInput)
-    case 'assemble_binary': return assembleBinary(data as AssembleBinaryInput)
-    case 'decode_instruction': return decodeInstruction(data as DecodeInstructionInput)
-    case 'disassemble': return disassemble(data as DisassembleInput)
-    case 'detailed_disassemble': return detailedDisassemble(data as DetailedDisassembleInput)
-    case 'configure_display': return configureDisplay(data as ConfigureDisplayInput)
-    case 'last_display': return lastDisplay()
-    case 'configure_elf': return configureElf(data as ConfigureElfInput)
-    case 'configure_asm': return configureAsm(data as ConfigureAsmInput)
-    default: throw new Error(`Unknown worker op ${op}`)
+function pause() {
+  runner.pause()
+}
+
+async function dispatchOp(data: MessageData): Promise<any> {
+  switch (data.op) {
+    case MessageOp.AssembleRegions: return assembleRegions(data)
+    case MessageOp.AssembleText: return assembleText(data)
+    case MessageOp.AssembleBinary: return assembleBinary(data)
+    case MessageOp.DecodeInstruction: return decodeInstruction(data)
+    case MessageOp.Disassemble: return disassemble(data)
+    case MessageOp.DetailedDisassemble: return detailedDisassemble(data)
+    case MessageOp.ConfigureDisplay: return configureDisplay(data)
+    case MessageOp.LastDisplay: return lastDisplay()
+    case MessageOp.ConfigureElf: return configureElf(data)
+    case MessageOp.ConfigureAsm: return configureAsm(data)
+    case MessageOp.Resume: return await resume(data)
+    case MessageOp.Stop: return stop()
+    case MessageOp.Pause: return pause()
   }
 }
 
 async function handleMessage(event: MessageEvent) {
-  const { requestId, op, data } = event.data
+  const { id, data } = event.data as Message
 
   try {
-    const value = await dispatchOp(op, data)
+    const value = await dispatchOp(data)
 
     postMessage({
-      requestId,
+      id,
+      success: true,
       data: value
-    })
+    } satisfies MessageResponse)
   } catch (error) {
     postMessage({
-      requestId,
+      id,
+      success: false,
       error
-    })
+    } satisfies MessageResponse)
   }
 }
 

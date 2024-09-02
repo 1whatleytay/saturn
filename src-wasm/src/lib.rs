@@ -11,6 +11,7 @@ use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::elf::Elf;
 use titan::execution::Executor;
+use titan::execution::executor::ExecutorMode;
 use titan::execution::trackers::empty::EmptyTracker;
 use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
@@ -18,12 +19,17 @@ use wasm_bindgen::prelude::*;
 use saturn_backend::build::{AssemblerResult, configure_keyboard, create_elf_state, get_binary_finished_pcs, get_elf_finished_pcs, TIME_TRAVEL_HISTORY_SIZE};
 use saturn_backend::device::{ExecutionState, setup_state, state_from_binary};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::execution::RewindableDevice;
+use saturn_backend::execution::{BatchOptions, ResumeOptions, RewindableDevice};
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use crate::console::WasmConsole;
 use crate::midi::WasmMidi;
 use crate::time::WasmTime;
+
+#[wasm_bindgen]
+pub fn listen(f: &js_sys::Function) {
+    f.call0(&JsValue::NULL).ok();
+}
 
 // noinspection RsTraitObligations
 #[wasm_bindgen]
@@ -202,7 +208,6 @@ impl Runner {
         true
     }
 
-    // noinspection RsTraitObligations
     pub fn configure_asm(
         &mut self,
         text: &str,
@@ -281,7 +286,41 @@ impl Runner {
         }
     }
 
-    pub async fn resume(&mut self, batch_size: usize) -> JsValue {
-        todo!()
+    pub async fn resume(&mut self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
+        let Some(device) = &mut self.device else {
+            return JsValue::NULL
+        };
+
+        // Some(batch_size), breakpoints, Some(self.display.clone()), set_running
+        let result = device.resume(ResumeOptions {
+            batch: Some(BatchOptions {
+                count: batch_size,
+                first_batch,
+                allow_interrupt: !is_step
+            }),
+            breakpoints: breakpoints.unwrap_or_default(),
+            display: Some(self.display.clone()),
+            change_state: if is_step { None } else { Some(ExecutorMode::Running) }
+        }).await;
+        
+        serde_wasm_bindgen::to_value(&result.ok()).unwrap()
+    }
+
+    pub fn pause(&mut self) {
+        let Some(device) = &mut self.device else {
+            return
+        };
+
+        device.pause()
+    }
+
+    pub fn stop(&mut self) {
+        let Some(device) = &mut self.device else {
+            return
+        };
+
+        device.pause();
+
+        self.device = None
     }
 }

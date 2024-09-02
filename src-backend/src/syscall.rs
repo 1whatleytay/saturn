@@ -789,7 +789,7 @@ impl SyscallDelegate {
                 (
                     match result {
                         Completed => {
-                            debugger.invalid_handled();
+                            debugger.syscall_handled();
 
                             None
                         }
@@ -802,11 +802,35 @@ impl SyscallDelegate {
         }
     }
 
+    // A syscall will interrupt a batch!
+    pub async fn run_batch<Mem: Memory, Track: Tracker<Mem>>(
+        &self, debugger: &Executor<Mem, Track>, batch: usize, should_skip_first: bool, allow_interrupt: bool
+    ) -> Option<(DebugFrame, Option<SyscallResult>)> {
+        if !debugger.run_batched(batch, should_skip_first, allow_interrupt) {
+            return None // no interruption, batch completed successfully
+        }
+
+        let (frame, result) = self.handle_frame(debugger, debugger.frame()).await;
+
+        if let Some(frame) = frame {
+            return Some((frame, result));
+        }
+
+        // Need to re-check.
+        let frame = debugger.frame();
+
+        if frame.mode != Recovered {
+            return Some((frame, None))
+        }
+
+        None
+    }
+
     pub async fn run<Mem: Memory, Track: Tracker<Mem>>(
-        &self, debugger: &Executor<Mem, Track>
+        &self, debugger: &Executor<Mem, Track>, should_skip_first: bool
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
-            let frame = debugger.run();
+            let frame = debugger.run(should_skip_first);
             let (frame, result) = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
@@ -820,23 +844,5 @@ impl SyscallDelegate {
                 return (frame, None);
             }
         }
-    }
-
-    pub async fn cycle<Mem: Memory + Send, Track: Tracker<Mem> + Send>(
-        &self,
-        debugger: &Executor<Mem, Track>,
-    ) -> (DebugFrame, Option<SyscallResult>) {
-        let frame = debugger.cycle(true);
-
-        let (frame, result) = if let Some(frame) = frame {
-            self.handle_frame(debugger, frame).await
-        } else {
-            (None, None)
-        };
-
-        (
-            frame.unwrap_or_else(|| debugger.frame()),
-            result,
-        )
     }
 }
