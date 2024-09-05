@@ -25,7 +25,13 @@ import {
   MessageData,
   MessageOp,
   MessageResponse,
-  ResumeData
+  PostInputData,
+  PostKeyData,
+  ReadBytesData,
+  ResumeData, RewindData,
+  SetBreakpointsData,
+  SetRegisterData,
+  WriteBytesData
 } from './wasm-worker-message'
 
 // Runner/Execution State (Automatically Freed with the Worker Memory)
@@ -88,14 +94,14 @@ async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResu
 
   let result: ExecutionResult | null = null
 
-  let first_run = true
+  let firstRun = true
 
   while (count === null || instructionsExecuted < count) {
     const instructionsToExecute = count === null ? batchSize : Math.min(count - instructionsExecuted, batchSize)
 
-    result = await runner.resume(instructionsToExecute, breaks, first_run, count !== null) as ExecutionResult | null
+    result = await runner.resume(instructionsToExecute, firstRun ? breaks : undefined, firstRun, count !== null) as ExecutionResult | null
 
-    first_run = false
+    firstRun = false
 
     if (result === null) {
       return null
@@ -121,6 +127,44 @@ function pause() {
   runner.pause()
 }
 
+function lastPc(): number | null {
+  return runner.last_pc() ?? null
+}
+
+function readBytes({ address, count }: ReadBytesData): (number | null)[] | null {
+  return runner.read_bytes(address, count)
+}
+
+function writeBytes({ address, bytes }: WriteBytesData) {
+  runner.write_bytes(address, bytes)
+}
+
+function setRegister({ register, value }: SetRegisterData) {
+  runner.set_register(register, value)
+}
+
+function setBreakpoints({ breakpoints }: SetBreakpointsData) {
+  console.log({ breakpoints })
+
+  runner.set_breakpoints(breakpoints)
+}
+
+function postInput({ text }: PostInputData) {
+  runner.post_input(text)
+}
+
+function postKey({ key, up }: PostKeyData) {
+  runner.post_key(key, up)
+}
+
+function wakeSync() {
+  runner.wake_sync()
+}
+
+function rewind({ count }: RewindData): ExecutionResult | null {
+  return runner.rewind(count)
+}
+
 async function dispatchOp(data: MessageData): Promise<any> {
   switch (data.op) {
     case MessageOp.AssembleRegions: return assembleRegions(data)
@@ -136,6 +180,15 @@ async function dispatchOp(data: MessageData): Promise<any> {
     case MessageOp.Resume: return await resume(data)
     case MessageOp.Stop: return stop()
     case MessageOp.Pause: return pause()
+    case MessageOp.LastPc: return lastPc()
+    case MessageOp.ReadBytes: return readBytes(data)
+    case MessageOp.WriteBytes: return writeBytes(data)
+    case MessageOp.SetRegister: return setRegister(data)
+    case MessageOp.SetBreakpoints: return setBreakpoints(data)
+    case MessageOp.PostInput: return postInput(data)
+    case MessageOp.PostKey: return postKey(data)
+    case MessageOp.WakeSync: return wakeSync()
+    case MessageOp.Rewind: return rewind(data)
   }
 }
 

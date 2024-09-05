@@ -15,6 +15,15 @@ export enum MessageOp {
   Resume,
   Stop,
   Pause,
+  LastPc,
+  ReadBytes,
+  WriteBytes,
+  SetRegister,
+  SetBreakpoints,
+  PostInput,
+  PostKey,
+  WakeSync,
+  Rewind,
 }
 
 export interface AssembleRegionsData {
@@ -98,6 +107,53 @@ export interface PauseData {
   op: MessageOp.Pause
 }
 
+export interface LastPcData {
+  op: MessageOp.LastPc
+}
+
+export interface ReadBytesData {
+  op: MessageOp.ReadBytes
+  address: number
+  count: number
+}
+
+export interface WriteBytesData {
+  op: MessageOp.WriteBytes
+  address: number
+  bytes: Uint8Array
+}
+
+export interface SetRegisterData {
+  op: MessageOp.SetRegister
+  register: number
+  value: number
+}
+
+export interface SetBreakpointsData {
+  op: MessageOp.SetBreakpoints
+  breakpoints: Uint32Array
+}
+
+export interface PostInputData {
+  op: MessageOp.PostInput
+  text: string
+}
+
+export interface PostKeyData {
+  op: MessageOp.PostKey
+  key: string
+  up: boolean
+}
+
+export interface WakeSyncData {
+  op: MessageOp.WakeSync
+}
+
+export interface RewindData {
+  op: MessageOp.Rewind
+  count: number
+}
+
 export type MessageData =
   AssembleRegionsData |
   AssembleTextData |
@@ -111,16 +167,20 @@ export type MessageData =
   ConfigureAsmData |
   ResumeData |
   StopData |
-  PauseData
+  PauseData |
+  LastPcData |
+  ReadBytesData |
+  WriteBytesData |
+  SetRegisterData |
+  SetBreakpointsData |
+  PostInputData |
+  PostKeyData |
+  WakeSyncData |
+  RewindData
 
 export interface Message {
   id: number
   data: MessageData
-}
-
-export enum MessageResponseType {
-  Success,
-  Failed,
 }
 
 export interface MessageResponseSuccess {

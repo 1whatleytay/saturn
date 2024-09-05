@@ -112,7 +112,9 @@ export class WasmBackend implements MipsBackend {
   }
 
   wakeSync(): Promise<void> {
-    throw new Error()
+    return this.sendRequest({
+      op: MessageOp.WakeSync
+    })
   }
 
   async createExecution(text: string, path: string | null, timeTravel: boolean, profile: ExecutionProfile): Promise<MipsExecution> {
@@ -182,31 +184,55 @@ export class WasmExecution implements MipsExecution {
   }
 
   lastPc(): Promise<number | null> {
-    throw new Error()
+    return this.backend.sendRequest<number | null>({ op: MessageOp.LastPc })
   }
 
   memoryAt(address: number, count: number): Promise<(number | null)[] | null> {
-    throw new Error()
+    return this.backend.sendRequest<(number | null)[] | null>({
+      op: MessageOp.ReadBytes,
+      address,
+      count
+    })
   }
 
   setBreakpoints(breakpoints: number[]): Promise<void> {
-    throw new Error()
+    const mappedBreakpoints = this.breakpoints?.mapLines(breakpoints) ?? []
+
+    return this.backend.sendRequest({
+      op: MessageOp.SetBreakpoints,
+      breakpoints: new Uint32Array(mappedBreakpoints)
+    })
   }
 
   setMemory(address: number, bytes: number[]): Promise<void> {
-    throw new Error()
+    return this.backend.sendRequest({
+      op: MessageOp.WriteBytes,
+      address,
+      bytes: new Uint8Array(bytes)
+    })
   }
 
   setRegister(register: number, value: number): Promise<void> {
-    throw new Error()
+    return this.backend.sendRequest({
+      op: MessageOp.SetRegister,
+      register,
+      value
+    })
   }
 
   postInput(text: string): Promise<void> {
-    throw new Error()
+    return this.backend.sendRequest({
+      op: MessageOp.PostInput,
+      text
+    })
   }
 
   postKey(key: string, up: boolean): Promise<void> {
-    throw new Error()
+    return this.backend.sendRequest({
+      op: MessageOp.PostKey,
+      key,
+      up
+    })
   }
 
   async pause(): Promise<void> {
@@ -225,8 +251,11 @@ export class WasmExecution implements MipsExecution {
     return await this.backend.sendRequest<ExecutionResult | null>({ op: MessageOp.Resume, count, breakpoints: mappedBreakpoints })
   }
 
-  rewind(count: number | null): Promise<ExecutionResult | null> {
-    throw new Error()
+  rewind(count: number): Promise<ExecutionResult | null> {
+    return this.backend.sendRequest<ExecutionResult | null>({
+      op: MessageOp.Rewind,
+      count
+    })
   }
 
   constructor(

@@ -73,7 +73,7 @@ export class TauriExecution implements MipsExecution {
     return await tauri.invoke('last_pc')
   }
 
-  public async rewind(count: number | null): Promise<ExecutionResult | null> {
+  public async rewind(count: number): Promise<ExecutionResult | null> {
     return await tauri.invoke('rewind', { count })
   }
 

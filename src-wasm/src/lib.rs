@@ -1,7 +1,9 @@
 mod console;
 mod midi;
 mod time;
+mod events;
 
+use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -27,12 +29,6 @@ use crate::midi::WasmMidi;
 use crate::time::WasmTime;
 
 #[wasm_bindgen]
-pub fn listen(f: &js_sys::Function) {
-    f.call0(&JsValue::NULL).ok();
-}
-
-// noinspection RsTraitObligations
-#[wasm_bindgen]
 pub fn assemble_regions(text: &str, options: JsValue) -> JsValue {
     let result = saturn_backend::regions::assemble_regions(
         text, None, serde_wasm_bindgen::from_value(options).unwrap());
@@ -40,7 +36,6 @@ pub fn assemble_regions(text: &str, options: JsValue) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-// noinspection RsTraitObligations
 #[wasm_bindgen]
 pub fn assemble_text(text: &str) -> JsValue {
     let result = saturn_backend::build::assemble(text, None);
@@ -48,7 +43,6 @@ pub fn assemble_text(text: &str) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-// noinspection RsTraitObligations
 #[wasm_bindgen]
 pub fn assemble_binary(text: &str) -> JsValue {
     let result = saturn_backend::build::assemble_binary(text, None);
@@ -56,7 +50,6 @@ pub fn assemble_binary(text: &str) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-// noinspection RsTraitObligations
 #[wasm_bindgen]
 pub fn decode_instruction(pc: u32, instruction: u32) -> JsValue {
     let result = saturn_backend::decode::decode_instruction(pc, instruction);
@@ -64,7 +57,6 @@ pub fn decode_instruction(pc: u32, instruction: u32) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-// noinspection RsTraitObligations
 #[wasm_bindgen]
 pub fn disassemble(named: Option<String>, bytes: Vec<u8>) -> JsValue {
     let result = saturn_backend::build::disassemble(named.as_deref(), bytes);
@@ -72,7 +64,6 @@ pub fn disassemble(named: Option<String>, bytes: Vec<u8>) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-// noinspection RsTraitObligations
 #[wasm_bindgen]
 pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
     let result = saturn_backend::decode::detailed_disassemble(bytes)?;
@@ -144,7 +135,12 @@ impl Runner {
         Runner::default()
     }
 
-    // noinspection RsTraitObligations
+    pub fn set_breakpoints(&mut self, breakpoints: &[u32]) {
+        if let Some(device) = &mut self.device {
+            device.set_breakpoints(HashSet::<u32>::from_iter(breakpoints.iter().copied()))
+        }
+    }
+
     pub fn last_display(&self) -> JsValue {
         let display = self.display.lock().unwrap();
 
@@ -269,8 +265,8 @@ impl Runner {
     pub fn read_bytes(&mut self, address: u32, count: u32) -> JsValue {
         let result = self.device
             .as_ref()
-            .map(|device| device.read_bytes(address, count));
-        
+            .and_then(|device| device.read_bytes(address, count));
+
         serde_wasm_bindgen::to_value(&result).unwrap()
     }
     
@@ -286,6 +282,24 @@ impl Runner {
         }
     }
 
+    pub fn post_input(&self, text: String) {
+        if let Some(device) = &self.device {
+            device.post_input(text)
+        }
+    }
+
+    pub fn post_key(&self, key: char, up: bool) {
+        if let Some(device) = &self.device {
+            device.post_key(key, up)
+        }
+    }
+
+    pub fn wake_sync(&self) {
+        if let Some(device) = &self.device {
+            device.wake_sync()
+        }
+    }
+
     pub async fn resume(&mut self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
         let Some(device) = &mut self.device else {
             return JsValue::NULL
@@ -298,9 +312,9 @@ impl Runner {
                 first_batch,
                 allow_interrupt: !is_step
             }),
-            breakpoints: breakpoints.unwrap_or_default(),
+            breakpoints,
             display: Some(self.display.clone()),
-            change_state: if is_step { None } else { Some(ExecutorMode::Running) }
+            change_state: if !is_step && first_batch { Some(ExecutorMode::Running) } else { None }
         }).await;
         
         serde_wasm_bindgen::to_value(&result.ok()).unwrap()
@@ -322,5 +336,15 @@ impl Runner {
         device.pause();
 
         self.device = None
+    }
+
+    pub fn rewind(&mut self, count: u32) -> JsValue {
+        let Some(device) = &mut self.device else {
+            return JsValue::NULL
+        };
+
+        let result = device.rewind(count);
+
+        serde_wasm_bindgen::to_value(&result).unwrap()
     }
 }

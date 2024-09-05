@@ -160,7 +160,7 @@ pub struct BatchOptions {
 
 pub struct ResumeOptions {
     pub batch: Option<BatchOptions>,
-    pub breakpoints: Vec<u32>,
+    pub breakpoints: Option<Vec<u32>>,
     pub display: Option<FlushDisplayBody>,
     // if set_running is true, set state to "Running" and clear cancellation
     // useful for looping batches, like in the WASM backend
@@ -199,9 +199,11 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         let state = self.delegate.clone();
         let finished_pcs = self.finished_pcs.clone();
 
-        let breakpoints_set = HashSet::from_iter(options.breakpoints.iter().copied());
+        if let Some(breakpoints) = options.breakpoints {
+            let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
-        debugger.set_breakpoints(breakpoints_set);
+            debugger.set_breakpoints(breakpoints_set);
+        }
         
         let is_breakpoint = debugger.is_breakpoint();
 

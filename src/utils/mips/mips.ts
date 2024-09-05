@@ -261,7 +261,7 @@ export interface MipsExecution {
   lastPc(): Promise<number | null>
 
   configure(): Promise<AssemblerResult | null>
-  rewind(count: number | null): Promise<ExecutionResult | null>
+  rewind(count: number): Promise<ExecutionResult | null>
   resume(
     count: number | null,
     breakpoints: number[] | null,

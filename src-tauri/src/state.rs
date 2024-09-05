@@ -36,7 +36,7 @@ pub async fn resume(
                 first_batch: true,
                 allow_interrupt: false
             }),
-            breakpoints: breakpoints.unwrap_or_default(),
+            breakpoints,
             display: Some(display),
             change_state: if count.is_none() { Some(ExecutorMode::Running) } else { None }
         }).await

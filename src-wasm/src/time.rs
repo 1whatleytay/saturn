@@ -6,10 +6,10 @@ pub struct WasmTime { }
 
 impl TimeHandler for WasmTime {
     fn time(&self) -> Option<Duration> {
-        todo!()
+        Some(Duration::from_millis(js_sys::Date::now() as u64))
     }
 
     fn sleep(&self, duration: Duration) -> oneshot::Receiver<()> {
-        todo!()
+        
     }
 }
