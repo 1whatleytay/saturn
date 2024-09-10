@@ -279,4 +279,7 @@ export interface MipsExecution {
   ): Promise<(number | null)[] | null>
   setRegister(register: number, value: number): Promise<void>
   setMemory(address: number, bytes: number[]): Promise<void>
+
+  // Live display, should generally be more performant on tauri.
+  readDisplay(width: number, height: number, address: number): Promise<Uint8Array | null>
 }

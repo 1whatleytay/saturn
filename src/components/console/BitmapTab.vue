@@ -100,8 +100,9 @@
               target="_blank"
               href="https://github.com/1whatleytay/saturn"
               class="underline hover:text-gray-300"
-              >https://github.com/1whatleytay/saturn</a
-            >.
+            >
+              https://github.com/1whatleytay/saturn
+            </a>.
           </div>
         </div>
       </div>
@@ -291,9 +292,9 @@ async function renderFrameFallback(
   context: CanvasRenderingContext2D,
   execution: MipsExecution
 ) {
-  const memory = await execution.memoryAt(0x10008000, 64 * 64 * 4)
+  const { width, height, address} = config.value
 
-  const { width, height } = config.value
+  const memory = await execution.memoryAt(address, width * height * 4)
 
   const pixels = width * height * 4
 
@@ -317,8 +318,6 @@ async function renderFrameFallback(
   context.putImageData(data, 0, 0)
 }
 
-const protocol = convertFileSrc('', 'display')
-
 function renderOrdered(
   context: CanvasRenderingContext2D,
   width: number,
@@ -335,21 +334,15 @@ function renderOrdered(
 }
 
 async function renderFrameProtocol(context: CanvasRenderingContext2D) {
-  const { width, height } = config.value
+  const { width, height, address } = config.value
 
-  const result = await fetch(protocol, {
-    headers: {
-      width: width.toString(),
-      height: height.toString(),
-      address: settings.bitmap.address.toString(),
-    },
-    mode: 'cors',
-    cache: 'no-cache',
-  })
+  if (consoleData.execution) {
+    const memory = await consoleData.execution.readDisplay(width, height, address)
 
-  const memory = new Uint8Array(await result.arrayBuffer())
-
-  renderOrdered(context, width, height, memory)
+    if (memory) {
+      renderOrdered(context, width, height, memory)
+    }
+  }
 }
 
 async function renderLastDisplay(context: CanvasRenderingContext2D) {

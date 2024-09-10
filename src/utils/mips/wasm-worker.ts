@@ -27,12 +27,14 @@ import {
   MessageResponse,
   PostInputData,
   PostKeyData,
-  ReadBytesData,
+  ReadBytesData, ReadDisplayData,
   ResumeData, RewindData,
   SetBreakpointsData,
   SetRegisterData,
   WriteBytesData
 } from './wasm-worker-message'
+
+backend.initialize()
 
 // Runner/Execution State (Automatically Freed with the Worker Memory)
 const runner = new backend.Runner();
@@ -165,6 +167,10 @@ function rewind({ count }: RewindData): ExecutionResult | null {
   return runner.rewind(count)
 }
 
+function readDisplay({ width, height, address }: ReadDisplayData) {
+  return runner.read_display(address, width, height)
+}
+
 async function dispatchOp(data: MessageData): Promise<any> {
   switch (data.op) {
     case MessageOp.AssembleRegions: return assembleRegions(data)
@@ -189,6 +195,7 @@ async function dispatchOp(data: MessageData): Promise<any> {
     case MessageOp.PostKey: return postKey(data)
     case MessageOp.WakeSync: return wakeSync()
     case MessageOp.Rewind: return rewind(data)
+    case MessageOp.ReadDisplay: return readDisplay(data)
   }
 }
 

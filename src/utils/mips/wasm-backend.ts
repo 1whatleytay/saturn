@@ -258,6 +258,15 @@ export class WasmExecution implements MipsExecution {
     })
   }
 
+  readDisplay(width: number, height: number, address: number): Promise<Uint8Array | null> {
+    return this.backend.sendRequest<Uint8Array | null>({
+      op: MessageOp.ReadDisplay,
+      width,
+      height,
+      address
+    })
+  }
+
   constructor(
     public backend: WasmBackend,
     public text: string,

@@ -11,10 +11,13 @@ import {
 import { ExportRegionsOptions } from '../settings'
 
 import { tauri } from '@tauri-apps/api'
+import { convertFileSrc } from '@tauri-apps/api/tauri'
 
 export class TauriExecution implements MipsExecution {
   configured: boolean = false
   public breakpoints: Breakpoints | null
+
+  protocol = convertFileSrc('', 'display')
 
   async configure(): Promise<AssemblerResult | null> {
     if (this.configured) {
@@ -152,6 +155,20 @@ export class TauriExecution implements MipsExecution {
 
   public async setMemory(address: number, bytes: number[]) {
     await tauri.invoke('write_bytes', { address, bytes })
+  }
+
+  async readDisplay(width: number, height: number, address: number): Promise<Uint8Array> {
+    const result = await fetch(this.protocol, {
+      headers: {
+        width: width.toString(),
+        height: height.toString(),
+        address: address.toString(),
+      },
+      mode: 'cors',
+      cache: 'no-cache',
+    })
+
+    return new Uint8Array(await result.arrayBuffer())
   }
 
   public constructor(

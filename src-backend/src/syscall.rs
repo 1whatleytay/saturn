@@ -13,6 +13,7 @@ use std::io::{Read, Write};
 use std::pin::{Pin, pin};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use async_trait::async_trait;
 use futures::future::FusedFuture;
 use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
@@ -32,6 +33,7 @@ pub struct MidiRequest {
     pub volume: u32,     // 0 - 127
 }
 
+#[derive(Debug)]
 pub enum SyscallResult {
     Completed,          // Syscall completed successfully.
     Failure(String),    // Failed to complete with message.
@@ -52,9 +54,10 @@ pub trait MidiHandler {
     fn installed(&mut self, instrument: u32) -> bool;
 }
 
+#[async_trait]
 pub trait TimeHandler {
     fn time(&self) -> Option<Duration>;
-    fn sleep(&self, duration: Duration) -> oneshot::Receiver<()>;
+    async fn sleep(&self, duration: Duration);
 }
 
 // Sync problems probably require something like this.
@@ -71,7 +74,7 @@ pub struct SyscallState {
     heap_start: u32,
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
-    time: Box<dyn TimeHandler + Send + Sync>,
+    time: Arc<dyn TimeHandler + Send + Sync>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
     file_map: HashMap<u32, File>,
@@ -81,7 +84,7 @@ impl SyscallState {
     pub fn new(
         console: Box<dyn ConsoleHandler + Send + Sync>,
         midi: Box<dyn MidiHandler + Send + Sync>,
-        time: Box<dyn TimeHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
     ) -> SyscallState {
         SyscallState {
             cancel_token: CancelToken::None,
@@ -159,9 +162,9 @@ impl SyscallDelegate {
     async fn send_print(&self, text: &str) {
         self.state.lock().unwrap().console.print(text, false);
 
-        let future = self.state.lock().unwrap().time.sleep(PRINT_BUFFER_TIME);
+        let time = self.state.lock().unwrap().time.clone();
 
-        future.await.ok();
+        time.sleep(PRINT_BUFFER_TIME).await;
     }
 
     fn play_installed(&self, request: &MidiRequest, sync: bool) -> bool {
@@ -604,9 +607,9 @@ impl SyscallDelegate {
     async fn sleep_for_duration(&self, time: u64) {
         let duration = Duration::from_millis(time);
 
-        let future = self.state.lock().unwrap().time.sleep(duration);
+        let time = self.state.lock().unwrap().time.clone();
 
-        future.await.ok();
+        time.sleep(duration).await;
     }
 
     async fn sleep<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
@@ -806,11 +809,15 @@ impl SyscallDelegate {
     pub async fn run_batch<Mem: Memory, Track: Tracker<Mem>>(
         &self, debugger: &Executor<Mem, Track>, batch: usize, should_skip_first: bool, allow_interrupt: bool
     ) -> Option<(DebugFrame, Option<SyscallResult>)> {
-        if !debugger.run_batched(batch, should_skip_first, allow_interrupt) {
+        log::info!("Running batch (size: {batch}, should_skip_first: {should_skip_first}, allow_interrupt: {allow_interrupt})");
+
+        if !debugger.run_batched(batch, should_skip_first, allow_interrupt).interrupted {
             return None // no interruption, batch completed successfully
         }
 
-        let (frame, result) = self.handle_frame(debugger, debugger.frame()).await;
+        let frame_in = debugger.frame();
+
+        let (frame, result) = self.handle_frame(debugger, frame_in).await;
 
         if let Some(frame) = frame {
             return Some((frame, result));
@@ -818,6 +825,8 @@ impl SyscallDelegate {
 
         // Need to re-check.
         let frame = debugger.frame();
+
+        log::info!("Resulting debugger frame handled with output mode: {:?}, result: {:?}", frame.mode, result);
 
         if frame.mode != Recovered {
             return Some((frame, None))

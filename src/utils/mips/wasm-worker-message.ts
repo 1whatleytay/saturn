@@ -24,6 +24,7 @@ export enum MessageOp {
   PostKey,
   WakeSync,
   Rewind,
+  ReadDisplay,
 }
 
 export interface AssembleRegionsData {
@@ -154,6 +155,13 @@ export interface RewindData {
   count: number
 }
 
+export interface ReadDisplayData {
+  op: MessageOp.ReadDisplay
+  width: number
+  height: number
+  address: number
+}
+
 export type MessageData =
   AssembleRegionsData |
   AssembleTextData |
@@ -176,7 +184,8 @@ export type MessageData =
   PostInputData |
   PostKeyData |
   WakeSyncData |
-  RewindData
+  RewindData |
+  ReadDisplayData
 
 export interface Message {
   id: number

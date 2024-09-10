@@ -29,6 +29,13 @@ use crate::midi::WasmMidi;
 use crate::time::WasmTime;
 
 #[wasm_bindgen]
+pub fn initialize() {
+    wasm_logger::init(wasm_logger::Config::default());
+
+    console_error_panic_hook::set_once();
+}
+
+#[wasm_bindgen]
 pub fn assemble_regions(text: &str, options: JsValue) -> JsValue {
     let result = saturn_backend::regions::assemble_regions(
         text, None, serde_wasm_bindgen::from_value(options).unwrap());
@@ -86,7 +93,7 @@ impl Runner {
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
         midi: Box<dyn MidiHandler + Send + Sync>,
-        time: Box<dyn TimeHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
     ) {
         if let Some(device) = &self.device {
             device.pause()
@@ -110,7 +117,7 @@ impl Runner {
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
         midi: Box<dyn MidiHandler + Send + Sync>,
-        time: Box<dyn TimeHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
     ) {
         if let Some(device) = &self.device {
             device.pause()
@@ -167,7 +174,7 @@ impl Runner {
 
         let console = Box::new(WasmConsole { });
         let midi = Box::new(WasmMidi { });
-        let time = Box::new(WasmTime { });
+        let time = Arc::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
@@ -221,7 +228,7 @@ impl Runner {
 
         let console = Box::new(WasmConsole { });
         let midi = Box::new(WasmMidi { });
-        let time = Box::new(WasmTime { });
+        let time = Arc::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
@@ -300,12 +307,19 @@ impl Runner {
         }
     }
 
+    pub fn read_display(&self, address: u32, width: u32, height: u32) -> Option<Vec<u8>> {
+        if let Some(device) = &self.device {
+            device.read_display(address, width, height)
+        } else {
+            None
+        }
+    }
+
     pub async fn resume(&mut self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
         let Some(device) = &mut self.device else {
             return JsValue::NULL
         };
 
-        // Some(batch_size), breakpoints, Some(self.display.clone()), set_running
         let result = device.resume(ResumeOptions {
             batch: Some(BatchOptions {
                 count: batch_size,

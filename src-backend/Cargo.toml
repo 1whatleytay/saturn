@@ -18,6 +18,6 @@ base64 = "0.21.7"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 async-trait = "0.1.77"
+log = "0.4.22"
 
 titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
-log = "0.4.22"

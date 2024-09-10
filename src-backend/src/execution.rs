@@ -149,6 +149,7 @@ pub trait ExecutionRewindable {
 
 pub trait RewindableDevice: ExecutionDevice + ExecutionRewindable { }
 
+#[derive(Debug, Clone)]
 pub struct BatchOptions {
     pub count: usize,
     // if true, the cancelled flag for syscall delegates will be cleared
@@ -199,9 +200,12 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         let state = self.delegate.clone();
         let finished_pcs = self.finished_pcs.clone();
 
+        log::info!("Resuming with batch options: {:?}", options.batch);
+
         if let Some(breakpoints) = options.breakpoints {
             let breakpoints_set = HashSet::from_iter(breakpoints.iter().copied());
 
+            log::info!("Overriding breakpoints: {:?}", breakpoints_set);
             debugger.set_breakpoints(breakpoints_set);
         }
         
