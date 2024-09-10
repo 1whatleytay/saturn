@@ -27,6 +27,7 @@ base64 = "0.21.5"
 
 saturn_backend = { path = "../src-backend" }
 titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+async-trait = "0.1.82"
 
 [features]
 default = [ "custom-protocol" ]

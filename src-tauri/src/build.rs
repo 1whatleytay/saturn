@@ -42,7 +42,7 @@ pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemo
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
-    time: Box<dyn TimeHandler + Send + Sync>,
+    time: Arc<dyn TimeHandler + Send + Sync>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
@@ -67,7 +67,7 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
-    time: Box<dyn TimeHandler + Send + Sync>,
+    time: Arc<dyn TimeHandler + Send + Sync>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
@@ -98,7 +98,7 @@ pub fn configure_elf(
     
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));
-    let time = Box::new(TokioTimeHandler::new());
+    let time = Arc::new(TokioTimeHandler::new());
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
     let mut memory = SectionMemory::new();
@@ -155,7 +155,7 @@ pub fn configure_asm(
 
     let console = forward_print(app_handle.clone());
     let midi = Box::new(ForwardMidi::new(app_handle));
-    let time = Box::new(TokioTimeHandler::new());
+    let time = Arc::new(TokioTimeHandler::new());
     let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
     let mut memory = SectionMemory::new();
