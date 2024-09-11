@@ -3,7 +3,6 @@ mod midi;
 mod time;
 mod events;
 
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
@@ -83,7 +82,7 @@ pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
 #[derive(Default)]
 pub struct Runner {
     display: FlushDisplayBody,
-    device: RefCell<Option<Rc<dyn RewindableDevice>>>
+    device: Option<Rc<dyn RewindableDevice>>
 }
 
 impl Runner {
@@ -144,7 +143,7 @@ impl Runner {
     }
 
     pub fn set_breakpoints(&self, breakpoints: &[u32]) {
-        if let Some(device) = self.device.borrow() {
+        if let Some(device) = &self.device {
             device.set_breakpoints(HashSet::<u32>::from_iter(breakpoints.iter().copied()))
         }
     }
@@ -343,7 +342,7 @@ impl Runner {
         device.pause()
     }
 
-    pub fn stop(&self) {
+    pub fn stop(&mut self) {
         let Some(device) = &self.device else {
             return
         };
@@ -354,7 +353,7 @@ impl Runner {
     }
 
     pub fn rewind(&self, count: u32) -> JsValue {
-        let Some(device) = &mut self.device else {
+        let Some(device) = &self.device else {
             return JsValue::NULL
         };
 
