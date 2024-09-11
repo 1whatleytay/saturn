@@ -20,7 +20,7 @@ use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::state::Registers;
 use titan::cpu::Memory;
 use titan::execution::executor::DebugFrame;
-use titan::execution::executor::ExecutorMode::{Invalid, Recovered};
+use titan::execution::executor::ExecutorMode::{Invalid,};
 use titan::execution::Executor;
 use titan::execution::trackers::Tracker;
 use futures::{FutureExt, select};
@@ -782,26 +782,23 @@ impl SyscallDelegate {
         &self,
         debugger: &Executor<Mem, Track>,
         frame: DebugFrame,
-    ) -> (Option<DebugFrame>, Option<SyscallResult>) {
+    ) -> (Option<DebugFrame>, Option<SyscallResult>, bool) {
         match frame.mode {
             Invalid(CpuSyscall) => {
                 // $v0
                 let code = debugger.with_state(|s| s.registers.line[V0_REG]);
                 let result = self.dispatch(debugger, code).await;
 
-                (
-                    match result {
-                        Completed => {
-                            debugger.syscall_handled();
+                match result {
+                    Completed => {
+                        debugger.syscall_handled();
 
-                            None
-                        }
-                        _ => Some(frame),
-                    },
-                    Some(result),
-                )
+                        (None, Some(result), true)
+                    }
+                    _ => (Some(frame), Some(result), false),
+                }
             }
-            _ => (Some(frame), None),
+            _ => (Some(frame), None, false),
         }
     }
 
@@ -809,27 +806,20 @@ impl SyscallDelegate {
     pub async fn run_batch<Mem: Memory, Track: Tracker<Mem>>(
         &self, debugger: &Executor<Mem, Track>, batch: usize, should_skip_first: bool, allow_interrupt: bool
     ) -> Option<(DebugFrame, Option<SyscallResult>)> {
-        log::info!("Running batch (size: {batch}, should_skip_first: {should_skip_first}, allow_interrupt: {allow_interrupt})");
-
         if !debugger.run_batched(batch, should_skip_first, allow_interrupt).interrupted {
             return None // no interruption, batch completed successfully
         }
 
         let frame_in = debugger.frame();
 
-        let (frame, result) = self.handle_frame(debugger, frame_in).await;
+        let (frame, result, recovered) = self.handle_frame(debugger, frame_in).await;
 
         if let Some(frame) = frame {
             return Some((frame, result));
         }
 
-        // Need to re-check.
-        let frame = debugger.frame();
-
-        log::info!("Resulting debugger frame handled with output mode: {:?}, result: {:?}", frame.mode, result);
-
-        if frame.mode != Recovered {
-            return Some((frame, None))
+        if !recovered {
+            return Some((debugger.frame(), None))
         }
 
         None
@@ -840,17 +830,14 @@ impl SyscallDelegate {
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
             let frame = debugger.run(should_skip_first);
-            let (frame, result) = self.handle_frame(debugger, frame).await;
+            let (frame, result, recovered) = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
                 return (frame, result);
             }
 
-            // Need to re-check.
-            let frame = debugger.frame();
-
-            if frame.mode != Recovered {
-                return (frame, None);
+            if !recovered {
+                return (debugger.frame(), None);
             }
         }
     }

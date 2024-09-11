@@ -9,7 +9,8 @@
     "dev": "yarn wasm && vite",
     "build": "yarn wasm && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "cargo-bump": "cd src-backend && cargo update && cd ../src-tauri && cargo update && cd ../src-wasm && cargo update"
   },
   "dependencies": {
     "@heroicons/vue": "^2.0.13",

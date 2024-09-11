@@ -3,6 +3,7 @@ mod midi;
 mod time;
 mod events;
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
@@ -82,7 +83,7 @@ pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
 #[derive(Default)]
 pub struct Runner {
     display: FlushDisplayBody,
-    device: Option<Rc<dyn RewindableDevice>>
+    device: RefCell<Option<Rc<dyn RewindableDevice>>>
 }
 
 impl Runner {
@@ -142,8 +143,8 @@ impl Runner {
         Runner::default()
     }
 
-    pub fn set_breakpoints(&mut self, breakpoints: &[u32]) {
-        if let Some(device) = &mut self.device {
+    pub fn set_breakpoints(&self, breakpoints: &[u32]) {
+        if let Some(device) = self.device.borrow() {
             device.set_breakpoints(HashSet::<u32>::from_iter(breakpoints.iter().copied()))
         }
     }
@@ -265,11 +266,11 @@ impl Runner {
         serde_wasm_bindgen::to_value(&result).unwrap()
     }
     
-    pub fn last_pc(&mut self) -> Option<u32> {
+    pub fn last_pc(&self) -> Option<u32> {
         self.device.as_ref().and_then(|device| device.last_pc())
     }
     
-    pub fn read_bytes(&mut self, address: u32, count: u32) -> JsValue {
+    pub fn read_bytes(&self, address: u32, count: u32) -> JsValue {
         let result = self.device
             .as_ref()
             .and_then(|device| device.read_bytes(address, count));
@@ -277,14 +278,14 @@ impl Runner {
         serde_wasm_bindgen::to_value(&result).unwrap()
     }
     
-    pub fn write_bytes(&mut self, address: u32, bytes: Vec<u8>) {
-        if let Some(device) = &mut self.device {
+    pub fn write_bytes(&self, address: u32, bytes: Vec<u8>) {
+        if let Some(device) = &self.device {
             device.write_bytes(address, bytes)
         }
     }
     
-    pub fn set_register(&mut self, register: u32, value: u32) {
-        if let Some(device) = &mut self.device {
+    pub fn set_register(&self, register: u32, value: u32) {
+        if let Some(device) = &self.device {
             device.write_register(register, value)
         }
     }
@@ -315,8 +316,8 @@ impl Runner {
         }
     }
 
-    pub async fn resume(&mut self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
-        let Some(device) = &mut self.device else {
+    pub async fn resume(&self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
+        let Some(device) = &self.device else {
             return JsValue::NULL
         };
 
@@ -334,16 +335,16 @@ impl Runner {
         serde_wasm_bindgen::to_value(&result.ok()).unwrap()
     }
 
-    pub fn pause(&mut self) {
-        let Some(device) = &mut self.device else {
+    pub fn pause(&self) {
+        let Some(device) = &self.device else {
             return
         };
 
         device.pause()
     }
 
-    pub fn stop(&mut self) {
-        let Some(device) = &mut self.device else {
+    pub fn stop(&self) {
+        let Some(device) = &self.device else {
             return
         };
 
@@ -352,7 +353,7 @@ impl Runner {
         self.device = None
     }
 
-    pub fn rewind(&mut self, count: u32) -> JsValue {
+    pub fn rewind(&self, count: u32) -> JsValue {
         let Some(device) = &mut self.device else {
             return JsValue::NULL
         };

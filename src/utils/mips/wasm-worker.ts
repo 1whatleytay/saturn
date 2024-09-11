@@ -27,8 +27,10 @@ import {
   MessageResponse,
   PostInputData,
   PostKeyData,
-  ReadBytesData, ReadDisplayData,
-  ResumeData, RewindData,
+  ReadBytesData,
+  ReadDisplayData,
+  ResumeData,
+  RewindData,
   SetBreakpointsData,
   SetRegisterData,
   WriteBytesData
@@ -87,6 +89,20 @@ function configureAsm({ text, timeTravel }: ConfigureAsmData): AssemblerResult {
   return runner.configure_asm(text, timeTravel)
 }
 
+// Thanks to Milo
+// https://github.com/facebook/react/blob/66cf2cfc8a8c4b09d2b783fd7302ae6b24150935/packages/scheduler/src/forks/Scheduler.js#L534-L540
+const channel = new MessageChannel()
+const port = channel.port2
+let currentResolve: (() => void) | null = null
+channel.port1.onmessage = () => currentResolve!()
+
+function awaitMacrotaskFast(): Promise<void> {
+  return new Promise<void>(resolve => {
+    currentResolve = resolve
+    port.postMessage(null)
+  });
+}
+
 async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResult | null> {
   const batchSize = 1200 // worth adjusting this batch size
 
@@ -115,7 +131,7 @@ async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResu
 
     instructionsExecuted += batchSize
 
-    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    await awaitMacrotaskFast()
   }
 
   return result
