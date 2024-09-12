@@ -3,6 +3,7 @@ mod midi;
 mod time;
 mod events;
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
@@ -81,13 +82,17 @@ pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
 #[wasm_bindgen]
 #[derive(Default)]
 pub struct Runner {
-    display: FlushDisplayBody,
-    device: Option<Rc<dyn RewindableDevice>>
+    display: RefCell<FlushDisplayBody>,
+    device: RefCell<Option<Rc<dyn RewindableDevice>>>
 }
 
 impl Runner {
+    fn take_device(&self) -> Option<Rc<dyn RewindableDevice>> {
+        self.device.borrow().clone()
+    }
+    
     pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemory<Listen>> + Send + 'static>(
-        &mut self,
+        &self,
         debugger: Executor<SectionMemory<Listen>, Track>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
@@ -95,14 +100,14 @@ impl Runner {
         midi: Box<dyn MidiHandler + Send + Sync>,
         time: Arc<dyn TimeHandler + Send + Sync>,
     ) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.pause()
         }
 
         let wrapped = Arc::new(debugger);
         let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
-        self.device = Some(Rc::new(ExecutionState {
+        *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
             debugger: wrapped,
             keyboard,
             delegate,
@@ -111,7 +116,7 @@ impl Runner {
     }
 
     pub fn swap_watched<Mem: Memory + Send + 'static>(
-        &mut self,
+        &self,
         debugger: Executor<WatchedMemory<Mem>, HistoryTracker>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
@@ -119,14 +124,14 @@ impl Runner {
         midi: Box<dyn MidiHandler + Send + Sync>,
         time: Arc<dyn TimeHandler + Send + Sync>,
     ) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.pause()
         }
 
         let wrapped = Arc::new(debugger);
         let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
 
-        self.device = Some(Rc::new(ExecutionState {
+        *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
             debugger: wrapped,
             keyboard,
             delegate,
@@ -143,19 +148,20 @@ impl Runner {
     }
 
     pub fn set_breakpoints(&self, breakpoints: &[u32]) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.set_breakpoints(HashSet::<u32>::from_iter(breakpoints.iter().copied()))
         }
     }
 
     pub fn last_display(&self) -> JsValue {
-        let display = self.display.lock().unwrap();
+        let display_borrow = self.display.borrow();
+        let display = display_borrow.lock().unwrap();
 
         serde_wasm_bindgen::to_value(&*display).unwrap()
     }
 
-    pub fn configure_display(&mut self, address: u32, width: u32, height: u32) {
-        self.display = Arc::new(Mutex::new(FlushDisplayState {
+    pub fn configure_display(&self, address: u32, width: u32, height: u32) {
+        *self.display.borrow_mut() = Arc::new(Mutex::new(FlushDisplayState {
             address,
             width,
             height,
@@ -164,7 +170,7 @@ impl Runner {
     }
 
     pub fn configure_elf(
-        &mut self,
+        &self,
         bytes: Vec<u8>,
         time_travel: bool
     ) -> bool {
@@ -212,7 +218,7 @@ impl Runner {
     }
 
     pub fn configure_asm(
-        &mut self,
+        &self,
         text: &str,
         time_travel: bool,
     ) -> JsValue {
@@ -266,11 +272,12 @@ impl Runner {
     }
     
     pub fn last_pc(&self) -> Option<u32> {
-        self.device.as_ref().and_then(|device| device.last_pc())
+        self.device.borrow().as_ref().and_then(|device| device.last_pc())
     }
     
     pub fn read_bytes(&self, address: u32, count: u32) -> JsValue {
         let result = self.device
+            .borrow()
             .as_ref()
             .and_then(|device| device.read_bytes(address, count));
 
@@ -278,37 +285,37 @@ impl Runner {
     }
     
     pub fn write_bytes(&self, address: u32, bytes: Vec<u8>) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.write_bytes(address, bytes)
         }
     }
     
     pub fn set_register(&self, register: u32, value: u32) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.write_register(register, value)
         }
     }
 
     pub fn post_input(&self, text: String) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.post_input(text)
         }
     }
 
     pub fn post_key(&self, key: char, up: bool) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.post_key(key, up)
         }
     }
 
     pub fn wake_sync(&self) {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.wake_sync()
         }
     }
 
     pub fn read_display(&self, address: u32, width: u32, height: u32) -> Option<Vec<u8>> {
-        if let Some(device) = &self.device {
+        if let Some(device) = &self.take_device() {
             device.read_display(address, width, height)
         } else {
             None
@@ -316,7 +323,7 @@ impl Runner {
     }
 
     pub async fn resume(&self, batch_size: usize, breakpoints: Option<Vec<u32>>, first_batch: bool, is_step: bool) -> JsValue {
-        let Some(device) = &self.device else {
+        let Some(device) = &self.take_device() else {
             return JsValue::NULL
         };
 
@@ -327,7 +334,7 @@ impl Runner {
                 allow_interrupt: !is_step
             }),
             breakpoints,
-            display: Some(self.display.clone()),
+            display: Some(self.display.borrow().clone()),
             change_state: if !is_step && first_batch { Some(ExecutorMode::Running) } else { None }
         }).await;
         
@@ -335,25 +342,25 @@ impl Runner {
     }
 
     pub fn pause(&self) {
-        let Some(device) = &self.device else {
+        let Some(device) = &self.take_device() else {
             return
         };
 
         device.pause()
     }
 
-    pub fn stop(&mut self) {
-        let Some(device) = &self.device else {
+    pub fn stop(&self) {
+        let Some(device) = &self.take_device() else {
             return
         };
 
         device.pause();
 
-        self.device = None
+        *self.device.borrow_mut() = None
     }
 
     pub fn rewind(&self, count: u32) -> JsValue {
-        let Some(device) = &self.device else {
+        let Some(device) = &self.take_device() else {
             return JsValue::NULL
         };
 
