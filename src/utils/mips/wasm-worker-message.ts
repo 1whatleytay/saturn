@@ -1,5 +1,6 @@
-import { ExportRegionsOptions } from '../settings'
-import { BitmapConfig } from './mips'
+import { type ExportRegionsOptions } from '../settings'
+import { type BitmapConfig } from './mips'
+import { type MidiNote } from '../midi'
 
 export enum MessageOp {
   AssembleRegions,
@@ -187,21 +188,54 @@ export type MessageData =
   RewindData |
   ReadDisplayData
 
+export enum MessageEventOp {
+  ConsoleWrite,
+  MidiPlay,
+}
+
+export interface MessageEventConsoleWrite {
+  op: MessageEventOp.ConsoleWrite
+  text: string
+  error: boolean
+}
+
+export interface MessageEventMidiPlay {
+  op: MessageEventOp.MidiPlay
+  note: MidiNote
+}
+
+export type MessageEventData =
+  MessageEventConsoleWrite |
+  MessageEventMidiPlay
+
 export interface Message {
   id: number
   data: MessageData
 }
 
+export enum MessageResponseKind {
+  Success,
+  Failure,
+  Event,
+}
+
 export interface MessageResponseSuccess {
   id: number
-  success: true
+  kind: MessageResponseKind.Success
   data: unknown
+}
+
+export interface MessageResponseEvent {
+  kind: MessageResponseKind.Event
+  data: MessageEventData
 }
 
 export interface MessageResponseFailure {
   id: number
-  success: false
+  kind: MessageResponseKind.Failure
   error: unknown
 }
 
-export type MessageResponse = MessageResponseSuccess | MessageResponseFailure
+export type MessageResponse = MessageResponseSuccess
+  | MessageResponseFailure
+  | MessageResponseEvent

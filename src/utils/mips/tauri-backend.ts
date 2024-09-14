@@ -6,12 +6,15 @@ import {
   HexBinaryResult,
   InstructionDetails,
   InstructionLine,
-  LastDisplay, MipsBackend, MipsExecution
+  LastDisplay, MipsBackend, MipsCallbacks, MipsExecution
 } from './mips'
 import { ExportRegionsOptions } from '../settings'
 
 import { tauri } from '@tauri-apps/api'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
+import { listen } from '@tauri-apps/api/event'
+import { ConsoleType, pushConsole } from '../../state/console-data'
+import { MidiNote, playNote } from '../midi'
 
 export class TauriExecution implements MipsExecution {
   configured: boolean = false
@@ -195,7 +198,38 @@ export class TauriExecution implements MipsExecution {
   }
 }
 
+interface PrintPayload {
+  text: string
+  error: boolean
+}
+
 export class TauriBackend implements MipsBackend {
+  unListen: (() => void)[] = []
+
+  async setCallbacks(callbacks: MipsCallbacks) {
+    this.clearCallbacks()
+
+    this.unListen = [
+      await listen('print', (event) => {
+        let payload = event.payload as PrintPayload
+
+        callbacks.consoleWrite(payload.text, payload.error)
+      }),
+
+      await listen('play-midi', async (event) => {
+        callbacks.midiPlay(event.payload as MidiNote)
+      })
+    ]
+  }
+
+  clearCallbacks() {
+    for (const entry of this.unListen) {
+      entry()
+    }
+
+    this.unListen = []
+  }
+
   async assembleRegions(text: string, path: string | null, options: ExportRegionsOptions): Promise<HexBinaryResult> {
     const value = (await tauri.invoke('assemble_regions', {
       text, path, options
@@ -275,5 +309,9 @@ export class TauriBackend implements MipsBackend {
     return Promise.resolve(
       new TauriExecution(text, path, timeTravel, profile)
     )
+  }
+
+  close() {
+    this.clearCallbacks()
   }
 }

@@ -1,4 +1,5 @@
 import { ExportRegionsOptions } from '../settings'
+import { MidiNote } from '../midi'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
@@ -220,7 +221,14 @@ export type InstructionLine = InstructionLineInstruction
   | InstructionLineComment
   | InstructionLineLabel
 
+export interface MipsCallbacks {
+  consoleWrite(text: string, error: boolean): void
+  midiPlay(note: MidiNote): void
+}
+
 export interface MipsBackend {
+  setCallbacks(callbacks: MipsCallbacks): Promise<void>
+
   // Insight
   decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null>
   disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]>
@@ -251,6 +259,8 @@ export interface MipsBackend {
     timeTravel: boolean,
     profile: ExecutionProfile
   ): Promise<MipsExecution>
+
+  close(): void
 }
 
 export interface MipsExecution {

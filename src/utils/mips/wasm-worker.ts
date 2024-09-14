@@ -23,8 +23,11 @@ import {
   DisassembleData,
   Message,
   MessageData,
+  MessageEventData,
+  MessageEventOp,
   MessageOp,
   MessageResponse,
+  MessageResponseKind,
   PostInputData,
   PostKeyData,
   ReadBytesData,
@@ -35,11 +38,30 @@ import {
   SetRegisterData,
   WriteBytesData
 } from './wasm-worker-message'
+import { type MidiNote } from '../midi'
 
 backend.initialize()
 
+function sendConsoleWrite(text: string, error: boolean) {
+  postEvent({
+    op: MessageEventOp.ConsoleWrite,
+    text,
+    error
+  })
+}
+
+function sendMidiPlay(note: MidiNote) {
+  postEvent({
+    op: MessageEventOp.MidiPlay,
+    note
+  })
+}
+
 // Runner/Execution State (Automatically Freed with the Worker Memory)
-const runner = new backend.Runner();
+const runner = new backend.Runner(new backend.EventHandler(
+  sendConsoleWrite,
+  sendMidiPlay
+))
 
 function assembleRegions({ text, options }: AssembleRegionsData): HexBinaryResult {
   const [regions, result] = backend.assemble_regions(text, options) as [
@@ -100,7 +122,7 @@ function awaitMacrotaskFast(): Promise<void> {
   return new Promise<void>(resolve => {
     currentResolve = resolve
     port.postMessage(null)
-  });
+  })
 }
 
 async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResult | null> {
@@ -162,8 +184,6 @@ function setRegister({ register, value }: SetRegisterData) {
 }
 
 function setBreakpoints({ breakpoints }: SetBreakpointsData) {
-  console.log({ breakpoints })
-
   runner.set_breakpoints(breakpoints)
 }
 
@@ -215,6 +235,13 @@ async function dispatchOp(data: MessageData): Promise<any> {
   }
 }
 
+function postEvent(data: MessageEventData) {
+  postMessage({
+    kind: MessageResponseKind.Event,
+    data,
+  } satisfies MessageResponse)
+}
+
 async function handleMessage(event: MessageEvent) {
   const { id, data } = event.data as Message
 
@@ -223,13 +250,13 @@ async function handleMessage(event: MessageEvent) {
 
     postMessage({
       id,
-      success: true,
+      kind: MessageResponseKind.Success,
       data: value
     } satisfies MessageResponse)
   } catch (error) {
     postMessage({
       id,
-      success: false,
+      kind: MessageResponseKind.Failure,
       error
     } satisfies MessageResponse)
   }

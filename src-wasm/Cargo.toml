@@ -17,6 +17,7 @@ wasm-bindgen = "0.2.91"
 wasm-bindgen-futures = "0.4.41"
 serde-wasm-bindgen = "0.6.4"
 async-trait = "0.1.82"
+send_wrapper = "0.6.0"
 js-sys = "0.3.70"
 gloo-timers = "0.3.0"
 

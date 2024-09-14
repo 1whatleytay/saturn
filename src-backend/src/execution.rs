@@ -156,6 +156,10 @@ pub struct BatchOptions {
     // if false, mode (pausing) will not stop execution
     // handy if we want to start in the breakpoint mode (and we only want to run 1 instruction anyway)
     pub allow_interrupt: bool,
+    // If this variable is true, the mode will be forced to breakpoint at the end of the batch.
+    // The mode will only be changed if the mode is Running at the end of the batch.
+    // Useful for stepping over syscalls, since syscalls will set the mode to Running when finished.
+    pub break_at_end: bool,
 }
 
 pub struct ResumeOptions {
@@ -222,13 +226,25 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
 
         let (frame, result) = {
             if let Some(batch) = &options.batch {
-                delegate.run_batch(
+                let (frame, result) = delegate.run_batch(
                     &debugger,
                     batch.count,
                     is_breakpoint && batch.first_batch,
                     batch.allow_interrupt
                 ).await
-                    .unwrap_or((debugger.frame(), None))
+                    .unwrap_or((debugger.frame(), None));
+
+                let frame = if frame.mode == ExecutorMode::Running && batch.break_at_end {
+                    debugger.override_mode(ExecutorMode::Breakpoint);
+
+                    // re-fetch the new frame, post override
+                    // too tired to fetch it myself
+                    debugger.frame()
+                } else {
+                    frame
+                };
+                
+                (frame, result)
             } else {
                 delegate.run(&debugger, is_breakpoint).await
             }

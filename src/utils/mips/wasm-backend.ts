@@ -10,12 +10,19 @@ import {
   InstructionDetails,
   InstructionLine,
   LastDisplay,
-  MipsBackend,
+  MipsBackend, MipsCallbacks,
   MipsExecution
 } from './mips'
 import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
-import { Message, MessageData, MessageOp, MessageResponse } from './wasm-worker-message'
+import {
+  Message,
+  MessageData,
+  MessageEventData, MessageEventOp,
+  MessageOp,
+  MessageResponse,
+  MessageResponseKind
+} from './wasm-worker-message'
 
 interface RequestResponder {
   resolve: (arg: any) => void
@@ -37,26 +44,53 @@ export class WasmBackend implements MipsBackend {
   worker: Worker
   requestId = 0
 
+  callbacks: MipsCallbacks | null = null
+
   pendingRequests = new Map<number, RequestResponder>()
+
+  async setCallbacks(callbacks: MipsCallbacks): Promise<void> {
+    this.callbacks = callbacks
+  }
 
   async sendRequest<T>(data: MessageData): Promise<T> {
     const requestId = this.requestId++
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(requestId, {
-        resolve: a => resolve(a as T),
-        reject: e => reject(e)
+        resolve: (a) => resolve(a as T),
+        reject: (e) => reject(e),
       })
 
       this.worker.postMessage({
         id: requestId,
-        data
+        data,
       } satisfies Message)
     })
   }
 
+  handleEvent(data: MessageEventData) {
+    if (!this.callbacks) {
+      return
+    }
+
+    switch (data.op) {
+      case MessageEventOp.ConsoleWrite:
+        this.callbacks.consoleWrite(data.text, data.error)
+        break
+      case MessageEventOp.MidiPlay:
+        this.callbacks.midiPlay(data.note)
+        break
+    }
+  }
+
   handleMessage(event: MessageEvent) {
     const response = event.data as MessageResponse
+
+    if (response.kind === MessageResponseKind.Event) {
+      this.handleEvent(response.data)
+
+      return
+    }
 
     const result = this.pendingRequests.get(response.id)
 
@@ -64,26 +98,50 @@ export class WasmBackend implements MipsBackend {
       return
     }
 
-    if (response.success) {
-      result.resolve(response.data)
-    } else {
-      result.reject(response.error)
+    this.pendingRequests.delete(response.id)
+
+    switch (response.kind) {
+      case MessageResponseKind.Success:
+        result.resolve(response.data)
+        break
+
+      case MessageResponseKind.Failure:
+        result.reject(response.error)
+        break
     }
   }
 
-  async assembleRegions(text: string, path: string | null, options: ExportRegionsOptions): Promise<HexBinaryResult> {
-    return  await this.sendRequest<HexBinaryResult>({ op: MessageOp.AssembleRegions, text, path, options })
+  async assembleRegions(
+    text: string,
+    path: string | null,
+    options: ExportRegionsOptions
+  ): Promise<HexBinaryResult> {
+    return await this.sendRequest<HexBinaryResult>({
+      op: MessageOp.AssembleRegions,
+      text,
+      path,
+      options,
+    })
   }
 
-  async assembleText(text: string, path: string | null): Promise<AssemblerResult> {
-    return await this.sendRequest<AssemblerResult>({ op: MessageOp.AssembleText, text, path })
+  async assembleText(
+    text: string,
+    path: string | null
+  ): Promise<AssemblerResult> {
+    return await this.sendRequest<AssemblerResult>({
+      op: MessageOp.AssembleText,
+      text,
+      path,
+    })
   }
 
-  async assembleWithBinary(text: string, path: string | null): Promise<BinaryResult> {
-    const [binary, assemblerResult] = await this.sendRequest<[
-      number[] | null,
-      AssemblerResult
-    ]>({ op: MessageOp.AssembleBinary, text, path })
+  async assembleWithBinary(
+    text: string,
+    path: string | null
+  ): Promise<BinaryResult> {
+    const [binary, assemblerResult] = await this.sendRequest<
+      [number[] | null, AssemblerResult]
+    >({ op: MessageOp.AssembleBinary, text, path })
 
     return {
       binary: binary ? Uint8Array.from(binary) : null,
@@ -91,16 +149,33 @@ export class WasmBackend implements MipsBackend {
     }
   }
 
-  async decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null> {
-    return await this.sendRequest<InstructionDetails | null>({ op: MessageOp.DecodeInstruction, pc, instruction })
+  async decodeInstruction(
+    pc: number,
+    instruction: number
+  ): Promise<InstructionDetails | null> {
+    return await this.sendRequest<InstructionDetails | null>({
+      op: MessageOp.DecodeInstruction,
+      pc,
+      instruction,
+    })
   }
 
-  async disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
-    return await this.sendRequest<DisassembleResult>({ op: MessageOp.Disassemble, named, bytes: new Uint8Array(elf) })
+  async disassembleElf(
+    named: string,
+    elf: ArrayBuffer
+  ): Promise<DisassembleResult> {
+    return await this.sendRequest<DisassembleResult>({
+      op: MessageOp.Disassemble,
+      named,
+      bytes: new Uint8Array(elf),
+    })
   }
 
   async disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
-    return await this.sendRequest<InstructionLine[]>({ op: MessageOp.DetailedDisassemble, bytes: new Uint8Array(bytes) })
+    return await this.sendRequest<InstructionLine[]>({
+      op: MessageOp.DetailedDisassemble,
+      bytes: new Uint8Array(bytes),
+    })
   }
 
   async lastDisplay(): Promise<LastDisplay> {
@@ -113,18 +188,27 @@ export class WasmBackend implements MipsBackend {
 
   wakeSync(): Promise<void> {
     return this.sendRequest({
-      op: MessageOp.WakeSync
+      op: MessageOp.WakeSync,
     })
   }
 
-  async createExecution(text: string, path: string | null, timeTravel: boolean, profile: ExecutionProfile): Promise<MipsExecution> {
+  async createExecution(
+    text: string,
+    path: string | null,
+    timeTravel: boolean,
+    profile: ExecutionProfile
+  ): Promise<MipsExecution> {
     return new WasmExecution(this, text, path, timeTravel, profile)
   }
 
   constructor() {
     this.worker = new WasmWorker()
 
-    this.worker.onmessage = event => this.handleMessage(event)
+    this.worker.onmessage = (event) => this.handleMessage(event)
+  }
+
+  close() {
+    this.worker.terminate()
   }
 }
 
@@ -235,20 +319,21 @@ export class WasmExecution implements MipsExecution {
     })
   }
 
-  async pause(): Promise<void> {
-    await this.backend.sendRequest({ op: MessageOp.Pause })
+  pause(): Promise<void> {
+    return this.backend.sendRequest({ op: MessageOp.Pause })
   }
 
-  async stop(): Promise<void> {
-    await this.backend.sendRequest({ op: MessageOp.Stop })
+  stop(): Promise<void> {
+    return this.backend.sendRequest({ op: MessageOp.Stop })
   }
 
-  async resume(count: number | null, breakpoints: number[] | null): Promise<ExecutionResult | null> {
+  resume(count: number | null, breakpoints: number[] | null): Promise<ExecutionResult | null> {
     const mappedBreakpoints = breakpoints
       ? this.breakpoints?.mapLines(breakpoints) ?? []
       : []
 
-    return await this.backend.sendRequest<ExecutionResult | null>({ op: MessageOp.Resume, count, breakpoints: mappedBreakpoints })
+
+    return this.backend.sendRequest<ExecutionResult | null>({ op: MessageOp.Resume, count, breakpoints: mappedBreakpoints })
   }
 
   rewind(count: number): Promise<ExecutionResult | null> {

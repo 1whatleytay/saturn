@@ -349,9 +349,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
+checksum = "0884ad60e090bf1345b93da0a5de8923c93884cd03f40dfcfddd3b4bee661853"
 dependencies = [
  "bitflags",
 ]
@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#63a44dfd5aa9af2b7303b2e54278ba3f382ee53a"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#27452daadd84875529e179a27d9e4ec7db12b0dd"
 dependencies = [
  "bitflags",
  "byteorder",

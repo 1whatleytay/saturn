@@ -34,7 +34,8 @@ pub async fn resume(
             batch: count.map(|count| BatchOptions {
                 count,
                 first_batch: true,
-                allow_interrupt: false
+                allow_interrupt: false,
+                break_at_end: true
             }),
             breakpoints,
             display: Some(display),

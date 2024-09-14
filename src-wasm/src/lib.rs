@@ -29,6 +29,8 @@ use crate::console::WasmConsole;
 use crate::midi::WasmMidi;
 use crate::time::WasmTime;
 
+pub use events::EventHandler;
+
 #[wasm_bindgen]
 pub fn initialize() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -80,8 +82,8 @@ pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
 }
 
 #[wasm_bindgen]
-#[derive(Default)]
 pub struct Runner {
+    events: Arc<EventHandler>,
     display: RefCell<FlushDisplayBody>,
     device: RefCell<Option<Rc<dyn RewindableDevice>>>
 }
@@ -143,8 +145,12 @@ impl Runner {
 #[wasm_bindgen]
 impl Runner {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Runner {
-        Runner::default()
+    pub fn new(events: EventHandler) -> Runner {
+        Runner {
+            events: Arc::new(events),
+            display: RefCell::new(Arc::new(Mutex::new(Default::default()))),
+            device: RefCell::new(None),
+        }
     }
 
     pub fn set_breakpoints(&self, breakpoints: &[u32]) {
@@ -178,7 +184,7 @@ impl Runner {
 
         let finished_pcs = get_elf_finished_pcs(&elf);
 
-        let console = Box::new(WasmConsole { });
+        let console = Box::new(WasmConsole { events: self.events.clone() });
         let midi = Box::new(WasmMidi { });
         let time = Arc::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
@@ -232,7 +238,7 @@ impl Runner {
 
         let finished_pcs = get_binary_finished_pcs(&binary);
 
-        let console = Box::new(WasmConsole { });
+        let console = Box::new(WasmConsole { events: self.events.clone() });
         let midi = Box::new(WasmMidi { });
         let time = Arc::new(WasmTime { });
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
@@ -327,14 +333,17 @@ impl Runner {
             return JsValue::NULL
         };
 
+        let display = self.display.borrow().clone();
+
         let result = device.resume(ResumeOptions {
             batch: Some(BatchOptions {
                 count: batch_size,
                 first_batch,
-                allow_interrupt: !is_step
+                allow_interrupt: !is_step,
+                break_at_end: is_step
             }),
             breakpoints,
-            display: Some(self.display.borrow().clone()),
+            display: Some(display),
             change_state: if !is_step && first_batch { Some(ExecutorMode::Running) } else { None }
         }).await;
         

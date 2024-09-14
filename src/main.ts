@@ -6,6 +6,7 @@ import App from './App.vue'
 import { setupEvents } from './utils/events'
 import { setupShortcuts } from './utils/platform-shortcuts'
 import { setupWindow } from './utils/window'
+import { setupBackend } from './state/backend'
 
 createApp(App).mount('#app')
 
@@ -16,3 +17,5 @@ if (window.__TAURI__) {
   setupShortcuts().then(() => {})
   setupEvents().then(() => {})
 }
+
+setupBackend().then(() => {})
