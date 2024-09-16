@@ -126,7 +126,7 @@ function awaitMacrotaskFast(): Promise<void> {
 }
 
 async function resume({ count, breakpoints }: ResumeData): Promise<ExecutionResult | null> {
-  const batchSize = 1200 // worth adjusting this batch size
+  const batchSize = 120000 // worth adjusting this batch size
 
   let instructionsExecuted = 0
 
