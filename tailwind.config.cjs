@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ['selector'],
+
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
 
   theme: {
@@ -9,7 +11,9 @@ module.exports = {
       },
       colors: {
         'breakpoint-neutral': '#2b1515',
+        'breakpoint-neutral-light': '#e0cccc',
         'breakpoint-stopped': '#3f3b18',
+        'breakpoint-stopped-light': '#e0decc',
         'readonly-neutral': '#2b2b15',
       },
 

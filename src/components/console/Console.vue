@@ -8,7 +8,7 @@
 
     <div
       ref="grabber"
-      class="w-full fixed bottom-0 z-30 bg-neutral-900 border-t border-neutral-700 flex flex-col max-h-screen"
+      class="w-full fixed bottom-0 z-30 dark:bg-neutral-900 bg-neutral-200 border-t border-neutral-700 flex flex-col max-h-screen"
       :style="{
         height: `${properties.height}px`,
         opacity: properties.height > closingHeight ? '1' : '0',
@@ -58,7 +58,7 @@
         />
 
         <button
-          class="w-10 h-10 ml-auto hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center"
+          class="w-10 h-10 ml-auto dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
           @click="close"
         >
           <XMarkIcon class="w-4 h-4" />
@@ -112,16 +112,16 @@ const modeString = computed(() => {
 const modeClass = computed(() => {
   switch (consoleData.mode) {
     case ExecutionModeType.Running:
-      return 'text-teal-100 border-teal-500 border'
+      return 'dark:text-teal-100 text-teal-800 border-teal-500 border'
     case ExecutionModeType.Breakpoint:
     case ExecutionModeType.Invalid:
-      return 'text-red-100 border-red-400 border'
+      return 'dark:text-red-100 text-red-800 border-red-400 border'
     case ExecutionModeType.Paused:
-      return 'text-yellow-100 border-yellow-400 border'
+      return 'dark:text-yellow-100 text-yellow-800 border-yellow-400 border'
     case ExecutionModeType.Finished:
-      return 'text-lime-100 border-lime-500 border'
+      return 'dark:text-lime-100 text-lime-800 border-lime-500 border'
     default:
-      return 'text-white'
+      return 'dark:text-white text-black'
   }
 })
 

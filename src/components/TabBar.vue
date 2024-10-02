@@ -5,7 +5,7 @@
     <ExportOverlay :show="showExportRegionsDialog" @close="showExportRegionsDialog = false" />
 
     <div
-      class="h-10 flex items-start bg-neutral-900 w-full fixed z-20 top-0"
+      class="h-10 flex items-start dark:bg-neutral-900 bg-neutral-200 w-full fixed z-20 top-0 shadow-md"
     >
       <div class="flex flex-grow overflow-x-auto no-scrollbar items-start">
         <Tab
@@ -23,7 +23,7 @@
         />
 
         <button
-          class="w-10 h-10 hover:bg-slate-800 text-slate-300 shrink-0 flex items-center justify-center font-black"
+          class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center font-black"
           @click="create"
         >
           <PlusIcon class="w-4 h-4" />

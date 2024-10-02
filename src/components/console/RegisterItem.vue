@@ -11,7 +11,7 @@
       v-if="props.value !== undefined"
       :classes="`
               pl-2 py-1 rounded
-              hover:bg-neutral-800 select-all cursor-text
+              dark:hover:bg-neutral-800 hover:bg-neutral-300 select-all cursor-text
               w-28 bg-transparent
               text-sm
               ${props.marked ? 'text-orange-200' : 'text-gray-100'}`"
