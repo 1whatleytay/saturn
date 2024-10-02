@@ -5,7 +5,7 @@
   "type": "module",
   "author": "Taylor Whatley",
   "scripts": {
-    "wasm": "RUSTFLAGS=\"-C target-feature=+bulk-memory\" wasm-pack build ./src-wasm --out-dir ../src/utils/mips/wasm",
+    "wasm": "wasm-pack build ./src-wasm --out-dir ../src/utils/mips/wasm",
     "dev": "yarn wasm && vite",
     "build": "yarn wasm && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
