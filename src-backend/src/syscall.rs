@@ -12,7 +12,7 @@ use std::future::Future;
 use std::io::{Read, Write};
 use std::pin::{Pin, pin};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use async_trait::async_trait;
 use futures::future::FusedFuture;
 use titan::cpu::error::Error;
@@ -564,8 +564,8 @@ impl SyscallDelegate {
     }
 
     async fn system_time<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
-        match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(time) => {
+        match self.state.lock().unwrap().time.time() {
+            Some(time) => {
                 let millis = time.as_millis() as u64;
 
                 debugger.with_state(|debugger_state| {
@@ -575,7 +575,7 @@ impl SyscallDelegate {
 
                 Completed
             }
-            Err(_) => Failure("System clock failed to get current time.".into()),
+            None => Failure("System clock failed to get current time.".into()),
         }
     }
 
