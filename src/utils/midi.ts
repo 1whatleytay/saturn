@@ -2,13 +2,11 @@ import { tauri } from '@tauri-apps/api'
 
 import * as MIDI from 'midicube'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
-
-;
 import { backend } from '../state/backend'
 
-(window as any).MIDI = MIDI
+;(window as any).MIDI = MIDI
 
-const loadedInstruments = new Set<string>()
+const loadedInstruments = new Map<string, Promise<boolean>>()
 
 export interface MidiNote {
   sync: boolean
@@ -19,31 +17,37 @@ export interface MidiNote {
   volume: number
 }
 
-function loadInstrument(instrument: string): Promise<boolean> {
+function loadInstrument(instrument: string): void {
   const soundfontUrl = convertFileSrc('', 'midi')
 
-  return new Promise((resolve) => {
-    MIDI.loadPlugin({
-      instrument,
-      soundfontUrl,
-      targetFormat: 'mp3',
-      onerror: () => resolve(false),
-      onsuccess: () => {
-        loadedInstruments.add(instrument)
-
-        resolve(true)
-      },
-    })
-  })
+  loadedInstruments.set(
+    instrument,
+    new Promise((resolve) => {
+      MIDI.loadPlugin({
+        instrument,
+        soundfontUrl,
+        targetFormat: 'mp3',
+        onerror: () => {
+          loadedInstruments.delete(instrument)
+          resolve(false)
+        },
+        onsuccess: () => {
+          resolve(true)
+        },
+      })
+    }),
+  )
 }
 
 export async function playNote(note: MidiNote) {
   const wake = async () => await backend.wakeSync()
 
-  if (!loadedInstruments.has(note.name)) {
-    if (!(await loadInstrument(note.name))) {
-      return await wake()
-    }
+  if (
+    !loadedInstruments.has(note.name) ||
+    !(await loadedInstruments.get(note.name))
+  ) {
+    loadInstrument(note.name)
+    return await wake()
   }
 
   if (note.duration > 0) {
@@ -56,7 +60,7 @@ export async function playNote(note: MidiNote) {
   if (note.sync) {
     if (note.duration > 0) {
       await new Promise((resolve) =>
-        window.setTimeout(resolve, note.duration * 1000)
+        window.setTimeout(resolve, note.duration * 1000),
       )
     }
 
