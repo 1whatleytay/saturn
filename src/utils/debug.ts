@@ -12,7 +12,7 @@ import {
   ExecutionModeType,
   ExecutionResult
 } from './mips/mips'
-import { tab, settings, buildLines } from '../state/state'
+import { tab, settings } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
