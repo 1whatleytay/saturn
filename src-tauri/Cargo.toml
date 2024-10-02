@@ -1,6 +1,6 @@
 [package]
 name = "saturn"
-version = "0.1.8"
+version = "0.1.9"
 description = "A modern MIPS IDE."
 authors = ["desgroup"]
 license = ""
@@ -14,7 +14,7 @@ tauri-build = {version = "1.2", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.2", features = ["api-all", "time"] }
+tauri = { version = "1.7.2", features = ["api-all", "time", "linux-protocol-headers"] }
 tokio = { version = "1.33.0", features = ["time", "macros"] }
 
 hex = "0.4.3"
@@ -23,10 +23,11 @@ percent-encoding = "2.3.0"
 sha2 = "0.10.8"
 uuid = "1.5.0"
 notify = "6.1.1"
-base64 = "0.21.5"
+base64 = "0.22.1"
 
 saturn_backend = { path = "../src-backend" }
 titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+async-trait = "0.1.82"
 
 [features]
 default = [ "custom-protocol" ]

@@ -15,11 +15,13 @@ export function setupWindow() {
     event.preventDefault()
   }
 
-  invoke('is_debug').then(debug => {
-    if (!debug) {
-      window.addEventListener('contextmenu', handler)
-    }
-  })
+  if (window.__TAURI__) {
+    invoke('is_debug').then(debug => {
+      if (!debug) {
+        window.addEventListener('contextmenu', handler)
+      }
+    })
+  }
 }
 
 // Restricting tauri calls to certain files.

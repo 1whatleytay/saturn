@@ -1,8 +1,8 @@
 use std::cmp::min;
 use std::sync::Mutex;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::error::TrySendError::Full;
-use tokio::sync::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
+use futures::channel::mpsc;
+use futures::lock::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
+use futures::StreamExt;
 
 struct ByteChannelReceiver {
     receiver: mpsc::Receiver<Vec<u8>>, // this might panic in WASM
@@ -59,8 +59,8 @@ impl ByteChannelConsumption {
     }
 }
 
-impl ByteChannel {
-    pub fn new() -> ByteChannel {
+impl Default for ByteChannel {
+    fn default() -> Self {
         // Not using unbounded channels out of lack of trust
         let (sender, receiver) = mpsc::channel(12);
 
@@ -69,12 +69,14 @@ impl ByteChannel {
             receiver: AsyncMutex::new(ByteChannelReceiver::new(receiver)),
         }
     }
+}
 
+impl ByteChannel {
     pub fn send(&self, data: Vec<u8>) {
         let mut state = self.sender.lock().unwrap();
 
-        if let Err(Full(data)) = state.sender.try_send(data) {
-            state.cache.push(data)
+        if let Err(err) = state.sender.try_send(data) {
+            state.cache.push(err.into_inner())
         }
     }
 
@@ -95,7 +97,7 @@ impl ByteChannel {
         if let Some(value) = state.peek.take() {
             Some(value)
         } else {
-            let result = state.receiver.recv().await;
+            let result = state.receiver.next().await;
 
             result.or_else(|| self.pop_cache()).map(|x| (0, x))
         }

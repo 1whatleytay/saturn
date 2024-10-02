@@ -14,6 +14,7 @@ mod watch;
 mod export;
 mod decode;
 mod display;
+mod time;
 
 use std::sync::{Arc, Mutex};
 use tauri::{FileDropEvent, Manager};

@@ -2,6 +2,8 @@ import { tauri } from '@tauri-apps/api'
 
 import * as MIDI from 'midicube'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
+import { backend } from '../state/backend'
+
 ;(window as any).MIDI = MIDI
 
 const loadedInstruments = new Map<string, Promise<boolean>>()
@@ -38,7 +40,7 @@ function loadInstrument(instrument: string): void {
 }
 
 export async function playNote(note: MidiNote) {
-  const wake = async () => await tauri.invoke('wake_sync')
+  const wake = async () => await backend.wakeSync()
 
   if (
     !loadedInstruments.has(note.name) ||
