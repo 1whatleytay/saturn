@@ -108,21 +108,7 @@ export async function saveCurrentTab(
   }
 }
 
-interface PrintPayload {
-  text: string
-  error: boolean
-}
-
 export async function setupEvents() {
-  await listen('print', (event) => {
-    let payload = event.payload as PrintPayload
-
-    pushConsole(
-      payload.text,
-      payload.error ? ConsoleType.Stderr : ConsoleType.Stdout
-    )
-  })
-
   await listen('new-tab', () => {
     createTab('Untitled', [''])
   })
@@ -250,10 +236,6 @@ export async function setupEvents() {
 
   await listen('toggle-settings', () => {
     showSettings.value = !showSettings.value
-  })
-
-  await listen('play-midi', async (event) => {
-    await playNote(event.payload as MidiNote)
   })
 
   let events = new Map<string, number>() // uuid to number

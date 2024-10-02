@@ -1,9 +1,9 @@
 <template>
   <div
-    class="w-28 py-1 px-0.5 h-12"
-    :class="!props.editable ? 'opacity-50' : ''"
+    class="w-28 py-1 px-0.5 h-12 text-white font-medium"
+    :class="!props.editable ? 'opacity-80' : ''"
   >
-    <div class="text-xs pl-2 group" :class="props.classes">
+    <div class="text-xs pl-2 group font-bold" :class="props.classes">
       {{ props.name }}
     </div>
 

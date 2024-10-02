@@ -6,7 +6,7 @@
     @resize="updateBounds"
   >
     <div
-      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0 pt-2"
+      class="w-20 pr-4 mr-2 text-xs text-slate-400 font-medium shrink-0 z-10 absolute left-0 pt-2"
       @click.self
       @wheel.stop
       :style="{ top: `${state.lineOffset}px` }"
@@ -31,7 +31,7 @@
       </div>
     </div>
 
-    <div class="w-16 pr-2 mr-2 shrink-0"></div>
+    <div class="w-20 pr-2 mr-2 shrink-0"></div>
 
     <div
       ref="code"

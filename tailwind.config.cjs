@@ -6,6 +6,9 @@ module.exports = {
 
   theme: {
     extend: {
+      maxWidth: {
+        '3/4': '75%'
+      },
       colors: {
         'breakpoint-neutral': '#2b1515',
         'breakpoint-neutral-light': '#e0cccc',

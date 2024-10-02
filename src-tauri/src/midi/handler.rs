@@ -1,23 +1,13 @@
 use crate::midi::install_instruments;
-use crate::midi::instruments::to_instrument;
 use saturn_backend::syscall::{MidiHandler, MidiRequest};
-use serde::Serialize;
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use tauri::api::path::app_local_data_dir;
 use tauri::{AppHandle, Manager, Wry};
-
-#[derive(Clone, Serialize)]
-struct MidiNote {
-    sync: bool,
-    instrument: u64,
-    name: String,
-    note: u64,
-    duration: f64,
-    volume: u64,
-}
+use saturn_backend::midi::instruments::to_instrument;
+use saturn_backend::midi::note::MidiNote;
 
 #[derive(Clone)]
 pub struct ForwardMidi {

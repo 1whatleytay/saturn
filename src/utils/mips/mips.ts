@@ -1,4 +1,5 @@
 import { ExportRegionsOptions } from '../settings'
+import { MidiNote } from '../midi'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
@@ -220,7 +221,14 @@ export type InstructionLine = InstructionLineInstruction
   | InstructionLineComment
   | InstructionLineLabel
 
+export interface MipsCallbacks {
+  consoleWrite(text: string, error: boolean): void
+  midiPlay(note: MidiNote): void
+}
+
 export interface MipsBackend {
+  setCallbacks(callbacks: MipsCallbacks): Promise<void>
+
   // Insight
   decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null>
   disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]>
@@ -243,12 +251,16 @@ export interface MipsBackend {
   configureDisplay(config: BitmapConfig): Promise<void>
   lastDisplay(): Promise<LastDisplay>
 
+  wakeSync(): Promise<void>
+
   createExecution(
     text: string,
     path: string | null,
     timeTravel: boolean,
     profile: ExecutionProfile
   ): Promise<MipsExecution>
+
+  close(): void
 }
 
 export interface MipsExecution {
@@ -259,11 +271,10 @@ export interface MipsExecution {
   lastPc(): Promise<number | null>
 
   configure(): Promise<AssemblerResult | null>
-  rewind(count: number | null): Promise<ExecutionResult | null>
+  rewind(count: number): Promise<ExecutionResult | null>
   resume(
     count: number | null,
     breakpoints: number[] | null,
-    listen: (result: AssemblerResult) => void
   ): Promise<ExecutionResult | null>
   pause(): Promise<void>
   stop(): Promise<void>
@@ -278,4 +289,7 @@ export interface MipsExecution {
   ): Promise<(number | null)[] | null>
   setRegister(register: number, value: number): Promise<void>
   setMemory(address: number, bytes: number[]): Promise<void>
+
+  // Live display, should generally be more performant on tauri.
+  readDisplay(width: number, height: number, address: number): Promise<Uint8Array | null>
 }
