@@ -138,7 +138,7 @@ impl AccessManager {
                         app.emit_all("save:remove", path).ok();
                     }
                 }
-                notify::EventKind::Modify(ModifyKind::Data(_)) => {
+                notify::EventKind::Modify(ModifyKind::Data(_) | ModifyKind::Any) => {
                     // If the path is in dismiss, we probably caused the save.
                     if details.dismiss.remove(path) {
                         return
