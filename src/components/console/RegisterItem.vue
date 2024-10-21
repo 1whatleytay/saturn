@@ -1,9 +1,9 @@
 <template>
   <div
-    class="w-28 py-1 px-0.5 h-12"
-    :class="!props.editable ? 'opacity-50' : ''"
+    class="w-28 py-1 px-0.5 h-12 text-white font-medium"
+    :class="!props.editable ? 'opacity-80' : ''"
   >
-    <div class="text-xs pl-2 group" :class="props.classes">
+    <div class="text-xs pl-2 group font-bold" :class="props.classes">
       {{ props.name }}
     </div>
 
@@ -11,7 +11,7 @@
       v-if="props.value !== undefined"
       :classes="`
               pl-2 py-1 rounded
-              hover:bg-neutral-800 select-all cursor-text
+              dark:hover:bg-neutral-800 hover:bg-neutral-300 select-all cursor-text
               w-28 bg-transparent
               text-sm
               ${props.marked ? 'text-orange-200' : 'text-gray-100'}`"

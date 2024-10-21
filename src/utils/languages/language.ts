@@ -30,17 +30,17 @@ export interface Token {
 
 export const style = {
   known: 'font-bold',
-  comment: 'text-neutral-400',
-  hard: 'text-yellow-400',
-  label: 'text-amber-400',
-  directive: 'text-red-400',
-  parameter: 'text-orange-300',
-  instruction: 'text-sky-400',
-  register: 'text-orange-300',
-  numeric: 'text-teal-300',
-  symbol: 'text-white',
-  text: 'text-lime-300',
-  nothing: 'text-white',
+  comment: 'dark:text-neutral-400 text-neutral-500',
+  hard: 'dark:text-yellow-400 text-yellow-700',
+  label: 'dark:text-amber-400 text-amber-700',
+  directive: 'dark:text-red-400 text-red-700',
+  parameter: 'dark:text-orange-300 text-orange-800',
+  instruction: 'dark:text-sky-400 text-sky-700',
+  register: 'dark:text-orange-300 text-orange-800',
+  numeric: 'dark:text-teal-300 text-teal-800',
+  symbol: 'dark:text-white text-black',
+  text: 'dark:text-lime-300 text-lime-800',
+  nothing: 'dark:text-white text-black',
 }
 
 function mapStyle(type: TokenType): string {

@@ -319,23 +319,23 @@ onMounted(updateBounds)
 function stylingFor(type: ConsoleType): string {
   switch (type) {
     case ConsoleType.Stdout:
-      return 'text-teal-100 border-teal-700'
+      return 'dark:text-teal-100 dark:border-teal-700 text-teal-800 border-teal-200'
     case ConsoleType.Stderr:
-      return 'text-red-200 border-red-700'
+      return 'dark:text-red-200 dark:border-red-700 text-red-800 border-red-200'
     case ConsoleType.Success:
-      return 'text-green-400 border-green-700'
+      return 'dark:text-green-400 border-green-700 text-green-700 border-green-200'
     case ConsoleType.Error:
-      return 'text-red-400 border-red-700'
+      return 'dark:text-red-400 dark:border-red-700 text-red-600 border-red-200'
     case ConsoleType.Info:
-      return 'text-orange-300 border-orange-700'
+      return 'dark:text-orange-300 dark:border-orange-700 text-orange-700 border-orange-200'
     case ConsoleType.Secondary:
-      return 'text-gray-500 border-gray-700'
+      return 'dark:text-gray-500 dark:border-gray-700 text-gray-500 border-gray-200'
     case ConsoleType.Editing:
-      return 'text-lime-400 border-neutral-700'
+      return 'dark:text-lime-400 dark:border-neutral-700 text-lime-600 border-lime-200'
     case ConsoleType.Submitted:
-      return 'text-lime-500 font-black border-green-700'
+      return 'dark:text-lime-500 font-black dark:border-green-700 text-lime-700 border-lime-200'
     default:
-      return 'text-orange-500'
+      return 'dark:text-orange-500 text-orange-500'
   }
 }
 

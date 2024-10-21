@@ -9,10 +9,10 @@
   >
     <div
       v-if="props.highlight.message"
-      class="mt-6 py-2 px-4 w-auto bg-neutral-700 rounded shadow-xl absolute z-30 text-gray-300 font-medium font-sans flex items-center"
+      class="mt-6 py-2 px-4 w-auto dark:bg-neutral-700 bg-neutral-300 rounded shadow-xl absolute z-30 dark:text-gray-300 text-gray-800 font-medium font-sans flex items-center"
     >
       Jump to
-      <span class="text-gray-200 font-bold font-mono">{{
+      <span class="dark:text-gray-200 text-gray-800 font-bold font-mono">{{
         props.highlight.message.label
       }}</span>
       (line {{ props.highlight.message.line + 1 }})

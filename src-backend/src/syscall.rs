@@ -10,20 +10,21 @@ use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::future::Future;
 use std::io::{Read, Write};
-use std::pin::Pin;
+use std::pin::{Pin, pin};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+use async_trait::async_trait;
+use futures::future::FusedFuture;
 use titan::cpu::error::Error;
 use titan::cpu::error::Error::{CpuSyscall, CpuTrap};
 use titan::cpu::state::Registers;
 use titan::cpu::Memory;
 use titan::execution::executor::DebugFrame;
-use titan::execution::executor::ExecutorMode::{Invalid, Recovered};
+use titan::execution::executor::ExecutorMode::{Invalid,};
 use titan::execution::Executor;
 use titan::execution::trackers::Tracker;
-use tokio::select;
-use tokio::sync::Notify;
-use tokio_util::sync::CancellationToken;
+use futures::{FutureExt, select};
+use futures::channel::{oneshot};
 
 pub struct MidiRequest {
     pub pitch: u32,      // 0 - 127
@@ -32,6 +33,7 @@ pub struct MidiRequest {
     pub volume: u32,     // 0 - 127
 }
 
+#[derive(Debug)]
 pub enum SyscallResult {
     Completed,          // Syscall completed successfully.
     Failure(String),    // Failed to complete with message.
@@ -52,13 +54,27 @@ pub trait MidiHandler {
     fn installed(&mut self, instrument: u32) -> bool;
 }
 
+#[async_trait]
+pub trait TimeHandler {
+    fn time(&self) -> Option<Duration>;
+    async fn sleep(&self, duration: Duration);
+}
+
+// Sync problems probably require something like this.
+pub enum CancelToken {
+    None,
+    Cancelled,
+    Token(oneshot::Sender<()>)
+}
+
 pub struct SyscallState {
-    pub cancel_token: CancellationToken,
+    pub cancel_token: CancelToken,
     pub input_buffer: Arc<ByteChannel>,
-    pub sync_wake: Arc<Notify>,
+    pub sync_wake: Option<oneshot::Sender<()>>,
     heap_start: u32,
-    console: Box<dyn ConsoleHandler + Send>,
-    midi: Box<dyn MidiHandler + Send>,
+    console: Box<dyn ConsoleHandler + Send + Sync>,
+    midi: Box<dyn MidiHandler + Send + Sync>,
+    time: Arc<dyn TimeHandler + Send + Sync>,
     generators: HashMap<u32, ChaCha8Rng>,
     next_file: u32,
     file_map: HashMap<u32, File>,
@@ -66,28 +82,46 @@ pub struct SyscallState {
 
 impl SyscallState {
     pub fn new(
-        console: Box<dyn ConsoleHandler + Send>,
-        midi: Box<dyn MidiHandler + Send>,
+        console: Box<dyn ConsoleHandler + Send + Sync>,
+        midi: Box<dyn MidiHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
     ) -> SyscallState {
         SyscallState {
-            cancel_token: CancellationToken::new(),
-            input_buffer: Arc::new(ByteChannel::new()),
-            sync_wake: Arc::new(Notify::new()),
+            cancel_token: CancelToken::None,
+            input_buffer: Arc::new(ByteChannel::default()),
+            sync_wake: None,
             heap_start: 0x20000000,
             console,
             midi,
+            time,
             generators: HashMap::from([(0, ChaCha8Rng::from_entropy())]),
             next_file: 3,
             file_map: HashMap::new(),
         }
     }
 
-    pub fn renew(&mut self) {
-        self.cancel_token = CancellationToken::new()
+    pub fn clear_cancelled(&mut self) {
+        self.cancel_token = CancelToken::None
     }
 
-    pub fn cancel(&self) {
-        self.cancel_token.cancel()
+    pub fn grab_cancel(&mut self) -> Option<oneshot::Receiver<()>> {
+        if let CancelToken::Cancelled = self.cancel_token {
+            None
+        } else {
+            let (sender, receiver) = oneshot::channel();
+
+            self.cancel_token = CancelToken::Token(sender);
+
+            Some(receiver)
+        }
+    }
+
+    pub fn cancel(&mut self) {
+        let token = std::mem::replace(&mut self.cancel_token, CancelToken::Cancelled);
+
+        if let CancelToken::Token(token) = token {
+            token.send(()).ok();
+        }
     }
 }
 
@@ -128,7 +162,9 @@ impl SyscallDelegate {
     async fn send_print(&self, text: &str) {
         self.state.lock().unwrap().console.print(text, false);
 
-        tokio::time::sleep(PRINT_BUFFER_TIME).await;
+        let time = self.state.lock().unwrap().time.clone();
+
+        time.sleep(PRINT_BUFFER_TIME).await;
     }
 
     fn play_installed(&self, request: &MidiRequest, sync: bool) -> bool {
@@ -528,8 +564,8 @@ impl SyscallDelegate {
     }
 
     async fn system_time<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
-        match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(time) => {
+        match self.state.lock().unwrap().time.time() {
+            Some(time) => {
                 let millis = time.as_millis() as u64;
 
                 debugger.with_state(|debugger_state| {
@@ -539,7 +575,7 @@ impl SyscallDelegate {
 
                 Completed
             }
-            Err(_) => Failure("System clock failed to get current time.".into()),
+            None => Failure("System clock failed to get current time.".into()),
         }
     }
 
@@ -550,27 +586,30 @@ impl SyscallDelegate {
             return Completed;
         }
 
-        let state_clone = self.state.clone();
+        // let state_clone = self.state.clone();
 
-        tokio::spawn(async move {
-            let install = {
-                let mut lock = state_clone.lock().unwrap();
+        Failure("MIDI Playback is disabled on this version. This is a bug. Please file a bug at https://github.com/1whatleytay/saturn.".into())
+        // tokio::spawn(async move {
+        //     let install = {
+        //         let mut lock = state_clone.lock().unwrap();
+        //
+        //         lock.midi.install(request.instrument)
+        //     };
+        //
+        //     if install.await {
+        //         state_clone.lock().unwrap().midi.play(&request, false)
+        //     }
+        // });
 
-                lock.midi.install(request.instrument)
-            };
-
-            if install.await {
-                state_clone.lock().unwrap().midi.play(&request, false)
-            }
-        });
-
-        Completed
+        // Completed
     }
 
     async fn sleep_for_duration(&self, time: u64) {
         let duration = Duration::from_millis(time);
 
-        tokio::time::sleep(duration).await
+        let time = self.state.lock().unwrap().time.clone();
+
+        time.sleep(duration).await;
     }
 
     async fn sleep<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
@@ -585,11 +624,14 @@ impl SyscallDelegate {
     async fn midi_out_sync<Mem: Memory, Track: Tracker<Mem>>(&self, debugger: &Executor<Mem, Track>) -> SyscallResult {
         let request = debugger.with_state(|s| midi_request(&s.registers));
 
-        if self.play_installed(&request, true) {
-            let notifier = self.state.lock().unwrap().sync_wake.clone();
-            notifier.notified().await;
+        let (sender, receiver) = oneshot::channel();
 
-            return Completed;
+        self.state.lock().unwrap().sync_wake = Some(sender);
+
+        if self.play_installed(&request, true) {
+            receiver.await.ok();
+
+            return Completed
         }
 
         let install = self.state.lock().unwrap().midi.install(request.instrument);
@@ -597,8 +639,7 @@ impl SyscallDelegate {
         if install.await {
             self.state.lock().unwrap().midi.play(&request, true);
 
-            let notifier = self.state.lock().unwrap().sync_wake.clone();
-            notifier.notified().await;
+            receiver.await.ok();
         }
 
         Completed
@@ -686,12 +727,15 @@ impl SyscallDelegate {
         Unimplemented(44)
     }
 
-    async fn wrap_cancel<F: Future<Output = SyscallResult>>(&self, f: F) -> SyscallResult {
-        let token = self.state.lock().unwrap().cancel_token.clone();
+    async fn wrap_cancel<F: FusedFuture<Output = SyscallResult>>(&self, f: F) -> SyscallResult {
+        // This is *really* bad code.
+        let Some(receiver) = self.state.lock().unwrap().grab_cancel() else {
+            return Aborted
+        };
 
         let result = select! {
-            result = f => result,
-            _ = token.cancelled() => Aborted
+            result = pin!(f) => result,
+            _ = receiver.fuse() => Aborted
         };
 
         result
@@ -701,35 +745,35 @@ impl SyscallDelegate {
         &self, state: &Executor<Mem, Track>, code: u32
     ) -> SyscallResult {
         match code {
-            1 => self.wrap_cancel(self.print_integer(state)).await,
-            2 => self.wrap_cancel(self.print_float(state)).await,
-            3 => self.wrap_cancel(self.print_double(state)).await,
-            4 => self.wrap_cancel(self.print_string(state)).await,
-            5 => self.wrap_cancel(self.read_integer(state)).await,
-            6 => self.wrap_cancel(self.read_float(state)).await,
-            7 => self.wrap_cancel(self.read_double(state)).await,
-            8 => self.wrap_cancel(self.read_string(state)).await,
-            9 => self.wrap_cancel(self.alloc_heap(state)).await,
-            10 => self.wrap_cancel(self.terminate(state)).await,
-            11 => self.wrap_cancel(self.print_character(state)).await,
-            12 => self.wrap_cancel(self.read_character(state)).await,
-            13 => self.wrap_cancel(self.open_file(state)).await,
-            14 => self.wrap_cancel(self.read_file(state)).await,
-            15 => self.wrap_cancel(self.write_file(state)).await,
-            16 => self.wrap_cancel(self.close_file(state)).await,
-            17 => self.wrap_cancel(self.terminate_valued(state)).await,
-            30 => self.wrap_cancel(self.system_time(state)).await,
-            31 => self.wrap_cancel(self.midi_out(state)).await,
-            32 => self.wrap_cancel(self.sleep(state)).await,
-            33 => self.wrap_cancel(self.midi_out_sync(state)).await,
-            34 => self.wrap_cancel(self.print_hexadecimal(state)).await,
-            35 => self.wrap_cancel(self.print_binary(state)).await,
-            36 => self.wrap_cancel(self.print_unsigned(state)).await,
-            40 => self.wrap_cancel(self.set_seed(state)).await,
-            41 => self.wrap_cancel(self.random_int(state)).await,
-            42 => self.wrap_cancel(self.random_int_ranged(state)).await,
-            43 => self.wrap_cancel(self.random_float(state)).await,
-            44 => self.wrap_cancel(self.random_double(state)).await,
+            1 => self.wrap_cancel(self.print_integer(state).fuse()).await,
+            2 => self.wrap_cancel(self.print_float(state).fuse()).await,
+            3 => self.wrap_cancel(self.print_double(state).fuse()).await,
+            4 => self.wrap_cancel(self.print_string(state).fuse()).await,
+            5 => self.wrap_cancel(self.read_integer(state).fuse()).await,
+            6 => self.wrap_cancel(self.read_float(state).fuse()).await,
+            7 => self.wrap_cancel(self.read_double(state).fuse()).await,
+            8 => self.wrap_cancel(self.read_string(state).fuse()).await,
+            9 => self.wrap_cancel(self.alloc_heap(state).fuse()).await,
+            10 => self.wrap_cancel(self.terminate(state).fuse()).await,
+            11 => self.wrap_cancel(self.print_character(state).fuse()).await,
+            12 => self.wrap_cancel(self.read_character(state).fuse()).await,
+            13 => self.wrap_cancel(self.open_file(state).fuse()).await,
+            14 => self.wrap_cancel(self.read_file(state).fuse()).await,
+            15 => self.wrap_cancel(self.write_file(state).fuse()).await,
+            16 => self.wrap_cancel(self.close_file(state).fuse()).await,
+            17 => self.wrap_cancel(self.terminate_valued(state).fuse()).await,
+            30 => self.wrap_cancel(self.system_time(state).fuse()).await,
+            31 => self.wrap_cancel(self.midi_out(state).fuse()).await,
+            32 => self.wrap_cancel(self.sleep(state).fuse()).await,
+            33 => self.wrap_cancel(self.midi_out_sync(state).fuse()).await,
+            34 => self.wrap_cancel(self.print_hexadecimal(state).fuse()).await,
+            35 => self.wrap_cancel(self.print_binary(state).fuse()).await,
+            36 => self.wrap_cancel(self.print_unsigned(state).fuse()).await,
+            40 => self.wrap_cancel(self.set_seed(state).fuse()).await,
+            41 => self.wrap_cancel(self.random_int(state).fuse()).await,
+            42 => self.wrap_cancel(self.random_int_ranged(state).fuse()).await,
+            43 => self.wrap_cancel(self.random_float(state).fuse()).await,
+            44 => self.wrap_cancel(self.random_double(state).fuse()).await,
             _ => Unknown(code),
         }
     }
@@ -738,64 +782,63 @@ impl SyscallDelegate {
         &self,
         debugger: &Executor<Mem, Track>,
         frame: DebugFrame,
-    ) -> (Option<DebugFrame>, Option<SyscallResult>) {
+    ) -> (Option<DebugFrame>, Option<SyscallResult>, bool) {
         match frame.mode {
             Invalid(CpuSyscall) => {
                 // $v0
                 let code = debugger.with_state(|s| s.registers.line[V0_REG]);
                 let result = self.dispatch(debugger, code).await;
 
-                (
-                    match result {
-                        Completed => {
-                            debugger.invalid_handled();
+                match result {
+                    Completed => {
+                        debugger.syscall_handled();
 
-                            None
-                        }
-                        _ => Some(frame),
-                    },
-                    Some(result),
-                )
+                        (None, Some(result), true)
+                    }
+                    _ => (Some(frame), Some(result), false),
+                }
             }
-            _ => (Some(frame), None),
+            _ => (Some(frame), None, false),
         }
     }
 
+    // A syscall will interrupt a batch!
+    pub async fn run_batch<Mem: Memory, Track: Tracker<Mem>>(
+        &self, debugger: &Executor<Mem, Track>, batch: usize, should_skip_first: bool, allow_interrupt: bool
+    ) -> Option<(DebugFrame, Option<SyscallResult>)> {
+        if !debugger.run_batched(batch, should_skip_first, allow_interrupt).interrupted {
+            return None // no interruption, batch completed successfully
+        }
+
+        let frame_in = debugger.frame();
+
+        let (frame, result, recovered) = self.handle_frame(debugger, frame_in).await;
+
+        if let Some(frame) = frame {
+            return Some((frame, result));
+        }
+
+        if !recovered {
+            return Some((debugger.frame(), None))
+        }
+
+        None
+    }
+
     pub async fn run<Mem: Memory, Track: Tracker<Mem>>(
-        &self, debugger: &Executor<Mem, Track>
+        &self, debugger: &Executor<Mem, Track>, should_skip_first: bool
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
-            let frame = debugger.run();
-            let (frame, result) = self.handle_frame(debugger, frame).await;
+            let frame = debugger.run(should_skip_first);
+            let (frame, result, recovered) = self.handle_frame(debugger, frame).await;
 
             if let Some(frame) = frame {
                 return (frame, result);
             }
 
-            // Need to re-check.
-            let frame = debugger.frame();
-
-            if frame.mode != Recovered {
-                return (frame, None);
+            if !recovered {
+                return (debugger.frame(), None);
             }
         }
-    }
-
-    pub async fn cycle<Mem: Memory + Send, Track: Tracker<Mem> + Send>(
-        &self,
-        debugger: &Executor<Mem, Track>,
-    ) -> (DebugFrame, Option<SyscallResult>) {
-        let frame = debugger.cycle(true);
-
-        let (frame, result) = if let Some(frame) = frame {
-            self.handle_frame(debugger, frame).await
-        } else {
-            (None, None)
-        };
-
-        (
-            frame.unwrap_or_else(|| debugger.frame()),
-            result,
-        )
     }
 }

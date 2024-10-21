@@ -2,7 +2,7 @@
   <div v-if="profile ?? false" class="flex items-center">
     <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
-      class="w-10 h-10 hover:bg-slate-800 shrink-0 flex items-center justify-center font-black text-sky-300"
+      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-sky-300 text-sky-700"
       @click="build()"
       title="Build"
     >
@@ -11,7 +11,7 @@
 
     <button
       v-if="!!consoleData.execution"
-      class="w-10 h-10 hover:bg-slate-800 shrink-0 flex items-center justify-center font-black text-red-300"
+      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-red-300 text-red-700"
       @click="stop()"
       title="Stop"
     >
@@ -20,7 +20,7 @@
 
     <button
       v-if="!!consoleData.execution"
-      class="w-10 h-10 hover:bg-slate-800 shrink-0 flex items-center justify-center font-black text-yellow-200"
+      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-yellow-200 text-yellow-800"
       @click="pause()"
       title="Pause"
     >
@@ -32,8 +32,8 @@
       class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
       @click="rewind()"
       :class="{
-        'text-gray-300 cursor-default': !allowRewind,
-        'text-teal-300 hover:bg-slate-800': allowRewind,
+        'dark:text-gray-300 text-gray-700 cursor-default': !allowRewind,
+        'dark:text-teal-300 text-teal-700 dark:hover:bg-slate-800 hover:bg-slate-300': allowRewind,
       }"
       :disabled="!allowRewind"
       title="Step Back"
@@ -46,8 +46,8 @@
       class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
       @click="step()"
       :class="{
-        'text-gray-300 cursor-default': !allowResume,
-        'text-teal-300 hover:bg-slate-800': allowResume,
+        'dark:text-gray-300 text-gray-700 cursor-default': !allowResume,
+        'dark:text-teal-300 text-teal-700 dark:hover:bg-slate-800 hover:bg-slate-300': allowResume,
       }"
       :disabled="!allowResume"
       title="Step"
@@ -58,8 +58,8 @@
     <button
       class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
       :class="{
-        'text-gray-300 cursor-default bg-neutral-800': !allowResume,
-        'text-green-300 hover:bg-slate-800': allowResume,
+        'dark:text-gray-300 text-gray-700 cursor-default dark:bg-neutral-800 bg-neutral-400': !allowResume,
+        'dark:text-green-300 text-green-700 dark:hover:bg-slate-800 hover:bg-slate-300': allowResume,
       }"
       @click="resume()"
       :disabled="!allowResume"

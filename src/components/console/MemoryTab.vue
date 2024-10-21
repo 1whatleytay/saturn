@@ -1,13 +1,13 @@
 <template>
   <div class="text-sm flex flex-col grow overflow-hidden content-start">
     <div
-      class="flex items-center py-2 border-b border-neutral-700 bg-neutral-900 w-full"
+      class="flex items-center py-2 border-b border-neutral-700 dark:bg-neutral-900 bg-neutral-200 w-full"
     >
       <label for="address" class="text-xs font-bold px-4 py-2">Address</label>
       <input
         id="address"
         type="text"
-        class="text-xs font-mono bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+        class="text-xs font-mono dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 w-40 rounded"
         v-model="settings.memory.address"
       />
 
@@ -30,7 +30,7 @@
       <label for="data-type" class="text-xs font-bold px-4 py-2">Type</label>
       <select
         id="data-type"
-        class="appearance-none text-xs bg-neutral-800 text-neutral-300 px-2 py-1 w-40 rounded"
+        class="appearance-none text-xs dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 w-40 rounded"
         :value="settings.memory.mode"
         @input="setMode"
       >
@@ -41,7 +41,7 @@
     </div>
 
     <div class="text-right pt-4 overflow-auto grow shrink flex flex-col">
-      <div class="flex font-bold text-neutral-500">
+      <div class="flex font-bold dark:text-neutral-500 text-neutral-800">
         <div class="w-32 px-2 py-1 shrink-0">Address</div>
 
         <div
@@ -59,7 +59,7 @@
           :key="index"
           class="flex font-mono"
         >
-          <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
+          <div class="w-32 px-2 py-1 dark:text-neutral-500 text-neutral-800 shrink-0">
             {{ row.header }}
           </div>
 
@@ -70,7 +70,7 @@
             :model-value="item"
             :bytes="unitSize"
             @update:model-value="value => setAddress(row.address, index, value, settings.memory.mode)"
-            classes="bg-transparent hover:bg-neutral-700 w-28 flex items-center px-2 py-1 shrink-0 select-all"
+            classes="bg-transparent dark:hover:bg-neutral-700 hover:bg-neutral-300 w-28 flex items-center px-2 py-1 shrink-0 select-all"
           />
         </div>
       </div>
@@ -78,7 +78,7 @@
         <div
           class="flex font-mono"
         >
-          <div class="w-32 px-2 py-1 text-neutral-500 shrink-0">
+          <div class="w-32 px-2 py-1 dark:text-neutral-500 text-neutral-800 shrink-0">
             {{ settings.memory.address }}
           </div>
 

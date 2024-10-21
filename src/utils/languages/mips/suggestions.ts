@@ -1,6 +1,5 @@
 import { Suggestion, SuggestionMatch, SuggestionType } from '../suggestions'
-import Fuse from 'fuse.js'
-import FuseResult = Fuse.FuseResult
+import Fuse, { type FuseResult } from 'fuse.js'
 
 export function toSuggestionMatches(
   results: FuseResult<Suggestion>[]

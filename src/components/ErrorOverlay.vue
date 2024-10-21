@@ -9,7 +9,7 @@
   >
     <div
       v-if="props.highlight.message"
-      class="mt-6 py-2 px-4 w-auto bg-neutral-900 rounded shadow-xl absolute z-30 text-red-400 font-medium font-sans hidden group-hover:block"
+      class="mt-6 py-2 px-4 w-auto dark:bg-neutral-900 bg-neutral-200 rounded shadow-xl absolute z-30 text-red-400 font-medium font-sans hidden group-hover:block"
     >
       {{ props.highlight.message }}
     </div>
