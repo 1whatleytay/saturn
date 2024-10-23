@@ -16,7 +16,7 @@ import { tab, settings } from '../state/state'
 
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
-import { toRaw } from 'vue'
+import { computed, toRaw } from 'vue'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -160,7 +160,24 @@ export async function build() {
   postBuildMessage(result)
 }
 
+// Some global state checks to avoid people running resume() via shortcuts.
+export const allowRewind = computed(
+  () =>
+    !consoleData.execution || (consoleData.mode !== ExecutionModeType.Running)
+)
+
+export const allowResume = computed(
+  () =>
+    !consoleData.execution ||
+    (consoleData.mode !== ExecutionModeType.Invalid &&
+      consoleData.mode !== ExecutionModeType.Running)
+)
+
 export async function resume() {
+  if (!allowResume.value) {
+    return
+  }
+
   clearDebug()
 
   const current = tab()
@@ -237,6 +254,10 @@ export async function stepCount(skip: number) {
 }
 
 export async function step() {
+  if (!allowResume.value) {
+    return
+  }
+
   if (!consoleData.execution) {
     return
   }
@@ -261,6 +282,10 @@ export async function step() {
 }
 
 export async function rewind() {
+  if (!allowRewind.value) {
+    return
+  }
+
   if (!consoleData.execution || !consoleData.execution.timeTravel) {
     return
   }

@@ -5,7 +5,7 @@
     >
       <div>Would you like to save changes made to this file?</div>
 
-      <div class="text-neutral-400 text-xs font-medium mt-1">
+      <div class="dark:text-neutral-400 text-neutral-600 text-xs font-medium mt-1">
         You will lose your changes if you chose to not save them.
       </div>
 
@@ -14,7 +14,7 @@
           @click="props.dialog.selectSave()"
           ref="saveButton"
           id="save-modal-save"
-          class="mr-4 mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-4 mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-300 hover:bg-slate-400 transition-colors duration-150 px-4 py-2 rounded"
         >
           Save
         </button>
@@ -23,7 +23,7 @@
           @click="props.dialog.selectDiscard()"
           ref="discardButton"
           id="save-modal-discard"
-          class="mr-8 mt-4 w-28 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-8 mt-4 w-28 dark:bg-neutral-800 dark:hover:bg-neutral-700 bg-neutral-300 hover:bg-neutral-400 transition-colors duration-150 px-4 py-2 rounded"
         >
           Don't Save
         </button>
@@ -32,7 +32,7 @@
           @click="props.dialog.selectDismiss()"
           ref="dismissButton"
           id="save-modal-dismiss"
-          class="mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-400 hover:bg-slate-500 transition-colors duration-150 px-4 py-2 rounded"
+          class="mt-4 w-24 dark:bg-neutral-800 dark:hover:bg-neutral-700 bg-neutral-300 hover:bg-neutral-400 transition-colors duration-150 px-4 py-2 rounded"
         >
           Cancel
         </button>

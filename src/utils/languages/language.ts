@@ -37,7 +37,7 @@ export const style = {
   parameter: 'dark:text-orange-300 text-orange-800',
   instruction: 'dark:text-sky-400 text-sky-700',
   register: 'dark:text-orange-300 text-orange-800',
-  numeric: 'dark:text-teal-300 text-teal-800',
+  numeric: 'dark:text-teal-300 text-teal-700',
   symbol: 'dark:text-white text-black',
   text: 'dark:text-lime-300 text-lime-800',
   nothing: 'dark:text-white text-black',

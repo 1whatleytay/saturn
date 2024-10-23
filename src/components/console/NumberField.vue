@@ -2,7 +2,7 @@
   <span class="inline-block relative group">
     <input
       type="text"
-      class="font-mono dark:bg-neutral-900 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 rounded"
+      class="font-mono dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 rounded"
       spellcheck="false"
       :class="[
         state.error !== null ? 'ring-2 ring-red-500' : '',

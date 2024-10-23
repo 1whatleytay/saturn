@@ -5,7 +5,7 @@
     <ExportOverlay :show="showExportRegionsDialog" @close="showExportRegionsDialog = false" />
 
     <div
-      class="h-10 flex items-start dark:bg-neutral-900 bg-neutral-200 w-full fixed z-20 top-0 shadow-md"
+      class="h-10 flex items-start dark:bg-neutral-900 bg-neutral-200 w-full fixed z-20 top-0 shadow-md dark:shadow-none"
     >
       <div class="flex flex-grow overflow-x-auto no-scrollbar items-start">
         <Tab

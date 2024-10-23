@@ -80,8 +80,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
-import { build, pause, resume, step, rewind, stop } from '../utils/debug'
-import { ExecutionModeType } from '../utils/mips/mips'
+import { build, pause, resume, step, rewind, stop, allowResume, allowRewind } from '../utils/debug'
 import { tab } from '../state/state'
 
 import {
@@ -94,18 +93,6 @@ import {
 } from '@heroicons/vue/24/solid'
 
 const profile = computed(() => tab()?.profile)
-
-const allowRewind = computed(
-  () =>
-    !consoleData.execution || (consoleData.mode !== ExecutionModeType.Running)
-)
-
-const allowResume = computed(
-  () =>
-    !consoleData.execution ||
-    (consoleData.mode !== ExecutionModeType.Invalid &&
-      consoleData.mode !== ExecutionModeType.Running)
-)
 
 const profileText = computed((): string | null => {
   switch (profile.value?.kind) {

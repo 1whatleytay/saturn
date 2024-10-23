@@ -70,7 +70,7 @@
             :model-value="item"
             :bytes="unitSize"
             @update:model-value="value => setAddress(row.address, index, value, settings.memory.mode)"
-            classes="bg-transparent dark:hover:bg-neutral-700 hover:bg-neutral-300 w-28 flex items-center px-2 py-1 shrink-0 select-all"
+            classes="bg-transparent dark:bg-neutral-900 dark:hover:bg-neutral-700 hover:bg-neutral-300 w-28 flex items-center px-2 py-1 shrink-0 select-all"
           />
         </div>
       </div>

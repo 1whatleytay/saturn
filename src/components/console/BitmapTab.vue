@@ -21,7 +21,7 @@
             classes="text-xs w-32"
           />
 
-          <span class="text-neutral-400 mx-3 text-xs font-bold"> Units </span>
+          <span class="dark:text-neutral-400 text-neutral-600 mx-3 text-xs font-bold"> Units </span>
 
           <NumberField
             v-model="settings.bitmap.unitWidth"
@@ -41,7 +41,7 @@
             classes="text-xs w-32"
           />
 
-          <span class="text-neutral-400 mx-3 text-xs font-bold"> Units </span>
+          <span class="dark:text-neutral-400 text-neutral-600 mx-3 text-xs font-bold"> Units </span>
 
           <NumberField
             v-model="settings.bitmap.unitHeight"
