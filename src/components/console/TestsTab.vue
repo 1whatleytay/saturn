@@ -18,7 +18,7 @@
     </div>
 
     <div class="w-full">
-      <div v-if="!state.items.length" class="bg-neutral-800 w-full rounded-lg p-4 flex items-center mb-2">
+      <div v-if="!state.items.length" class="dark:bg-neutral-800 bg-neutral-300 w-full rounded-lg p-4 flex items-center mb-2">
         <ExclamationCircleIcon class="w-6 h-6 mr-4" />
 
         No tests configured.
@@ -26,7 +26,7 @@
 
       <div
         v-for="item in state.items" :key="item.name"
-        class="bg-neutral-800 w-full rounded-lg px-4 py-3 flex items-center mb-2.5"
+        class="dark:bg-neutral-800 bg-neutral-300 w-full rounded-lg px-4 py-3 flex items-center mb-2.5"
       >
         <div v-if="item.result === 'Unset'">
           <EllipsisHorizontalCircleIcon class="w-5 h-5 text-blue-400" />

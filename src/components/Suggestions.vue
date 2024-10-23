@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="suggestions.state.results.length"
-    class="w-80 h-40 text-sm font-mono overflow-hidden rounded-lg mt-6 p-2 bg-neutral-900 border border-neutral-800 absolute mx-[-0.08rem] z-20"
+    class="w-80 h-40 text-sm font-mono overflow-hidden rounded-lg mt-6 p-2 dark:bg-neutral-900 bg-neutral-200 border border-neutral-800 absolute mx-[-0.08rem] z-20"
     :style="{
       left: `${position.offsetX}px`,
       top: `${position.offsetY}px`,
@@ -18,7 +18,7 @@
         v-for="(suggestion, index) in suggestions.state.results"
         :key="index"
         class="w-full h-6 rounded px-2 flex items-center cursor-pointer transition-colors duration-150"
-        :class="{ 'bg-neutral-700': index === suggestions.state.index }"
+        :class="{ 'dark:bg-neutral-700 bg-neutral-300': index === suggestions.state.index }"
         @click.stop="suggestions.state.index = index"
         @dblclick.stop="merge(index)"
       >
@@ -50,7 +50,7 @@
         <div class="ml-auto flex items-center">
           <span
             v-if="suggestion.name"
-            class="text-neutral-500 mr-2 text-xs max-w-[12rem] shrink truncate"
+            class="dark:text-neutral-500 text-neutral-800 mr-2 text-xs max-w-[12rem] shrink truncate"
           >
             {{ suggestion.name }}
           </span>

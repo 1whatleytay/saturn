@@ -33,7 +33,7 @@
     <div class="w-full h-12" />
 
     <div
-      class="absolute border border-neutral-800 bottom-0 right-0 bg-neutral-900 rounded text-neutral-300 text-xs mr-6 mb-6 overflow-hidden"
+      class="absolute border border-neutral-800 bottom-0 right-0 dark:bg-neutral-900 bg-neutral-200 rounded text-neutral-800 text-xs mr-6 mb-6 overflow-hidden"
     >
       <button
         class="px-3 py-1 transition-colors"
@@ -75,9 +75,9 @@ import RegisterItem from './RegisterItem.vue'
 
 function buttonClasses(format: RegisterFormat) {
   if (settings.registers.format === format) {
-    return 'hover:bg-slate-800 bg-neutral-800'
+    return 'hover:text-neutral-300 dark:text-neutral-300 text-neutral-300 hover:bg-slate-800 bg-neutral-800'
   } else {
-   return 'hover:bg-slate-700'
+   return 'hover:text-neutral-300 dark:text-neutral-300 text-neutral-800 hover:bg-slate-700'
   }
 }
 
@@ -133,19 +133,19 @@ interface OutlinedSection {
 const sections = [
   {
     name: 'System',
-    classes: 'text-purple-300',
+    classes: 'dark:text-purple-300 text-purple-700',
     indices: [0, 1, 26, 27, 28, 29, 30, 31],
     system: true,
   },
-  { name: 'Values', classes: 'text-red-300', indices: [2, 3, 4, 5, 6, 7] },
+  { name: 'Values', classes: 'dark:text-red-300 text-red-700', indices: [2, 3, 4, 5, 6, 7] },
   {
     name: 'Temporary',
-    classes: 'text-cyan-300',
+    classes: 'dark:text-cyan-300 text-cyan-700',
     indices: [8, 9, 10, 11, 12, 13, 14, 15, 24, 25],
   },
   {
     name: 'Saved',
-    classes: 'text-green-300',
+    classes: 'dark:text-green-300 text-green-700',
     indices: [16, 17, 18, 19, 20, 21, 22, 23],
   },
 ] as OutlinedSection[]

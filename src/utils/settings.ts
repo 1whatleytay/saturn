@@ -23,6 +23,7 @@ export interface EditorSettings {
   fontSize: number
   consoleFontSize: number
   enterAutocomplete: boolean
+  darkMode: boolean
 }
 
 export enum RegisterFormat {
@@ -67,7 +68,8 @@ function defaultSettings(): Settings {
       tabSize: 4,
       fontSize: 22,
       consoleFontSize: 16,
-      enterAutocomplete: true
+      enterAutocomplete: true,
+      darkMode: true
     },
     bitmap: {
       displayWidth: 64,
@@ -149,6 +151,12 @@ export function useSettings(): Settings {
       debounce = window.setTimeout(() => toStorage(settings), 1000)
     },
     { deep: true }
+  )
+
+  watch(
+    () => state.editor.darkMode,
+    (darkMode) => document.body.classList.toggle('dark', darkMode),
+    { immediate: true },
   )
 
   return state

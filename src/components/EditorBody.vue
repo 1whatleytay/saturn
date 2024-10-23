@@ -1,12 +1,12 @@
 <template>
   <div
     ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex bg-neutral-200 dark:bg-neutral-900 pt-2"
     @scroll="handleScroll"
     @resize="updateBounds"
   >
     <div
-      class="w-16 pr-2 mr-2 text-xs text-slate-600 shrink-0 z-10 absolute left-0 bg-neutral-900 pt-2"
+      class="w-20 pr-4 mr-2 text-xs text-slate-400 font-medium shrink-0 z-10 absolute left-0 pt-2"
       @click.self
       @wheel.stop
       :style="{ top: `${state.lineOffset}px` }"
@@ -31,7 +31,7 @@
       </div>
     </div>
 
-    <div class="w-16 pr-2 mr-2 shrink-0"></div>
+    <div class="w-20 pr-2 mr-2 shrink-0"></div>
 
     <div
       ref="code"
@@ -154,8 +154,8 @@ function lineStyling(i: number): Record<string, boolean> {
   const isStopped = index === stoppedIndex.value
 
   return {
-    'bg-breakpoint-neutral': breakpoint && !isStopped,
-    'bg-breakpoint-stopped': isStopped,
+    'dark:bg-breakpoint-neutral bg-breakpoint-neutral-light': breakpoint && !isStopped,
+    'dark:bg-breakpoint-stopped bg-breakpoint-stopped-light': isStopped,
     'bg-yellow-500 bg-opacity-5':
       !breakpoint && !isStopped && !(tab()?.writable ?? true),
   }

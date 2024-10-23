@@ -17,10 +17,10 @@ Saturn contains a custom-made editor, interpreter, debugger and assembler for MI
 To install Saturn, visit the [releases](https://github.com/1whatleytay/saturn/releases) page.
 There are usually two trains to pick some. If you're not sure, pick the Latest release.
 
-| Train                                                                               | Usage                                          |
-|-------------------------------------------------------------------------------------|------------------------------------------------|
-| [Latest](https://github.com/1whatleytay/saturn/releases/latest) v0.1.7              | Stable, complete release for most users.       |
-| [Pre-Release](https://github.com/1whatleytay/saturn/releases/tag/app-v0.1.8) v0.1.8 | Latest experimental features. Sometimes buggy. |
+| Train                                                                                | Usage                                          |
+|--------------------------------------------------------------------------------------|------------------------------------------------|
+| [Latest](https://github.com/1whatleytay/saturn/releases/latest) v0.1.9               | Stable, complete release for most users.       |
+| [Pre-Release](https://github.com/1whatleytay/saturn/releases/tag/app-v0.1.10) v0.1.10 | Latest experimental features. Sometimes buggy. |
 
 Trying out the pre-release versions of Saturn helps the project out.
 If you encounter an issue, please [file a bug](https://github.com/1whatleytay/saturn/issues/new).

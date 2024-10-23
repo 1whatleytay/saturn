@@ -6,15 +6,21 @@ import {
   HexBinaryResult,
   InstructionDetails,
   InstructionLine,
-  LastDisplay, MipsBackend, MipsExecution
+  LastDisplay, MipsBackend, MipsCallbacks, MipsExecution
 } from './mips'
 import { ExportRegionsOptions } from '../settings'
 
 import { tauri } from '@tauri-apps/api'
+import { convertFileSrc } from '@tauri-apps/api/tauri'
+import { listen } from '@tauri-apps/api/event'
+import { ConsoleType, pushConsole } from '../../state/console-data'
+import { MidiNote, playNote } from '../midi'
 
 export class TauriExecution implements MipsExecution {
   configured: boolean = false
   public breakpoints: Breakpoints | null
+
+  protocol = convertFileSrc('', 'display')
 
   async configure(): Promise<AssemblerResult | null> {
     if (this.configured) {
@@ -73,23 +79,18 @@ export class TauriExecution implements MipsExecution {
     return await tauri.invoke('last_pc')
   }
 
-  public async rewind(count: number | null): Promise<ExecutionResult | null> {
+  public async rewind(count: number): Promise<ExecutionResult | null> {
     return await tauri.invoke('rewind', { count })
   }
 
   public async resume(
     count: number | null,
-    breakpoints: number[] | null,
-    listen: (result: AssemblerResult) => void = () => {}
+    breakpoints: number[] | null
   ): Promise<ExecutionResult | null> {
-    const assemblerResult = await this.configure()
+    if (!this.configured) {
+      console.error('Not configured yet, cannot resume.')
 
-    if (assemblerResult) {
-      listen(assemblerResult)
-
-      if (assemblerResult.status === 'Error') {
-        return null
-      }
+      return null
     }
 
     const mappedBreakpoints = breakpoints
@@ -159,6 +160,20 @@ export class TauriExecution implements MipsExecution {
     await tauri.invoke('write_bytes', { address, bytes })
   }
 
+  async readDisplay(width: number, height: number, address: number): Promise<Uint8Array> {
+    const result = await fetch(this.protocol, {
+      headers: {
+        width: width.toString(),
+        height: height.toString(),
+        address: address.toString(),
+      },
+      mode: 'cors',
+      cache: 'no-cache',
+    })
+
+    return new Uint8Array(await result.arrayBuffer())
+  }
+
   public constructor(
     public text: string,
     public path: string | null,
@@ -183,7 +198,38 @@ export class TauriExecution implements MipsExecution {
   }
 }
 
+interface PrintPayload {
+  text: string
+  error: boolean
+}
+
 export class TauriBackend implements MipsBackend {
+  unListen: (() => void)[] = []
+
+  async setCallbacks(callbacks: MipsCallbacks) {
+    this.clearCallbacks()
+
+    this.unListen = [
+      await listen('print', (event) => {
+        let payload = event.payload as PrintPayload
+
+        callbacks.consoleWrite(payload.text, payload.error)
+      }),
+
+      await listen('play-midi', async (event) => {
+        callbacks.midiPlay(event.payload as MidiNote)
+      })
+    ]
+  }
+
+  clearCallbacks() {
+    for (const entry of this.unListen) {
+      entry()
+    }
+
+    this.unListen = []
+  }
+
   async assembleRegions(text: string, path: string | null, options: ExportRegionsOptions): Promise<HexBinaryResult> {
     const value = (await tauri.invoke('assemble_regions', {
       text, path, options
@@ -250,6 +296,10 @@ export class TauriBackend implements MipsBackend {
     return result as LastDisplay
   }
 
+  async wakeSync(): Promise<void> {
+    await tauri.invoke('wake_sync')
+  }
+
   createExecution(
     text: string,
     path: string | null,
@@ -259,5 +309,9 @@ export class TauriBackend implements MipsBackend {
     return Promise.resolve(
       new TauriExecution(text, path, timeTravel, profile)
     )
+  }
+
+  close() {
+    this.clearCallbacks()
   }
 }
