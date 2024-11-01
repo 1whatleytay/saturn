@@ -586,22 +586,19 @@ impl SyscallDelegate {
             return Completed;
         }
 
-        // let state_clone = self.state.clone();
+        let state_clone = self.state.clone();
 
-        Failure("MIDI Playback is disabled on this version. This is a bug. Please file a bug at https://github.com/1whatleytay/saturn.".into())
-        // tokio::spawn(async move {
-        //     let install = {
-        //         let mut lock = state_clone.lock().unwrap();
-        //
-        //         lock.midi.install(request.instrument)
-        //     };
-        //
-        //     if install.await {
-        //         state_clone.lock().unwrap().midi.play(&request, false)
-        //     }
-        // });
+        let install = {
+            let mut lock = state_clone.lock().unwrap();
+    
+            lock.midi.install(request.instrument)
+        };
+    
+        if install.await {
+            state_clone.lock().unwrap().midi.play(&request, false)
+        }
 
-        // Completed
+        Completed
     }
 
     async fn sleep_for_duration(&self, time: u64) {
