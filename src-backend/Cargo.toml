@@ -1,6 +1,6 @@
 [package]
 name = "saturn_backend"
-version = "0.1.9"
+version = "0.1.10"
 description = "Logical bakend for the Saturn IDE."
 authors = ["desgroup"]
 license = ""

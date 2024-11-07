@@ -3357,7 +3357,7 @@ dependencies = [
 
 [[package]]
 name = "saturn"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3378,7 +3378,7 @@ dependencies = [
 
 [[package]]
 name = "saturn_backend"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
