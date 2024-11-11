@@ -103,7 +103,8 @@ const knownDirectives = new Set([
   'eqv',
   'macro',
   'end_macro',
-  'include'
+  'include',
+  'file_path',
 ])
 
 const knownInstructions = new Set([
