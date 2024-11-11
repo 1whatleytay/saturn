@@ -1,20 +1,9 @@
-import { invoke } from '@tauri-apps/api'
 import { hasActionKey } from './query/shortcut-key'
 import { emit } from '@tauri-apps/api/event'
+import { MipsBackend, Shortcut } from './mips/mips'
 
-interface Accelerator {
-  command: boolean
-  shift: boolean
-  key: string
-}
-
-interface Shortcut {
-  event: string
-  accelerator: Accelerator
-}
-
-export async function setupShortcuts() {
-  const shortcuts: Shortcut[] = await invoke('platform_shortcuts')
+export async function setupShortcuts(backend: MipsBackend) {
+  const shortcuts = await backend.shortcuts()
 
   if (!shortcuts.length) {
     return

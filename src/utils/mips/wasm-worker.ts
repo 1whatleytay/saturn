@@ -1,15 +1,16 @@
 import * as backend from './wasm/saturn_wasm'
 import {
-  AssembledRegions,
-  AssemblerResult,
-  BinaryResult,
-  DisassembleResult,
   ExecutionModeType,
-  ExecutionResult,
-  HexBinaryResult,
-  InstructionDetails,
-  InstructionLine,
-  LastDisplay
+  type AssembledRegions,
+  type AssemblerResult,
+  type BinaryResult,
+  type DisassembleResult,
+  type ExecutionResult,
+  type HexBinaryResult,
+  type InstructionDetails,
+  type InstructionLine,
+  type LastDisplay,
+  type Shortcut,
 } from './mips'
 import {
   AssembleBinaryData,
@@ -39,8 +40,6 @@ import {
   WriteBytesData
 } from './wasm-worker-message'
 import { type MidiNote } from '../midi'
-
-backend.initialize()
 
 function sendConsoleWrite(text: string, error: boolean) {
   postEvent({
@@ -207,6 +206,10 @@ function readDisplay({ width, height, address }: ReadDisplayData) {
   return runner.read_display(address, width, height)
 }
 
+function platformShortcuts(): Shortcut[] {
+  return backend.get_shortcuts()
+}
+
 async function dispatchOp(data: MessageData): Promise<any> {
   switch (data.op) {
     case MessageOp.AssembleRegions: return assembleRegions(data)
@@ -232,6 +235,7 @@ async function dispatchOp(data: MessageData): Promise<any> {
     case MessageOp.WakeSync: return wakeSync()
     case MessageOp.Rewind: return rewind(data)
     case MessageOp.ReadDisplay: return readDisplay(data)
+    case MessageOp.PlatformShortcuts: return platformShortcuts()
   }
 }
 
@@ -263,3 +267,9 @@ async function handleMessage(event: MessageEvent) {
 }
 
 onmessage = handleMessage
+
+backend.initialize()
+
+postEvent({
+  op: MessageEventOp.Ready
+})

@@ -14,8 +14,8 @@ function createBackend(): MipsBackend {
 
 export const backend = createBackend()
 
-export function setupBackend(): Promise<void> {
-  return backend.setCallbacks({
+export async function setupBackend(): Promise<MipsBackend> {
+  await backend.setCallbacks({
     consoleWrite(text: string, error: boolean) {
       pushConsole(
         text,
@@ -27,4 +27,8 @@ export function setupBackend(): Promise<void> {
       await playNote(note)
     }
   })
+
+  await backend.waitReady()
+
+  return backend
 }

@@ -10,15 +10,18 @@ import {
   InstructionDetails,
   InstructionLine,
   LastDisplay,
-  MipsBackend, MipsCallbacks,
-  MipsExecution
+  MipsBackend,
+  MipsCallbacks,
+  MipsExecution,
+  Shortcut
 } from './mips'
 import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
 import {
   Message,
   MessageData,
-  MessageEventData, MessageEventOp,
+  MessageEventData,
+  MessageEventOp,
   MessageOp,
   MessageResponse,
   MessageResponseKind
@@ -43,6 +46,7 @@ interface RequestResponder {
 export class WasmBackend implements MipsBackend {
   worker: Worker
   requestId = 0
+  readyWaitList: (() => void)[] | null = []
 
   callbacks: MipsCallbacks | null = null
 
@@ -68,6 +72,17 @@ export class WasmBackend implements MipsBackend {
     })
   }
 
+  waitReady(): Promise<void> {
+    return new Promise(resolve => {
+      // I guess this closure is treated as asynchronous.
+      if (this.readyWaitList) {
+        this.readyWaitList.push(resolve)
+      } else {
+        resolve()
+      }
+    })
+  }
+
   handleEvent(data: MessageEventData) {
     if (!this.callbacks) {
       return
@@ -79,6 +94,14 @@ export class WasmBackend implements MipsBackend {
         break
       case MessageEventOp.MidiPlay:
         this.callbacks.midiPlay(data.note)
+        break
+      case MessageEventOp.Ready:
+        if (this.readyWaitList) {
+          this.readyWaitList.forEach(resolve => resolve())
+
+          this.readyWaitList = null
+        }
+
         break
     }
   }
@@ -111,10 +134,16 @@ export class WasmBackend implements MipsBackend {
     }
   }
 
+  shortcuts(): Promise<Shortcut[]> {
+    return this.sendRequest<Shortcut[]>({
+      op: MessageOp.PlatformShortcuts,
+    })
+  }
+
   async assembleRegions(
     text: string,
     path: string | null,
-    options: ExportRegionsOptions
+    options: ExportRegionsOptions,
   ): Promise<HexBinaryResult> {
     return await this.sendRequest<HexBinaryResult>({
       op: MessageOp.AssembleRegions,
@@ -126,7 +155,7 @@ export class WasmBackend implements MipsBackend {
 
   async assembleText(
     text: string,
-    path: string | null
+    path: string | null,
   ): Promise<AssemblerResult> {
     return await this.sendRequest<AssemblerResult>({
       op: MessageOp.AssembleText,
@@ -137,7 +166,7 @@ export class WasmBackend implements MipsBackend {
 
   async assembleWithBinary(
     text: string,
-    path: string | null
+    path: string | null,
   ): Promise<BinaryResult> {
     const [binary, assemblerResult] = await this.sendRequest<
       [number[] | null, AssemblerResult]
@@ -151,7 +180,7 @@ export class WasmBackend implements MipsBackend {
 
   async decodeInstruction(
     pc: number,
-    instruction: number
+    instruction: number,
   ): Promise<InstructionDetails | null> {
     return await this.sendRequest<InstructionDetails | null>({
       op: MessageOp.DecodeInstruction,
@@ -162,7 +191,7 @@ export class WasmBackend implements MipsBackend {
 
   async disassembleElf(
     named: string,
-    elf: ArrayBuffer
+    elf: ArrayBuffer,
   ): Promise<DisassembleResult> {
     return await this.sendRequest<DisassembleResult>({
       op: MessageOp.Disassemble,
@@ -196,7 +225,7 @@ export class WasmBackend implements MipsBackend {
     text: string,
     path: string | null,
     timeTravel: boolean,
-    profile: ExecutionProfile
+    profile: ExecutionProfile,
   ): Promise<MipsExecution> {
     return new WasmExecution(this, text, path, timeTravel, profile)
   }

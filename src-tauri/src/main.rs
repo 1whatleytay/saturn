@@ -19,7 +19,7 @@ mod time;
 use std::sync::{Arc, Mutex};
 use tauri::{FileDropEvent, Manager};
 use tauri::WindowEvent::{Destroyed, FileDrop};
-use crate::access_manager::AccessManager;
+use crate::access_manager::{access_read_file, access_read_text, access_select_open, access_select_save, access_sync, access_write_text, AccessManager};
 
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
 use crate::menu::{create_menu, handle_event};
@@ -94,12 +94,12 @@ fn main() {
             post_input,         // bitmap
             configure_display,  // bitmap
             last_display,       // bitmap
-            access_manager::access_sync,
-            access_manager::access_select_save,
-            access_manager::access_select_open,
-            access_manager::access_read_text,
-            access_manager::access_write_text,
-            access_manager::access_read_file,
+            access_sync,
+            access_select_save,
+            access_select_open,
+            access_read_text,
+            access_write_text,
+            access_read_file,
             midi_install,
             is_debug,
             wake_sync,

@@ -6,7 +6,7 @@ import {
   HexBinaryResult,
   InstructionDetails,
   InstructionLine,
-  LastDisplay, MipsBackend, MipsCallbacks, MipsExecution
+  LastDisplay, MipsBackend, MipsCallbacks, MipsExecution, Shortcut
 } from './mips'
 import { ExportRegionsOptions } from '../settings'
 
@@ -218,7 +218,7 @@ export class TauriBackend implements MipsBackend {
 
       await listen('play-midi', async (event) => {
         callbacks.midiPlay(event.payload as MidiNote)
-      })
+      }),
     ]
   }
 
@@ -230,32 +230,49 @@ export class TauriBackend implements MipsBackend {
     this.unListen = []
   }
 
-  async assembleRegions(text: string, path: string | null, options: ExportRegionsOptions): Promise<HexBinaryResult> {
-    const value = (await tauri.invoke('assemble_regions', {
-      text, path, options
-    })) as [
-      AssembledRegions | null,
-      AssemblerResult
-    ]
+  async shortcuts(): Promise<Shortcut[]> {
+    return (await tauri.invoke('platform_shortcuts')) as Shortcut[]
+  }
 
-    const [regions, result ] = value
+  waitReady(): Promise<void> {
+    return Promise.resolve()
+  }
+
+  async assembleRegions(
+    text: string,
+    path: string | null,
+    options: ExportRegionsOptions,
+  ): Promise<HexBinaryResult> {
+    const value = (await tauri.invoke('assemble_regions', {
+      text,
+      path,
+      options,
+    })) as [AssembledRegions | null, AssemblerResult]
+
+    const [regions, result] = value
 
     return {
       regions,
-      result
+      result,
     }
   }
 
-  async assembleText(text: string, path: string | null): Promise<AssemblerResult> {
+  async assembleText(
+    text: string,
+    path: string | null,
+  ): Promise<AssemblerResult> {
     const result = await tauri.invoke('assemble', { text, path })
 
     return result as AssemblerResult
   }
 
-  async assembleWithBinary(text: string, path: string | null): Promise<BinaryResult> {
+  async assembleWithBinary(
+    text: string,
+    path: string | null,
+  ): Promise<BinaryResult> {
     const result = (await tauri.invoke('assemble_binary', { text, path })) as [
       number[] | null,
-      AssemblerResult
+      AssemblerResult,
     ]
 
     const [binary, assemblerResult] = result
@@ -274,11 +291,19 @@ export class TauriBackend implements MipsBackend {
     })
   }
 
-  async decodeInstruction(pc: number, instruction: number): Promise<InstructionDetails | null> {
-    return await tauri.invoke('decode_instruction', { pc, instruction }) ?? null
+  async decodeInstruction(
+    pc: number,
+    instruction: number,
+  ): Promise<InstructionDetails | null> {
+    return (
+      (await tauri.invoke('decode_instruction', { pc, instruction })) ?? null
+    )
   }
 
-  async disassembleElf(named: string, elf: ArrayBuffer): Promise<DisassembleResult> {
+  async disassembleElf(
+    named: string,
+    elf: ArrayBuffer,
+  ): Promise<DisassembleResult> {
     const bytes = Array.from(new Uint8Array(elf))
 
     const value = await tauri.invoke('disassemble', { named, bytes })
@@ -287,7 +312,9 @@ export class TauriBackend implements MipsBackend {
   }
 
   async disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
-    return await tauri.invoke('detailed_disassemble', { bytes: Array.from(new Uint8Array(bytes)) })
+    return await tauri.invoke('detailed_disassemble', {
+      bytes: Array.from(new Uint8Array(bytes)),
+    })
   }
 
   async lastDisplay(): Promise<LastDisplay> {
@@ -304,11 +331,9 @@ export class TauriBackend implements MipsBackend {
     text: string,
     path: string | null,
     timeTravel: boolean,
-    profile: ExecutionProfile
+    profile: ExecutionProfile,
   ): Promise<MipsExecution> {
-    return Promise.resolve(
-      new TauriExecution(text, path, timeTravel, profile)
-    )
+    return Promise.resolve(new TauriExecution(text, path, timeTravel, profile))
   }
 
   close() {

@@ -14,8 +14,9 @@ setupWindow()
 
 if (window.__TAURI__) {
   // Needs backend tying.
-  setupShortcuts().then(() => {})
   setupEvents().then(() => {})
 }
 
-setupBackend().then(() => {})
+setupBackend().then(backend => {
+  setupShortcuts(backend).then(() => {})
+})

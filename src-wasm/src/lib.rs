@@ -82,6 +82,14 @@ pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
 }
 
 #[wasm_bindgen]
+pub fn get_shortcuts() -> Vec<JsValue> {
+    saturn_backend::shortcuts::get_emulated_shortcuts()
+        .iter()
+        .filter_map(|x| serde_wasm_bindgen::to_value(x).ok())
+        .collect()
+}
+
+#[wasm_bindgen]
 pub struct Runner {
     events: Arc<EventHandler>,
     display: RefCell<FlushDisplayBody>,

@@ -221,12 +221,27 @@ export type InstructionLine = InstructionLineInstruction
   | InstructionLineComment
   | InstructionLineLabel
 
+export interface Accelerator {
+  command: boolean
+  shift: boolean
+  key: string
+}
+
+export interface Shortcut {
+  event: string
+  accelerator: Accelerator
+}
+
 export interface MipsCallbacks {
   consoleWrite(text: string, error: boolean): void
   midiPlay(note: MidiNote): void
 }
 
 export interface MipsBackend {
+  waitReady(): Promise<void>
+
+  shortcuts(): Promise<Shortcut[]>
+
   setCallbacks(callbacks: MipsCallbacks): Promise<void>
 
   // Insight
