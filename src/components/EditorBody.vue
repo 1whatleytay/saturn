@@ -1,7 +1,7 @@
 <template>
   <div
     ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex bg-neutral-200 dark:bg-neutral-900 pt-2"
+    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
     @scroll="handleScroll"
     @resize="updateBounds"
   >

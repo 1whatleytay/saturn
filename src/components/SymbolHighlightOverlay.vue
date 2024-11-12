@@ -9,7 +9,7 @@
     >
       <div
         v-for="match in matches.matches"
-        class="bg-slate-800 h-6 absolute rounded"
+        class="bg-slate-400 dark:bg-slate-700 opacity-30 h-6 absolute rounded"
         :style="{
           left: `${match.offset}px`,
           width: `${match.size}px`,

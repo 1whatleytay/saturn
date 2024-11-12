@@ -13,6 +13,7 @@ body {
   @apply overflow-auto;
 
   @apply dark:text-slate-100 text-slate-900;
+  @apply dark:!bg-neutral-900 !bg-neutral-200;
 }
 
 #app {
