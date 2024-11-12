@@ -37,6 +37,6 @@
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.3.0",
     "vue-tsc": "^2.1.6",
-    "wasm-pack": "^0.13.0"
+    "wasm-pack": "^0.13.1"
   }
 }
