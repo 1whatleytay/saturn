@@ -41,7 +41,7 @@ fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>
     };
 
     match error {
-        MemoryAlign(_) => memory(MemoryErrorReason::Alignment),
+        MemoryAlign(_, _) => memory(MemoryErrorReason::Alignment),
         MemoryUnmapped(_) => memory(MemoryErrorReason::Unmapped),
         CpuTrap => {
             let pc = state.registers.pc.wrapping_sub(4);

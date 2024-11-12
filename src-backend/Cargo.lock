@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#847c8bce5ae0ab57f171259567384096f1ab4134"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#909317b1f8f49d2f059dfc17ffcb7a397e578f62"
 dependencies = [
  "bitflags",
  "byteorder",
