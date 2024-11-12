@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::future::Future;
 use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::pin::{Pin, pin};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -71,6 +72,7 @@ pub struct SyscallState {
     pub cancel_token: CancelToken,
     pub input_buffer: Arc<ByteChannel>,
     pub sync_wake: Option<oneshot::Sender<()>>,
+    current_directory: Option<String>, // for filesystem requests
     heap_start: u32,
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
@@ -85,12 +87,14 @@ impl SyscallState {
         console: Box<dyn ConsoleHandler + Send + Sync>,
         midi: Box<dyn MidiHandler + Send + Sync>,
         time: Arc<dyn TimeHandler + Send + Sync>,
+        current_directory: Option<String>,
     ) -> SyscallState {
         SyscallState {
             cancel_token: CancelToken::None,
             input_buffer: Arc::new(ByteChannel::default()),
             sync_wake: None,
             heap_start: 0x20000000,
+            current_directory,
             console,
             midi,
             time,
@@ -420,8 +424,7 @@ impl SyscallDelegate {
         });
 
         // Mode/$a2 is ignored.
-
-
+        
         let result = debugger.with_memory(|memory| {
             Self::grab_string(address, memory, Some(400))
         });
@@ -431,10 +434,34 @@ impl SyscallDelegate {
             Err(error) => return Exception(error),
         };
 
+        let filename_path = PathBuf::from(&filename);
+
+        let absolute_path = if filename_path.is_relative() {
+            let current_directory = {
+                self.state.lock().unwrap()
+                    .current_directory
+                    .as_ref()
+                    .map(PathBuf::from)
+            };
+
+            if let Some(mut current_directory) = current_directory {
+                current_directory.extend(&filename_path);
+
+                Some(current_directory)
+            } else {
+                // Cursed duplication.
+                None
+            }
+        } else {
+            None
+        };
+
+        let resolved_path = absolute_path.as_ref().unwrap_or(&filename_path);
+
         let file = match flags {
-            0 => File::open(filename),
-            1 => File::create(filename),
-            9 => OpenOptions::new().append(true).open(filename),
+            0 => File::open(resolved_path),
+            1 => File::create(resolved_path),
+            9 => OpenOptions::new().append(true).open(resolved_path),
             _ => {
                 return Failure(format!(
                     "Invalid flags {} for opening file {}",

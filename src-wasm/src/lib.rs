@@ -115,7 +115,7 @@ impl Runner {
         }
 
         let wrapped = Arc::new(debugger);
-        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
 
         *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
             debugger: wrapped,
@@ -139,7 +139,7 @@ impl Runner {
         }
 
         let wrapped = Arc::new(debugger);
-        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
 
         *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
             debugger: wrapped,

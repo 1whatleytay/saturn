@@ -1,4 +1,5 @@
 use std::io::Cursor;
+use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::{Manager, Wry};
 use titan::cpu::Memory;
@@ -43,13 +44,14 @@ pub fn swap<Listen: ListenResponder + Send + 'static, Track: Tracker<SectionMemo
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
     time: Arc<dyn TimeHandler + Send + Sync>,
+    current_directory: Option<String>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
     }
 
     let wrapped = Arc::new(debugger);
-    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, current_directory)));
 
     // Drop should cancel the last process and kill the other thread.
     *pointer = Some(Arc::new(ExecutionState {
@@ -68,13 +70,14 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
     console: Box<dyn ConsoleHandler + Send + Sync>,
     midi: Box<dyn MidiHandler + Send + Sync>,
     time: Arc<dyn TimeHandler + Send + Sync>,
+    current_directory: Option<String>,
 ) {
     if let Some(state) = pointer.as_ref() {
         state.pause();
     }
 
     let wrapped = Arc::new(debugger);
-    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time)));
+    let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, current_directory)));
 
     // Drop should cancel the last process and kill the other thread.
     *pointer = Some(Arc::new(ExecutionState {
@@ -89,6 +92,7 @@ pub fn swap_watched<Mem: Memory + Send + 'static>(
 pub fn configure_elf(
     bytes: Vec<u8>,
     time_travel: bool,
+    path: Option<String>,
     state: tauri::State<'_, DebuggerBody>,
     app_handle: tauri::AppHandle<Wry>,
 ) -> bool {
@@ -104,6 +108,10 @@ pub fn configure_elf(
     let mut memory = SectionMemory::new();
     let keyboard = configure_keyboard(&mut memory);
 
+    let current_directory = path
+        .and_then(|x| Path::new(&x).parent()
+            .map(|x| x.to_string_lossy().to_string()));
+
     if time_travel {
         let memory = WatchedMemory::new(memory);
 
@@ -118,6 +126,7 @@ pub fn configure_elf(
             console,
             midi,
             time,
+            current_directory,
         );
     } else {
         let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
@@ -131,6 +140,7 @@ pub fn configure_elf(
             console,
             midi,
             time,
+            current_directory,
         );
     }
 
@@ -140,12 +150,12 @@ pub fn configure_elf(
 #[tauri::command]
 pub fn configure_asm(
     text: &str,
-    path: Option<&str>,
+    path: Option<String>,
     time_travel: bool,
     state: tauri::State<'_, DebuggerBody>,
     app_handle: tauri::AppHandle<Wry>,
 ) -> AssemblerResult {
-    let binary = assemble_text(text, path);
+    let binary = assemble_text(text, path.as_ref().map(|x| x.as_str()));
 
     let (binary, result) = AssemblerResult::from_result_with_binary(binary, text);
 
@@ -161,6 +171,10 @@ pub fn configure_asm(
     let mut memory = SectionMemory::new();
     let keyboard = configure_keyboard(&mut memory);
 
+    let current_directory = path
+        .and_then(|x| Path::new(&x).parent()
+            .map(|x| x.to_string_lossy().to_string()));
+
     if time_travel {
         let memory = WatchedMemory::new(memory);
 
@@ -175,6 +189,7 @@ pub fn configure_asm(
             console,
             midi,
             time,
+            current_directory,
         );
     } else {
         let mut cpu_state = state_from_binary(binary, 0x100000, memory);
@@ -188,6 +203,7 @@ pub fn configure_asm(
             console,
             midi,
             time,
+            current_directory,
         );
     }
 

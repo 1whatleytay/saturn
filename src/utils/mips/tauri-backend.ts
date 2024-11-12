@@ -40,6 +40,7 @@ export class TauriExecution implements MipsExecution {
 
         const result = await tauri.invoke('configure_elf', {
           bytes,
+          path: this.path,
           timeTravel: this.timeTravel
         })
 
