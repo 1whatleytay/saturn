@@ -823,11 +823,13 @@ impl SyscallDelegate {
     }
 
     pub async fn run<Mem: Memory, Track: Tracker<Mem>>(
-        &self, debugger: &Executor<Mem, Track>, should_skip_first: bool
+        &self, debugger: &Executor<Mem, Track>, mut should_skip_first: bool
     ) -> (DebugFrame, Option<SyscallResult>) {
         loop {
             let frame = debugger.run(should_skip_first);
             let (frame, result, recovered) = self.handle_frame(debugger, frame).await;
+
+            should_skip_first = false;
 
             if let Some(frame) = frame {
                 return (frame, result);
