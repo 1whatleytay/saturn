@@ -211,14 +211,25 @@ export function useCursor(
     return editor().grab(range)
   }
 
-  function dropSelection(): boolean {
-    const range = selectionRange(cursor())
+  function dropSelection(inclusive: boolean = false): boolean {
+    const value = cursor()
+
+    let range = selectionRange(value)
 
     if (!range) {
-      return false
+      if (inclusive) {
+        range = {
+          startLine: value.line,
+          endLine: value.line,
+          startIndex: value.index,
+          endIndex: value.index,
+        }
+      } else {
+        return false
+      }
     }
 
-    editor().drop(range)
+    editor().drop(range, inclusive)
 
     clearSelection()
     putCursor({ line: range.startLine, index: range.startIndex })
@@ -692,13 +703,15 @@ export function useCursor(
       case 'Delete':
         const doDelete = event.key === 'Delete'
 
-        if (!last) {
+        const inclusive = hasActionKey(event)
+
+        if (!last || inclusive) {
           editor().commit()
         }
 
         pressedBackspace = true
 
-        if (!dropSelection()) {
+        if (!dropSelection(inclusive)) {
           bringCursorInline()
           let nextPosition: SelectionIndex
 

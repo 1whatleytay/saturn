@@ -176,6 +176,7 @@ export class Editor {
 
     this.redoOperations = []
 
+    console.log('try again')
     this.onDirty(line, count, this.data.slice(line, line + insert))
   }
 
@@ -242,16 +243,22 @@ export class Editor {
     )
   }
 
-  drop(range: SelectionRange) {
+  drop(range: SelectionRange, inclusive: boolean = false) {
     if (range.startLine == range.endLine) {
-      const text = this.data[range.startLine]
+      if (inclusive) {
+        this.mutate(range.startLine, 1, 0, () => {
+          this.data.splice(range.startLine, 1)
+        })
+      } else {
+        const text = this.data[range.startLine]
 
-      const leading = text.substring(0, range.startIndex)
-      const trailing = text.substring(range.endIndex)
+        const leading = text.substring(0, range.startIndex)
+        const trailing = text.substring(range.endIndex)
 
-      this.mutateLine(range.startLine, () => {
-        this.data[range.startLine] = leading + trailing
-      })
+        this.mutateLine(range.startLine, () => {
+          this.data[range.startLine] = leading + trailing
+        })
+      }
     } else {
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
@@ -259,10 +266,14 @@ export class Editor {
       this.mutate(
         range.startLine,
         range.endLine - range.startLine + 1,
-        1,
+        inclusive ? 0 : 1,
         () => {
-          this.data[range.startLine] = leading + trailing
-          this.data.splice(range.startLine + 1, range.endLine - range.startLine)
+          if (inclusive) {
+            this.data.splice(range.startLine, range.endLine - range.startLine + 1)
+          } else {
+            this.data[range.startLine] = leading + trailing
+            this.data.splice(range.startLine + 1, range.endLine - range.startLine)
+          }
         }
       )
     }
@@ -392,6 +403,14 @@ export class Editor {
     })
 
     return { line: index.line + 1, index: spacing.length }
+  }
+
+  dropLines(
+    index: SelectionIndex
+  ) {
+    this.mutate(index.line, 1, 0, () => {
+      this.data.splice(index.line, 1)
+    })
   }
 
   backspace(
