@@ -735,6 +735,10 @@ impl SyscallDelegate {
         let Some(generator) = syscall.generators.get_mut(&id) else {
             return Self::fail_generator(id)
         };
+        
+        if max <= 0 {
+            return Failure("Empty range for random int, please set $a0 to a value greater than 0.".to_string())
+        }
 
         let value: u32 = generator.gen_range(0..max);
 
