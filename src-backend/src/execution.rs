@@ -27,7 +27,7 @@ pub enum ResumeMode {
 
 fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>) -> String {
     let memory = |reason: MemoryErrorReason| {
-        let pc = state.registers.pc.wrapping_sub(4);
+        let pc = state.registers.pc;
 
         let description = state.memory.get_u32(pc).ok()
             .and_then(|value| InstructionDecoder::decode(pc, value))
