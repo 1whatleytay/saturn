@@ -442,9 +442,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.37"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40545c26d092346d8a8dab71ee48e7685a7a9cba76e634790c215b41a4a7b4cf"
+checksum = "1aeb932158bd710538c73702db6945cb68a8fb08c519e6e12706b94263b36db8"
 dependencies = [
  "shlex",
 ]
@@ -4402,7 +4402,7 @@ dependencies = [
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=main#909317b1f8f49d2f059dfc17ffcb7a397e578f62"
+source = "git+https://github.com/1whatleytay/titan.git?branch=main#39c8e6c19ec233810d2632658c0f6f623479dfd4"
 dependencies = [
  "bitflags 2.6.0",
  "byteorder",
