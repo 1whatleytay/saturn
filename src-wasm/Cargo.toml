@@ -23,6 +23,7 @@ async-trait = "0.1.82"
 send_wrapper = "0.6.0"
 js-sys = "0.3.70"
 gloo-timers = "0.3.0"
+num = "0.4.1"
 
 log = "0.4.22"
 wasm-logger = "0.2.0"

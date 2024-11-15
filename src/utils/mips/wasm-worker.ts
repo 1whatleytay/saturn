@@ -95,7 +95,7 @@ function detailedDisassemble({ bytes }: DetailedDisassembleData): InstructionLin
 }
 
 function configureDisplay({ config }: ConfigureDisplayData) {
-  runner.configure_display(config.address, config.width, config.height)
+  runner.configure_display(config.address, config.register ?? undefined, config.width, config.height)
 }
 
 function lastDisplay(): LastDisplay {
@@ -202,8 +202,8 @@ function rewind({ count }: RewindData): ExecutionResult | null {
   return runner.rewind(count)
 }
 
-function readDisplay({ width, height, address }: ReadDisplayData) {
-  return runner.read_display(address, width, height)
+function readDisplay({ width, height, address, register }: ReadDisplayData) {
+  return runner.read_display(address, register ?? undefined, width, height)
 }
 
 function platformShortcuts(): Shortcut[] {

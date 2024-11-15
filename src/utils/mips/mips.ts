@@ -54,6 +54,7 @@ export interface BitmapConfig {
   width: number
   height: number
   address: number
+  register: number | null
 }
 
 export enum ExecutionModeType {
@@ -306,5 +307,5 @@ export interface MipsExecution {
   setMemory(address: number, bytes: number[]): Promise<void>
 
   // Live display, should generally be more performant on tauri.
-  readDisplay(width: number, height: number, address: number): Promise<Uint8Array | null>
+  readDisplay(width: number, height: number, address: number, register: number | null): Promise<Uint8Array | null>
 }

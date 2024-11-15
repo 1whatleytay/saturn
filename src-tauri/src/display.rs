@@ -1,16 +1,20 @@
 use std::error::Error;
+use num::FromPrimitive;
 use tauri::{AppHandle, Manager, Wry};
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::http::method::Method;
+use titan::unit::register::RegisterName;
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
+use saturn_backend::execution::ReadDisplayTarget;
 use crate::state::DebuggerBody;
 
 #[tauri::command]
-pub fn configure_display(address: u32, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
+pub fn configure_display(address: u32, register: Option<u8>, width: u32, height: u32, state: tauri::State<FlushDisplayBody>) {
     let mut body = state.lock().unwrap();
 
     *body = FlushDisplayState {
         address,
+        register,
         width,
         height,
         data: None,
@@ -36,17 +40,27 @@ pub fn display_protocol(
         return builder.body(vec![]);
     }
 
-    let grab_params = || -> Option<(u32, u32, u32)> {
+    let grab_params = || -> Option<(u32, u32, ReadDisplayTarget)> {
         let headers = request.headers();
 
         let width = headers.get("width")?.to_str().ok()?;
         let height = headers.get("height")?.to_str().ok()?;
-        let address = headers.get("address")?.to_str().ok()?;
-
+        // address is still required as fallback
+        let register = headers.get("register")
+            .and_then(|x| x.to_str().ok());
+        
+        let target = if let Some(register) = register {
+            ReadDisplayTarget::Register(RegisterName::from_u8(register.parse().ok()?)?)
+        } else {
+            let address = headers.get("address")?.to_str().ok()?;
+            
+            ReadDisplayTarget::Address(address.parse().ok()?)
+        };
+        
         Some((
             width.parse().ok()?,
             height.parse().ok()?,
-            address.parse().ok()?,
+            target,
         ))
     };
 

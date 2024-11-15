@@ -162,6 +162,7 @@ export interface ReadDisplayData {
   width: number
   height: number
   address: number
+  register: number | null
 }
 
 export interface PlatformShortcutsData {

@@ -1,10 +1,14 @@
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
-use titan::cpu::Memory;
+use num::FromPrimitive;
+use titan::cpu::{Memory, State};
+use titan::unit::register::RegisterName;
+use crate::execution::ReadDisplayTarget;
 
 #[derive(Clone, Serialize)]
 pub struct FlushDisplayState {
     pub address: u32,
+    pub register: Option<u8>,
     pub width: u32,
     pub height: u32,
     pub data: Option<Vec<u8>>, // flush should impact this
@@ -14,6 +18,7 @@ impl Default for FlushDisplayState {
     fn default() -> FlushDisplayState {
         FlushDisplayState {
             address: 0x10008000,
+            register: None,
             width: 64,
             height: 64,
             data: None,
@@ -22,8 +27,19 @@ impl Default for FlushDisplayState {
 }
 
 impl FlushDisplayState {
-    pub fn flush<Mem: Memory>(&mut self, memory: &mut Mem) {
-        self.data = read_display(self.address, self.width, self.height, memory);
+    fn get_target(&self) -> ReadDisplayTarget {
+        if let Some(register) = self.register
+            .and_then(|register| RegisterName::from_u8(register)) {
+            ReadDisplayTarget::Register(register)
+        } else {
+            ReadDisplayTarget::Address(self.address)
+        }
+    }
+    
+    pub fn flush<Mem: Memory>(&mut self, state: &mut State<Mem>) {
+        let address = self.get_target().to_address(&state.registers);
+        
+        self.data = read_display(address, self.width, self.height, &mut state.memory);
     }
 }
 

@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use num::FromPrimitive;
 use titan::assembler::string::assemble_from;
 use titan::cpu::Memory;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
@@ -18,11 +19,12 @@ use titan::execution::executor::ExecutorMode;
 use titan::execution::trackers::empty::EmptyTracker;
 use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
+use titan::unit::register::RegisterName;
 use wasm_bindgen::prelude::*;
 use saturn_backend::build::{AssemblerResult, configure_keyboard, create_elf_state, get_binary_finished_pcs, get_elf_finished_pcs, TIME_TRAVEL_HISTORY_SIZE};
 use saturn_backend::device::{ExecutionState, setup_state, state_from_binary};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::execution::{BatchOptions, ResumeOptions, RewindableDevice};
+use saturn_backend::execution::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use crate::console::WasmConsole;
@@ -174,9 +176,10 @@ impl Runner {
         serde_wasm_bindgen::to_value(&*display).unwrap()
     }
 
-    pub fn configure_display(&self, address: u32, width: u32, height: u32) {
+    pub fn configure_display(&self, address: u32, register: Option<u8>, width: u32, height: u32) {
         *self.display.borrow_mut() = Arc::new(Mutex::new(FlushDisplayState {
             address,
+            register,
             width,
             height,
             data: None,
@@ -328,9 +331,15 @@ impl Runner {
         }
     }
 
-    pub fn read_display(&self, address: u32, width: u32, height: u32) -> Option<Vec<u8>> {
+    pub fn read_display(&self, address: u32, register: Option<u8>, width: u32, height: u32) -> Option<Vec<u8>> {
         if let Some(device) = &self.take_device() {
-            device.read_display(address, width, height)
+            let target = if let Some(register) = register {
+                ReadDisplayTarget::Register(RegisterName::from_u8(register)?)
+            } else {
+                ReadDisplayTarget::Address(address)
+            };
+            
+            device.read_display(target, width, height)
         } else {
             None
         }

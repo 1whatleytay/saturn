@@ -13,8 +13,7 @@ import { ExportRegionsOptions } from '../settings'
 import { tauri } from '@tauri-apps/api'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { listen } from '@tauri-apps/api/event'
-import { ConsoleType, pushConsole } from '../../state/console-data'
-import { MidiNote, playNote } from '../midi'
+import { MidiNote } from '../midi'
 
 export class TauriExecution implements MipsExecution {
   configured: boolean = false
@@ -161,13 +160,21 @@ export class TauriExecution implements MipsExecution {
     await tauri.invoke('write_bytes', { address, bytes })
   }
 
-  async readDisplay(width: number, height: number, address: number): Promise<Uint8Array> {
+  async readDisplay(
+    width: number,
+    height: number,
+    address: number,
+    register: number | null,
+  ): Promise<Uint8Array | null> {
+    const headers = {
+      width: width.toString(),
+      height: height.toString(),
+      address: address.toString(),
+      ...(register != null ? { register: register.toString() } : {})
+    }
+
     const result = await fetch(this.protocol, {
-      headers: {
-        width: width.toString(),
-        height: height.toString(),
-        address: address.toString(),
-      },
+      headers,
       mode: 'cors',
       cache: 'no-cache',
     })
@@ -289,6 +296,7 @@ export class TauriBackend implements MipsBackend {
       width: config.width,
       height: config.height,
       address: config.address,
+      register: config.register,
     })
   }
 

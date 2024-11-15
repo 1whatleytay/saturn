@@ -16,6 +16,7 @@ export interface BitmapSettings {
   unitWidth: number
   unitHeight: number
   address: number
+  register?: number | undefined // new property - dont reset settings for people
 }
 
 export interface EditorSettings {
@@ -77,6 +78,7 @@ function defaultSettings(): Settings {
       unitWidth: 1,
       unitHeight: 1,
       address: 0x10008000,
+      register: undefined
     },
     registers: {
       format: RegisterFormat.Hexadecimal,
@@ -122,6 +124,7 @@ export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
     width: Math.ceil(bitmap.displayWidth / bitmap.unitWidth),
     height: Math.ceil(bitmap.displayHeight / bitmap.unitHeight),
     address: bitmap.address,
+    register: bitmap.register ?? null,
   }
 }
 

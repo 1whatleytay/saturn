@@ -12,6 +12,7 @@ use titan::execution::executor::{DebugFrame, ExecutorMode};
 use titan::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::unit::instruction::InstructionDecoder;
+use titan::unit::register::RegisterName;
 use titan::unit::suggestions::MemoryErrorReason;
 use crate::device::ExecutionState;
 
@@ -171,6 +172,21 @@ pub struct ResumeOptions {
     pub change_state: Option<ExecutorMode>
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum ReadDisplayTarget {
+    Address(u32),
+    Register(RegisterName),
+}
+
+impl ReadDisplayTarget {
+    pub fn to_address(self, registers: &Registers) -> u32 {
+        match self {
+            ReadDisplayTarget::Address(address) => address,
+            ReadDisplayTarget::Register(register) => registers.get(register)
+        }
+    }
+}
+
 #[async_trait]
 pub trait ExecutionDevice: Send + Sync {
     async fn resume(
@@ -183,7 +199,7 @@ pub trait ExecutionDevice: Send + Sync {
     fn set_breakpoints(&self, breakpoints: HashSet<u32>);
 
     fn read_bytes(&self, address: u32, count: u32) -> Option<Vec<Option<u8>>>;
-    fn read_display(&self, address: u32, width: u32, height: u32) -> Option<Vec<u8>>;
+    fn read_display(&self, target: ReadDisplayTarget, width: u32, height: u32) -> Option<Vec<u8>>;
 
     fn write_bytes(&self, address: u32, bytes: Vec<u8>);
     fn write_register(&self, register: u32, value: u32);
@@ -253,8 +269,8 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         if let Some(display) = &options.display {
             let mut lock = display.lock().unwrap();
 
-            debugger_clone.with_memory(|memory| {
-                lock.flush(memory)
+            debugger_clone.with_state(|state| {
+                lock.flush(state)
             })
         }
 
@@ -285,9 +301,11 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice for Executi
         Some(value)
     }
 
-    fn read_display(&self, address: u32, width: u32, height: u32) -> Option<Vec<u8>> {
-        self.debugger.with_memory(|memory| {
-            read_display(address, width, height, memory)
+    fn read_display(&self, target: ReadDisplayTarget, width: u32, height: u32) -> Option<Vec<u8>> {
+        self.debugger.with_state(|state| {
+            let address = target.to_address(&state.registers);
+            
+            read_display(address, width, height, &mut state.memory)
         })
     }
 
