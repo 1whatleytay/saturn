@@ -282,23 +282,23 @@ export async function setupEvents() {
     }
   })
 
-  await listen('save:modify', (event) => {
-    const modification = event.payload as {
-      path: string,
-      data: any
-    }
-
-    if (typeof modification.data !== 'string') {
-      return
-    }
-
-    for (const tab of tabsState.tabs) {
-      if (tab.path === modification.path) {
-        editor.value.replaceAll(modification.data)
-        tab.marked = false
-      }
-    }
-  })
+  // await listen('save:modify', (event) => {
+  //   const modification = event.payload as {
+  //     path: string,
+  //     data: any
+  //   }
+  //
+  //   if (typeof modification.data !== 'string') {
+  //     return
+  //   }
+  //
+  //   for (const tab of tabsState.tabs) {
+  //     if (tab.path === modification.path) {
+  //       editor.value.replaceAll(modification.data)
+  //       tab.marked = false
+  //     }
+  //   }
+  // })
 
   await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {

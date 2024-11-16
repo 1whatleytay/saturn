@@ -126,16 +126,16 @@ impl AccessManager {
 
             match event.kind {
                 notify::EventKind::Create(_) => {
-                    app.emit_all("save:create", path).ok();
+                    // app.emit_all("save:create", path).ok();
                 }
                 notify::EventKind::Remove(_) => {
-                    app.emit_all("save:remove", path).ok();
+                    // app.emit_all("save:remove", path).ok();
                 }
                 notify::EventKind::Modify(ModifyKind::Name(_)) => {
                     if path.exists() {
-                        app.emit_all("save:create", path).ok();
+                        // app.emit_all("save:create", path).ok();
                     } else {
-                        app.emit_all("save:remove", path).ok();
+                        // app.emit_all("save:remove", path).ok();
                     }
                 }
                 notify::EventKind::Modify(ModifyKind::Data(_) | ModifyKind::Any) => {
@@ -145,9 +145,9 @@ impl AccessManager {
                     }
 
                     if let Ok(data) = fs::read_to_string(path) {
-                        app.emit_all("save:modify", AccessModify {
-                            path: path.to_string_lossy().to_string(), data: Text(data)
-                        }).ok();
+                        // app.emit_all("save:modify", AccessModify {
+                        //     path: path.to_string_lossy().to_string(), data: Text(data)
+                        // }).ok();
                     }
                 }
                 _ => {}
