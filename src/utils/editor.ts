@@ -201,11 +201,17 @@ export class Editor {
 
   // Returns the "reverse" step.
   apply(frame: Frame): Frame {
+    const from = this.data.length
+
     const deleted = this.data.splice(
       frame.index,
       frame.replaced,
       ...frame.deleted
     )
+
+    invoke('send_trace', { text: `UNDO line lengths ${from} to ${this.data.length}` })
+      .then(() => {})
+
     this.onDirty(frame.index, frame.replaced, frame.deleted)
 
     return {
@@ -224,6 +230,9 @@ export class Editor {
     }
 
     const frame = step.frame
+
+    invoke('send_trace', { text: `UNDO ${JSON.stringify(step)}` })
+      .then(() => {})
 
     const reverse = this.apply(frame)
 
