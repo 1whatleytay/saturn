@@ -13,6 +13,7 @@ import { closeWindow } from './window'
 import { splitLines } from './split-lines'
 import { accessReadText, accessSync } from './query/access-manager'
 import { backend } from '../state/backend'
+import { invoke } from '@tauri-apps/api'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -199,7 +200,7 @@ export function useTabs(): TabsResult {
     const values = localStorage.getItem(backupNameKey)
 
     if (values) {
-      const list = JSON.stringify(values)
+      const list = JSON.parse(values)
 
       for (const item of list) {
         localStorage.removeItem(item)
@@ -214,6 +215,9 @@ export function useTabs(): TabsResult {
     localStorage.setItem(backupNameKey, JSON.stringify(result))
 
     for (const [key, value] of map.entries()) {
+      invoke('send_trace', { text: `backing up ${key} ${value.length}` })
+        .then(() => { })
+      
       localStorage.setItem(backupKey(key), value)
     }
   }
@@ -251,7 +255,12 @@ export function useTabs(): TabsResult {
 
     updateBackups(map)
 
-    localStorage.setItem(restoreKey, JSON.stringify(state))
+    const restoreState = JSON.stringify(state)
+
+    invoke('send_trace', { text: `BACKUP restore state: ${restoreState}` })
+      .then(() => { })
+
+    localStorage.setItem(restoreKey, restoreState)
   }
 
   restore().then(() => {})

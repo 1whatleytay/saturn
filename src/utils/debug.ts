@@ -17,6 +17,7 @@ import { tab, settings } from '../state/state'
 import { format } from 'date-fns'
 import { PromptType, saveCurrentTab } from './events'
 import { computed, toRaw } from 'vue'
+import { invoke } from '@tauri-apps/api'
 
 export async function setBreakpoint(line: number, remove: boolean) {
   const currentTab = tab()
@@ -178,6 +179,8 @@ export async function resume() {
     return
   }
 
+  await invoke('send_trace', { text: 'resuming' })
+
   clearDebug()
 
   const current = tab()
@@ -195,12 +198,15 @@ export async function resume() {
     await saveCurrentTab(PromptType.NeverPrompt)
 
     consoleData.execution = await backend.createExecution(text, path, settings.execution.timeTravel, current.profile)
+
+    await invoke('send_trace', { text: 'created execution' })
   }
 
   consoleData.showConsole = true
   consoleData.mode = ExecutionModeType.Running
 
   const assemblerResult = await consoleData.execution.configure()
+  await invoke('send_trace', { text: `configured asm result ${JSON.stringify(assemblerResult)}` })
 
   if (assemblerResult) {
     postBuildMessage(assemblerResult)
@@ -216,6 +222,8 @@ export async function resume() {
     null,
     toRaw(usedBreakpoints)
   )
+
+  await invoke('send_trace', { text: `resume finished ${JSON.stringify(result)}` })
 
   if (result) {
     await postDebugInformationWithPcHint(result)

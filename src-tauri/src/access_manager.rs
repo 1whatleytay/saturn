@@ -124,30 +124,48 @@ impl AccessManager {
                 return
             };
 
+            tracing::info!("FS event for {}: {:?}", path.to_string_lossy(), event);
+
             match event.kind {
                 notify::EventKind::Create(_) => {
+                    tracing::info!("Emitting CREATE access_manager event for {}", path.to_string_lossy());
+
                     app.emit_all("save:create", path).ok();
                 }
                 notify::EventKind::Remove(_) => {
+                    tracing::info!("Emitting REMOVE access_manager event for {}", path.to_string_lossy());
+
                     app.emit_all("save:remove", path).ok();
                 }
                 notify::EventKind::Modify(ModifyKind::Name(_)) => {
                     if path.exists() {
+                        tracing::info!("Emitting MODIFY + CREATE access_manager event for {}", path.to_string_lossy());
+
                         app.emit_all("save:create", path).ok();
                     } else {
+                        tracing::info!("Emitting MODIFY + REMOVE access_manager event for {}", path.to_string_lossy());
+
                         app.emit_all("save:remove", path).ok();
                     }
                 }
                 notify::EventKind::Modify(ModifyKind::Data(_) | ModifyKind::Any) => {
+                    tracing::info!("Emitting MODIFY + DATA access_manager event for {}", path.to_string_lossy());
+                    
                     // If the path is in dismiss, we probably caused the save.
                     if details.dismiss.remove(path) {
+                        tracing::info!("Dismissed modify to {}", path.to_string_lossy());
+
                         return
                     }
 
                     if let Ok(data) = fs::read_to_string(path) {
+                        tracing::info!("Reading full data again from {} ({} bytes)", path.to_string_lossy(), data.len());
+                        
                         app.emit_all("save:modify", AccessModify {
                             path: path.to_string_lossy().to_string(), data: Text(data)
                         }).ok();
+                    } else {
+                        tracing::info!("Failed to read {}, skipping event", path.to_string_lossy());
                     }
                 }
                 _ => {}

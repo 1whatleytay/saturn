@@ -11,6 +11,7 @@ import { hasActionKey, hasAltKey } from './query/shortcut-key'
 import { selectionRange, CursorState } from './tabs'
 import { EditorSettings } from './settings'
 import { grabWhitespace } from './languages/language'
+import { invoke } from '@tauri-apps/api'
 
 export interface CursorPosition {
   offsetX: number
@@ -641,6 +642,9 @@ export function useCursor(
 
     const last = pressedBackspace
     pressedBackspace = false
+
+    invoke('send_trace', { text: `keydown ${event.key} s: ${event.shiftKey} m: ${hasActionKey(event)} a: ${event.altKey}` })
+      .then(() => { })
 
     switch (event.key) {
       case 'ArrowLeft':

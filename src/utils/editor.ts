@@ -5,6 +5,7 @@ import {
 } from './query/alt-consume'
 import { grabWhitespace } from './languages/language'
 import { splitLines } from './split-lines'
+import { invoke } from '@tauri-apps/api'
 
 export interface SelectionIndex {
   line: number
@@ -176,7 +177,9 @@ export class Editor {
 
     this.redoOperations = []
 
-    console.log('try again')
+    invoke('send_trace', { text: `mutate: @${line} -${count} +${insert} - ${this.lineCount()}` })
+      .then(() => { })
+
     this.onDirty(line, count, this.data.slice(line, line + insert))
   }
 
@@ -246,6 +249,7 @@ export class Editor {
   drop(range: SelectionRange, inclusive: boolean = false) {
     if (range.startLine == range.endLine) {
       if (inclusive) {
+        invoke('send_trace', { text: `editor DROPLINEi: ${JSON.stringify(range)}` }).then(() => {})
         this.mutate(range.startLine, 1, 0, () => {
           this.data.splice(range.startLine, 1)
         })
@@ -255,6 +259,8 @@ export class Editor {
         const leading = text.substring(0, range.startIndex)
         const trailing = text.substring(range.endIndex)
 
+        invoke('send_trace', { text: `editor DROPLINE: ${JSON.stringify(range)}` }).then(() => {})
+
         this.mutateLine(range.startLine, () => {
           this.data[range.startLine] = leading + trailing
         })
@@ -262,6 +268,8 @@ export class Editor {
     } else {
       const leading = this.data[range.startLine].substring(0, range.startIndex)
       const trailing = this.data[range.endLine].substring(range.endIndex)
+
+      invoke('send_trace', { text: `editor DROP: ${JSON.stringify(range)} ${inclusive}` }).then(() => {})
 
       this.mutate(
         range.startLine,
@@ -287,6 +295,8 @@ export class Editor {
   ) {
     const count = end - start + 1
 
+    invoke('send_trace', { text: `editor PREFIX: ${start} ${end} ${character} ${whitespace}` }).then(() => {})
+
     this.mutate(start, count, count, () => {
       for (let a = start; a <= end; a++) {
         if (whitespace) {
@@ -305,6 +315,8 @@ export class Editor {
   }
 
   crop(start: number, ranges: (LineRange | null)[]) {
+    invoke('send_trace', { text: `editor CROP: ${start} ${ranges} (${ranges.length})` }).then(() => {})
+
     this.mutate(start, ranges.length, ranges.length, () => {
       ranges.forEach((range, index) => {
         if (!range) {
@@ -324,6 +336,8 @@ export class Editor {
     const line = this.data[index.line]
     const leading = line.substring(0, index.index)
     const trailing = line.substring(index.index)
+
+    invoke('send_trace', { text: `editor PUT: ${JSON.stringify(index)} ${character}` }).then(() => {})
 
     // Mutate
     this.mutateLine(index.line, () => {
@@ -355,6 +369,8 @@ export class Editor {
     const last = rest[rest.length - 1].length
     rest[rest.length - 1] += trailing
 
+    invoke('send_trace', { text: `editor PASTE: ${JSON.stringify(index)} ${text}` }).then(() => {})
+
     // Mutate
     this.mutate(index.line, 1, textLines.length, () => {
       this.data[index.line] = leading + first
@@ -368,7 +384,11 @@ export class Editor {
     const regex = new RegExp(`^( {1,${spacing}}|\\t)`, 'g')
     const match = this.data[line].match(regex)
 
+    invoke('send_trace', { text: `editor DROPTAB: ${line} ${spacing}` }).then(() => {})
+
     if (match && match.length) {
+      invoke('send_trace', { text: `editor DROPTAB done` }).then(() => {})
+
       const text = match[0]
 
       this.mutateLine(line, () => {
@@ -396,6 +416,8 @@ export class Editor {
         ? trailing.substring(endMatch[0].length)
         : trailing
 
+    invoke('send_trace', { text: `editor NEWLINE: ${JSON.stringify(index)}` }).then(() => {})
+
     // Mutate
     this.mutate(index.line, 1, 2, () => {
       this.data[index.line] = leading
@@ -403,14 +425,6 @@ export class Editor {
     })
 
     return { line: index.line + 1, index: spacing.length }
-  }
-
-  dropLines(
-    index: SelectionIndex
-  ) {
-    this.mutate(index.line, 1, 0, () => {
-      this.data.splice(index.line, 1)
-    })
   }
 
   backspace(
@@ -428,6 +442,8 @@ export class Editor {
       const leading = line.substring(0, index.index - consumption)
       const trailing = line.substring(index.index)
 
+      invoke('send_trace', { text: `editor BACKSPACEi: ${JSON.stringify(index)} ${alt} ${space}` }).then(() => {})
+
       // Mutate
       this.mutateLine(index.line, () => {
         this.data[index.line] = leading + trailing
@@ -437,6 +453,8 @@ export class Editor {
     } else if (index.line > 0) {
       const leading = this.data[index.line - 1]
       const trailing = this.data[index.line]
+
+      invoke('send_trace', { text: `editor BACKSPACE: ${JSON.stringify(index)} ${alt} ${space}` }).then(() => {})
 
       this.mutate(index.line - 1, 2, 1, () => {
         this.data[index.line - 1] = leading + trailing
@@ -458,6 +476,8 @@ export class Editor {
       const leading = line.substring(0, index.index)
       const trailing = line.substring(index.index + consumption)
 
+      invoke('send_trace', { text: `editor DELFORWARDSi: ${JSON.stringify(index)} ${alt}` }).then(() => {})
+
       // Mutate
       this.mutateLine(index.line, () => {
         this.data[index.line] = leading + trailing
@@ -467,6 +487,8 @@ export class Editor {
     } else if (index.line + 1 < this.data.length) {
       const leading = this.data[index.line]
       const trailing = this.data[index.line + 1]
+
+      invoke('send_trace', { text: `editor DELFORWARDS: ${JSON.stringify(index)} ${alt}` }).then(() => {})
 
       this.mutate(index.line, 2, 1, () => {
         this.data[index.line] = leading + trailing
@@ -497,6 +519,8 @@ export class Editor {
 
   replaceAll(text: string) {
     const textLines = splitLines(text)
+
+    invoke('send_trace', { text: `editor REPLACEALL: ${text} (${text.length})` }).then(() => {})
 
     this.mutate(0, this.data.length, textLines.length, () => {
       this.data.splice(0, Infinity, ...textLines)

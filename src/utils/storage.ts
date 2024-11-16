@@ -6,6 +6,7 @@ import { MipsHighlighter } from './languages/mips/language'
 import { HighlightsInterface } from './highlights'
 import { SuggestionsStorage } from './languages/suggestions'
 import { backend } from '../state/backend'
+import { invoke } from '@tauri-apps/api'
 
 export interface StorageState {
   // editor: Editor
@@ -128,6 +129,9 @@ export function useStorage(
 
   function createEditor(): Editor {
     const current = tab()
+
+    invoke('send_trace', { text: `computing editor for tab ${current?.title} and line count ${current?.lines.length}` })
+      .then(() => { })
 
     return new Editor(
       current?.lines ?? ['Nothing yet.'],

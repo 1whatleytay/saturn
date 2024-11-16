@@ -32,6 +32,7 @@ import { watch } from 'vue'
 import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
 import { exportBinaryContents } from './query/serialize-files'
+import { invoke } from '@tauri-apps/api'
 
 export enum PromptType {
   NeverPrompt,
@@ -104,6 +105,9 @@ export async function saveCurrentTab(
   const current = tab()
 
   if (current) {
+    invoke('send_trace', { text: `saving current tab ${prompt}` })
+      .then(() => { })
+
     await saveTab(current, prompt)
   }
 }
@@ -283,6 +287,8 @@ export async function setupEvents() {
   })
 
   await listen('save:modify', (event) => {
+    invoke('send_trace', { text: `got save:modify event` }).then(() => {})
+
     const modification = event.payload as {
       path: string,
       data: any
@@ -294,6 +300,8 @@ export async function setupEvents() {
 
     for (const tab of tabsState.tabs) {
       if (tab.path === modification.path) {
+        invoke('send_trace', { text: `CALLING REPLACE ALL: ${modification} ${modification.path} ${modification.data.length}` }).then(() => {})
+
         editor.value.replaceAll(modification.data)
         tab.marked = false
       }

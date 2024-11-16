@@ -42,7 +42,26 @@ fn is_debug() -> bool {
     cfg!(debug_assertions)
 }
 
+#[tauri::command]
+fn send_trace(text: String) {
+    tracing::info!("(JS) {text}");
+}
+
 fn main() {
+    let mut desktop = tauri::api::path::home_dir().unwrap();
+    
+    desktop.push("Desktop/");
+    
+    let appender = tracing_appender::rolling::daily(desktop.clone(), "saturn-log");
+    let (writer, _guard) = tracing_appender::non_blocking(appender);
+    
+    tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_ansi(false)
+        .init();
+    
+    tracing::info!("Logging initialized. Hello world!");
+    
     let menu = create_menu();
 
     tauri::Builder::default()
@@ -58,6 +77,8 @@ fn main() {
         .on_window_event(|event| {
             match event.event() {
                 FileDrop(FileDropEvent::Dropped(paths)) => {
+                    tracing::info!("File drop.");
+                    
                     let app = event.window().app_handle();
                     let manager: tauri::State<AccessManager> = app.state();
 
@@ -110,6 +131,7 @@ fn main() {
             export_hex_regions,
             export_hex_contents,
             export_binary_contents,
+            send_trace,
         ])
         .register_uri_scheme_protocol("midi", midi_protocol)
         .register_uri_scheme_protocol("display", display_protocol)
