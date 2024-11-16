@@ -38,4 +38,4 @@ jobs:
           releaseBody: 'See attached builds.'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
+          args: --debug ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
