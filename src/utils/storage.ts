@@ -130,8 +130,10 @@ export function useStorage(
   function createEditor(): Editor {
     const current = tab()
 
-    invoke('send_trace', { text: `computing editor for tab ${current?.title} and line count ${current?.lines.length}` })
-      .then(() => { })
+    queueMicrotask(() => {
+      invoke('send_trace', { text: `computing editor for tab ${current?.title} and line count ${current?.lines.length}` })
+        .then(() => { })
+    })
 
     return new Editor(
       current?.lines ?? ['Nothing yet.'],
