@@ -136,6 +136,9 @@ export function useTabs(): TabsResult {
       return
     }
 
+    invoke('send_trace', { text: 'restoring' })
+      .then(() => { })
+
     const state = JSON.parse(item) as TabsRestoreState
 
     if (state.version != tabsVersion) {
@@ -217,7 +220,7 @@ export function useTabs(): TabsResult {
     for (const [key, value] of map.entries()) {
       invoke('send_trace', { text: `backing up ${key} ${value.length}` })
         .then(() => { })
-      
+
       localStorage.setItem(backupKey(key), value)
     }
   }
