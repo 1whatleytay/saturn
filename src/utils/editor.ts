@@ -176,7 +176,6 @@ export class Editor {
 
     this.redoOperations = []
 
-    console.log('try again')
     this.onDirty(line, count, this.data.slice(line, line + insert))
   }
 

@@ -29,7 +29,6 @@ import {
 } from '../state/state'
 import { appWindow } from '@tauri-apps/api/window'
 import { watch } from 'vue'
-import { MidiNote, playNote } from './midi'
 import { splitLines } from './split-lines'
 import { exportBinaryContents } from './query/serialize-files'
 
@@ -282,23 +281,30 @@ export async function setupEvents() {
     }
   })
 
-  // await listen('save:modify', (event) => {
-  //   const modification = event.payload as {
-  //     path: string,
-  //     data: any
-  //   }
-  //
-  //   if (typeof modification.data !== 'string') {
-  //     return
-  //   }
-  //
-  //   for (const tab of tabsState.tabs) {
-  //     if (tab.path === modification.path) {
-  //       editor.value.replaceAll(modification.data)
-  //       tab.marked = false
-  //     }
-  //   }
-  // })
+  await listen('save:modify', (event) => {
+    const modification = event.payload as {
+      path: string,
+      data: any
+    }
+
+    if (typeof modification.data !== 'string') {
+      return
+    }
+
+    const current = tab()
+
+    for (const tab of tabsState.tabs) {
+      if (tab.path === modification.path) {
+        if (current?.uuid === tab.uuid) {
+          editor.value.replaceAll(modification.data)
+        } else {
+          tab.lines = splitLines(modification.data)
+        }
+
+        tab.marked = false
+      }
+    }
+  })
 
   await appWindow.onFileDropEvent(async (event) => {
     if (event.payload.type === 'drop') {

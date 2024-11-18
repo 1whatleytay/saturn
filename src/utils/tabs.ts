@@ -199,7 +199,7 @@ export function useTabs(): TabsResult {
     const values = localStorage.getItem(backupNameKey)
 
     if (values) {
-      const list = JSON.stringify(values)
+      const list = JSON.parse(values)
 
       for (const item of list) {
         localStorage.removeItem(item)
