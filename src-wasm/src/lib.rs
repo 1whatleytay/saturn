@@ -195,9 +195,13 @@ impl Runner {
 
         let finished_pcs = get_elf_finished_pcs(&elf);
 
-        let console = Box::new(WasmConsole { events: self.events.clone() });
-        let midi = Box::new(WasmMidi { });
-        let time = Arc::new(WasmTime { });
+        let console = Box::new(WasmConsole {
+            events: self.events.clone(),
+        });
+        let midi = Box::new(WasmMidi {
+            events: self.events.clone(),
+        });
+        let time = Arc::new(WasmTime {});
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
@@ -249,9 +253,13 @@ impl Runner {
 
         let finished_pcs = get_binary_finished_pcs(&binary);
 
-        let console = Box::new(WasmConsole { events: self.events.clone() });
-        let midi = Box::new(WasmMidi { });
-        let time = Arc::new(WasmTime { });
+        let console = Box::new(WasmConsole {
+            events: self.events.clone(),
+        });
+        let midi = Box::new(WasmMidi {
+            events: self.events.clone(),
+        });
+        let time = Arc::new(WasmTime {});
         let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
