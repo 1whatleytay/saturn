@@ -18,7 +18,9 @@ export interface MidiNote {
 }
 
 function loadInstrument(instrument: string): void {
-  const soundfontUrl = convertFileSrc('', 'midi')
+  const soundfontUrl = window.__TAURI__
+    ? convertFileSrc('', 'midi')
+    : 'https://gleitz.github.io/midi-js-soundfonts/FatBoy/'
 
   loadedInstruments.set(
     instrument,
