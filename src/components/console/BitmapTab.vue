@@ -1,18 +1,18 @@
 <template>
   <div
-    class="text-sm overflow-auto flex whitespace-pre content-start p-2 w-full h-full"
+    class="flex h-full w-full content-start overflow-auto whitespace-pre p-2 text-sm"
   >
     <div
-      class="p-4 flex flex-col content-center mr-auto"
+      class="mr-auto flex flex-col content-center p-4"
       :class="{ 'sm:block': !state.small }"
     >
-      <div class="text-base font-bold mb-4 flex items-center">
+      <div class="mb-4 flex items-center text-base font-bold">
         Bitmap Display
       </div>
 
-      <div class="dark:text-neutral-300 text-neutral-700 ml-2">
+      <div class="ml-2 text-neutral-700 dark:text-neutral-300">
         <div class="py-1">
-          <label class="inline-block font-bold pr-4 w-32">Display Width</label>
+          <label class="inline-block w-32 pr-4 font-bold">Display Width</label>
 
           <NumberField
             v-model="settings.bitmap.displayWidth"
@@ -22,7 +22,7 @@
           />
 
           <span
-            class="dark:text-neutral-400 text-neutral-600 mx-3 text-xs font-bold"
+            class="mx-3 text-xs font-bold text-neutral-600 dark:text-neutral-400"
           >
             Units
           </span>
@@ -36,7 +36,7 @@
         </div>
 
         <div class="py-1">
-          <label class="inline-block font-bold pr-4 w-32">Display Height</label>
+          <label class="inline-block w-32 pr-4 font-bold">Display Height</label>
 
           <NumberField
             v-model="settings.bitmap.displayHeight"
@@ -46,7 +46,7 @@
           />
 
           <span
-            class="dark:text-neutral-400 text-neutral-600 mx-3 text-xs font-bold"
+            class="mx-3 text-xs font-bold text-neutral-600 dark:text-neutral-400"
           >
             Units
           </span>
@@ -60,7 +60,7 @@
         </div>
 
         <div class="py-1">
-          <label class="inline-block font-bold pr-4 w-32">Address</label>
+          <label class="inline-block w-32 pr-4 font-bold">Address</label>
           <NumberField
             v-model="settings.bitmap.address"
             :hex="true"
@@ -70,9 +70,9 @@
           />
 
           <button
-            class="rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 dark:active:bg-slate-700 active:bg-slate-400"
+            class="ml-4 rounded border border-neutral-700 px-2 py-1 text-xs font-bold active:bg-slate-400 dark:active:bg-slate-700"
             :class="{
-              'dark:bg-slate-800 bg-slate-300':
+              'bg-slate-300 dark:bg-slate-800':
                 settings.bitmap.register !== undefined,
               'dark:hover:bg-neutral-800':
                 settings.bitmap.register === undefined,
@@ -86,24 +86,24 @@
 
       <div
         v-if="state.keyboardLive"
-        class="text-gray-500 mt-4 flex items-center"
+        class="mt-4 flex items-center text-gray-500"
       >
-        <ArrowRightIcon class="w-4 h-4 mr-2" />
+        <ArrowRightIcon class="mr-2 h-4 w-4" />
 
         Press keys now to create keyboard events.
       </div>
 
-      <div v-else class="text-neutral-500 mt-4 flex items-center">
-        <ArrowRightIcon class="w-4 h-4 mr-2" />
+      <div v-else class="mt-4 flex items-center text-neutral-500">
+        <ArrowRightIcon class="mr-2 h-4 w-4" />
 
         To connect the keyboard, click on the display.
       </div>
 
       <div
         v-if="!state.useProtocol"
-        class="text-neutral-500 pt-4 flex items-center mt-auto"
+        class="mt-auto flex items-center pt-4 text-neutral-500"
       >
-        <ExclamationCircleIcon class="w-6 h-6 mr-2" />
+        <ExclamationCircleIcon class="mr-2 h-6 w-6" />
 
         <div>
           <div>Using fallback protocol. Performance may be affected.</div>
@@ -129,13 +129,13 @@
       @focusout="state.keyboardLive = false"
       @keydown="(e) => handleKey(e, false)"
       @keyup="(e) => handleKey(e, true)"
-      class="outline-none overflow-visible focus:ring-4 border border-neutral-700 rounded h-full shrink-0 max-w-3/4 self-end"
+      class="h-full max-w-3/4 shrink-0 self-end overflow-visible rounded border border-neutral-700 outline-none focus:ring-4"
       :style="{ width: `${correctedWidth}px` }"
       :class="{ 'mx-auto sm:mx-0': !state.small, 'mx-auto': state.small }"
     >
       <canvas
         ref="canvas"
-        class="w-full h-full bitmap-display rounded"
+        class="bitmap-display h-full w-full rounded"
         :width="config.width"
         :height="config.height"
       />

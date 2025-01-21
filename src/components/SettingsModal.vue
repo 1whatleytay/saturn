@@ -1,25 +1,25 @@
 <template>
   <Modal :show="props.show" @close="emit('close')">
     <div
-      class="max-w-2xl dark:bg-neutral-900 bg-neutral-200 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
+      class="pointer-events-auto mx-auto flex max-h-[84vh] max-w-2xl flex-col overflow-y-scroll rounded-xl bg-neutral-200 px-8 py-6 shadow dark:bg-neutral-900"
     >
       <div
-        class="text-2xl font-semibold flex items-center dark:bg-neutral-900 bg-neutral-200 w-full my-2 shrink-0"
+        class="my-2 flex w-full shrink-0 items-center bg-neutral-200 text-2xl font-semibold dark:bg-neutral-900"
       >
-        <CogIcon class="w-7 h-7 mr-3 shrink-0" /> Settings
+        <CogIcon class="mr-3 h-7 w-7 shrink-0" /> Settings
 
         <button
-          class="w-8 h-8 ml-auto rounded dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
+          class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           @click="emit('close')"
         >
-          <XMarkIcon class="w-4 h-4" />
+          <XMarkIcon class="h-4 w-4" />
         </button>
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Tab Size</div>
+        <div class="text-sm font-bold uppercase">Tab Size</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           Number of spaces that make up one tab (when the tab key is hit).
         </div>
 
@@ -51,9 +51,9 @@
       <!--      </div>-->
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Time Travel</div>
+        <div class="text-sm font-bold uppercase">Time Travel</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           When enabled, allows fpr stepping backwards when running your program.
           Enabling may affect performance.
         </div>
@@ -66,9 +66,9 @@
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Enter Autocomplete</div>
+        <div class="text-sm font-bold uppercase">Enter Autocomplete</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           When enabled, autocomplete suggestions will be taken if the user
           presses the enter key.
         </div>
@@ -81,9 +81,9 @@
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Dark Mode</div>
+        <div class="text-sm font-bold uppercase">Dark Mode</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           When disabled, use light mode.
         </div>
 
@@ -95,9 +95,9 @@
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Show minimap</div>
+        <div class="text-sm font-bold uppercase">Show minimap</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           When enabled, a minimap will be shown on the right side of the editor.
         </div>
 
@@ -109,9 +109,9 @@
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">VIM Mode</div>
+        <div class="text-sm font-bold uppercase">VIM Mode</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           When enabled, use VIM keybindings.
         </div>
 

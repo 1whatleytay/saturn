@@ -1,10 +1,10 @@
 <template>
   <div
-    class="text-xs font-light font-mono flex flex-col overflow-hidden grow content-start px-2"
+    class="flex grow flex-col content-start overflow-hidden px-2 font-mono text-xs font-light"
   >
     <div
       ref="scroll"
-      class="mt-2 overflow-auto w-full h-full whitespace-pre relative"
+      class="relative mt-2 h-full w-full overflow-auto whitespace-pre"
       @scroll="updateBounds"
       @mousedown.prevent="handleDown"
     >
@@ -28,7 +28,7 @@
         spellcheck="false"
         :value="''"
         tabindex="0"
-        class="opacity-0 pointer-events-none fixed top-0 left-0 peer"
+        class="peer pointer-events-none fixed left-0 top-0 opacity-0"
         @keydown="handleKeyIntercept"
         @copy.prevent="handleCopy"
         @cut.prevent="handleCut"

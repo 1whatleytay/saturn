@@ -1,22 +1,22 @@
 <template>
   <Modal :show="!!props.dialog.state.tab">
     <div
-      class="max-w-lg dark:bg-neutral-900 bg-neutral-200 rounded-xl px-8 py-6 mx-auto flex flex-col shadow"
+      class="mx-auto flex max-w-lg flex-col rounded-xl bg-neutral-200 px-8 py-6 shadow dark:bg-neutral-900"
     >
       <div>Would you like to save changes made to this file?</div>
 
       <div
-        class="dark:text-neutral-400 text-neutral-600 text-xs font-medium mt-1"
+        class="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400"
       >
         You will lose your changes if you chose to not save them.
       </div>
 
-      <div class="mt-4 text-sm flex flex-wrap">
+      <div class="mt-4 flex flex-wrap text-sm">
         <button
           @click="props.dialog.selectSave()"
           ref="saveButton"
           id="save-modal-save"
-          class="mr-4 mt-4 w-24 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-300 hover:bg-slate-400 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-4 mt-4 w-24 rounded bg-slate-300 px-4 py-2 transition-colors duration-150 hover:bg-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700"
         >
           Save
         </button>
@@ -25,7 +25,7 @@
           @click="props.dialog.selectDiscard()"
           ref="discardButton"
           id="save-modal-discard"
-          class="mr-8 mt-4 w-28 dark:bg-neutral-800 dark:hover:bg-neutral-700 bg-neutral-300 hover:bg-neutral-400 transition-colors duration-150 px-4 py-2 rounded"
+          class="mr-8 mt-4 w-28 rounded bg-neutral-300 px-4 py-2 transition-colors duration-150 hover:bg-neutral-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
         >
           Don't Save
         </button>
@@ -34,7 +34,7 @@
           @click="props.dialog.selectDismiss()"
           ref="dismissButton"
           id="save-modal-dismiss"
-          class="mt-4 w-24 dark:bg-neutral-800 dark:hover:bg-neutral-700 bg-neutral-300 hover:bg-neutral-400 transition-colors duration-150 px-4 py-2 rounded"
+          class="mt-4 w-24 rounded bg-neutral-300 px-4 py-2 transition-colors duration-150 hover:bg-neutral-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
         >
           Cancel
         </button>

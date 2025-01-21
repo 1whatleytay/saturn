@@ -1,36 +1,36 @@
 <template>
-  <div class="text-sm flex flex-col grow overflow-hidden content-start">
+  <div class="flex grow flex-col content-start overflow-hidden text-sm">
     <div
-      class="flex items-center py-2 border-b border-neutral-700 dark:bg-neutral-900 bg-neutral-200 w-full"
+      class="flex w-full items-center border-b border-neutral-700 bg-neutral-200 py-2 dark:bg-neutral-900"
     >
-      <label for="address" class="text-xs font-bold px-4 py-2">Address</label>
+      <label for="address" class="px-4 py-2 text-xs font-bold">Address</label>
       <input
         id="address"
         type="text"
-        class="text-xs font-mono dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 w-40 rounded"
+        class="w-40 rounded bg-neutral-300 px-2 py-1 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300"
         v-model="settings.memory.address"
       />
 
-      <div class="flex px-2 space-x-1">
+      <div class="flex space-x-1 px-2">
         <button
-          class="p-1 rounded hover:bg-neutral-700"
+          class="rounded p-1 hover:bg-neutral-700"
           @click="moveAddress(-1)"
         >
-          <ArrowUpIcon class="w-4 h-4" />
+          <ArrowUpIcon class="h-4 w-4" />
         </button>
 
         <button
-          class="p-1 rounded hover:bg-neutral-700"
+          class="rounded p-1 hover:bg-neutral-700"
           @click="moveAddress(+1)"
         >
-          <ArrowDownIcon class="w-4 h-4" />
+          <ArrowDownIcon class="h-4 w-4" />
         </button>
       </div>
 
-      <label for="data-type" class="text-xs font-bold px-4 py-2">Type</label>
+      <label for="data-type" class="px-4 py-2 text-xs font-bold">Type</label>
       <select
         id="data-type"
-        class="appearance-none text-xs dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 w-40 rounded"
+        class="w-40 appearance-none rounded bg-neutral-300 px-2 py-1 text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300"
         :value="settings.memory.mode"
         @input="setMode"
       >
@@ -40,14 +40,14 @@
       </select>
     </div>
 
-    <div class="text-right pt-4 overflow-auto grow shrink flex flex-col">
-      <div class="flex font-bold dark:text-neutral-500 text-neutral-800">
-        <div class="w-32 px-2 py-1 shrink-0">Address</div>
+    <div class="flex shrink grow flex-col overflow-auto pt-4 text-right">
+      <div class="flex font-bold text-neutral-800 dark:text-neutral-500">
+        <div class="w-32 shrink-0 px-2 py-1">Address</div>
 
         <div
           v-for="(item, index) in table.header"
           :key="index"
-          class="w-28 flex items-center px-2 py-1 shrink-0"
+          class="flex w-28 shrink-0 items-center px-2 py-1"
         >
           {{ item }}
         </div>
@@ -60,7 +60,7 @@
           class="flex font-mono"
         >
           <div
-            class="w-32 px-2 py-1 dark:text-neutral-500 text-neutral-800 shrink-0"
+            class="w-32 shrink-0 px-2 py-1 text-neutral-800 dark:text-neutral-500"
           >
             {{ row.header }}
           </div>
@@ -82,13 +82,13 @@
       <div v-else>
         <div class="flex font-mono">
           <div
-            class="w-32 px-2 py-1 dark:text-neutral-500 text-neutral-800 shrink-0"
+            class="w-32 shrink-0 px-2 py-1 text-neutral-800 dark:text-neutral-500"
           >
             {{ settings.memory.address }}
           </div>
 
           <div
-            class="font-sans text-neutral-400 flex items-center px-2 py-1 shrink-0 select-all"
+            class="flex shrink-0 select-all items-center px-2 py-1 font-sans text-neutral-400"
           >
             To view memory, set breakpoints or pause during execution.
           </div>

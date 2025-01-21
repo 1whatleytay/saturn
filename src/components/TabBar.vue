@@ -8,27 +8,27 @@
     />
 
     <div
-      class="h-10 flex items-start dark:bg-neutral-900 bg-neutral-200 w-full fixed z-20 top-0 shadow-md dark:shadow-none text-xs"
+      class="fixed top-0 z-20 flex h-10 w-full items-start bg-neutral-200 text-xs shadow-md dark:bg-neutral-900 dark:shadow-none"
     >
       <DropdownMenuRoot v-if="shouldShowMenu">
         <DropdownMenuTrigger>
           <button
-            class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center font-black"
+            class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            <Bars3Icon class="w-4 h-4" />
+            <Bars3Icon class="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
 
         <DropdownMenuPortal>
           <DropdownMenuContent
-            class="bg-neutral-200 dark:bg-neutral-900 dark:text-slate-300 text-slate-800 rounded-lg border dark:border-neutral-700 gap-2 shadow-md ml-2 p-2 text-sm w-60"
+            class="ml-2 w-60 gap-2 rounded-lg border bg-neutral-200 p-2 text-sm text-slate-800 shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-slate-300"
           >
             <DropdownMenuItem
               @click="showSettings = true"
               value="Settings"
-              class="dark:hover:bg-neutral-700 hover:bg-neutral-300 rounded flex items-center"
+              class="flex items-center rounded hover:bg-neutral-300 dark:hover:bg-neutral-700"
             >
-              <CogIcon class="w-4 h-4 m-2" />
+              <CogIcon class="m-2 h-4 w-4" />
               Settings
               <div class="ml-auto mr-1 pl-[20px] font-mono">⌘+,</div>
             </DropdownMenuItem>
@@ -36,9 +36,9 @@
             <DropdownMenuItem
               @click="showExportRegionsDialog = true"
               value="Export"
-              class="dark:hover:bg-neutral-700 hover:bg-neutral-300 rounded flex items-center"
+              class="flex items-center rounded hover:bg-neutral-300 dark:hover:bg-neutral-700"
             >
-              <ArrowUpLeftIcon class="w-4 h-4 m-2" />
+              <ArrowUpLeftIcon class="m-2 h-4 w-4" />
               Export
               <div class="ml-auto mr-1 pl-[20px] font-mono">⌘+E</div>
             </DropdownMenuItem>
@@ -46,7 +46,7 @@
         </DropdownMenuPortal>
       </DropdownMenuRoot>
 
-      <div class="flex flex-grow overflow-x-auto no-scrollbar items-start">
+      <div class="no-scrollbar flex flex-grow items-start overflow-x-auto">
         <Tab
           v-for="tab in tabsState.tabs"
           :ref="(component) => refTab(tab.uuid, component)"
@@ -62,17 +62,17 @@
         />
 
         <button
-          class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center font-black"
+          class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           @click="create"
         >
-          <PlusIcon class="w-4 h-4" />
+          <PlusIcon class="h-4 w-4" />
         </button>
       </div>
 
       <TabBarItems class="ml-auto shrink-0" />
     </div>
 
-    <div class="w-full h-10 border-b-2 opacity-0" />
+    <div class="h-10 w-full border-b-2 opacity-0" />
   </div>
 </template>
 

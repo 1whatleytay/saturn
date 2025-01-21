@@ -1,8 +1,8 @@
 <template>
-  <span class="inline-block relative group">
+  <span class="group relative inline-block">
     <input
       type="text"
-      class="font-mono dark:bg-neutral-800 bg-neutral-300 dark:text-neutral-300 text-neutral-800 px-2 py-1 rounded"
+      class="rounded bg-neutral-300 px-2 py-1 font-mono text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300"
       spellcheck="false"
       :class="[
         state.error !== null ? 'ring-2 ring-red-500' : '',
@@ -16,7 +16,7 @@
 
     <span
       v-if="state.error"
-      class="absolute top-6 py-2 px-4 dark:bg-neutral-900 bg-neutral-200 rounded shadow-xl z-30 w-80 text-red-400 font-medium font-sans hidden group-hover:block"
+      class="absolute top-6 z-30 hidden w-80 rounded bg-neutral-200 px-4 py-2 font-sans font-medium text-red-400 shadow-xl group-hover:block dark:bg-neutral-900"
     >
       {{ state.error }}
     </span>
