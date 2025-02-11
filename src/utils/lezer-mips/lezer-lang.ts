@@ -1,9 +1,5 @@
 import { parser } from './syntax.grammar'
-import {
-  LRLanguage,
-  LanguageSupport,
-  foldNodeProp,
-} from '@codemirror/language'
+import { LRLanguage, LanguageSupport, foldNodeProp } from '@codemirror/language'
 import { styleTags, tags as t } from '@lezer/highlight'
 import { myCompletions } from './autocomplete'
 

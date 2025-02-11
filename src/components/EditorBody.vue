@@ -66,7 +66,6 @@ onMounted(() => {
     () => settings.editor.fontSize,
     () => view.requestMeasure(),
   )
-
   ;(window as any).host = () => {
     view.dispatch({ effects: [hostYTab(tab()!)] })
   }
