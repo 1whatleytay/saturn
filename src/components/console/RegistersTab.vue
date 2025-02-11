@@ -1,22 +1,22 @@
 <template>
   <div
-    class="font-mono text-sm overflow-x-auto flex flex-wrap grow content-start"
+    class="flex grow flex-wrap content-start overflow-x-auto font-mono text-sm"
   >
     <div
       v-for="section of mappedSections"
       :key="section.name"
-      class="px-6 w-full mb-2"
+      class="mb-2 w-full px-6"
     >
       <div
         :class="section.classes"
-        class="flex items-center font-sans mt-2 mb-1 pb-1 text-lg border-b border-gray-700 font-light w-full"
+        class="mb-1 mt-2 flex w-full items-center border-b border-gray-700 pb-1 font-sans text-lg font-light"
       >
-        <Square3Stack3DIcon class="w-4 h-4 mr-2" />
+        <Square3Stack3DIcon class="mr-2 h-4 w-4" />
 
         {{ section.name }}
       </div>
 
-      <div class="flex items-center flex-wrap w-full -ml-2">
+      <div class="-ml-2 flex w-full flex-wrap items-center">
         <RegisterItem
           v-for="register in section.values"
           :key="register.name"
@@ -30,10 +30,10 @@
       </div>
     </div>
 
-    <div class="w-full h-12" />
+    <div class="h-12 w-full" />
 
     <div
-      class="absolute border border-neutral-800 bottom-0 right-0 dark:bg-neutral-900 bg-neutral-200 rounded text-neutral-800 text-xs mr-6 mb-6 overflow-hidden"
+      class="absolute bottom-0 right-0 mb-6 mr-6 overflow-hidden rounded border border-neutral-800 bg-neutral-200 text-xs text-neutral-800 dark:bg-neutral-900"
     >
       <button
         class="px-3 py-1 transition-colors"

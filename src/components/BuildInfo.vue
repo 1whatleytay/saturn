@@ -1,34 +1,34 @@
 <template>
   <div
-    class="flex-auto flex-grow overflow-auto flex px-6 border-l border-neutral-500"
+    class="flex flex-auto flex-grow overflow-auto border-l border-neutral-500 px-6"
     :style="{ width: '900px' }"
   >
-    <div v-if="buildLines" class="font-mono text-sm w-full">
-      <div class="h-6 flex items-center pr-16 text-gray-500 w-full">
+    <div v-if="buildLines" class="w-full font-mono text-sm">
+      <div class="flex h-6 w-full items-center pr-16 text-gray-500">
         <div class="w-32">Address</div>
 
         <div>Instruction</div>
 
-        <div class="w-32 ml-auto">Encoding</div>
+        <div class="ml-auto w-32">Encoding</div>
       </div>
 
       <div
         v-for="(line, i) in buildLines"
         :key="i"
-        class="h-6 flex items-center pr-16 w-full"
+        class="flex h-6 w-full items-center pr-16"
       >
-        <div v-if="line.type === 'Comment'" class="text-neutral-400 pl-32">
+        <div v-if="line.type === 'Comment'" class="pl-32 text-neutral-400">
           {{ line.message }}
         </div>
 
-        <div v-if="line.type === 'Label'" class="text-amber-400 pl-32">
+        <div v-if="line.type === 'Label'" class="pl-32 text-amber-400">
           {{ line.name }}:
         </div>
 
         <div v-if="line.type === 'Instruction'" class="flex w-full">
           <div class="w-32">0x{{ line.details.pc.toString(16) }}</div>
 
-          <span class="text-sky-400 ml-4">
+          <span class="ml-4 text-sky-400">
             {{ line.details.name }}
           </span>
 
@@ -56,7 +56,7 @@
             </span>
           </span>
 
-          <div class="w-32 ml-auto">
+          <div class="ml-auto w-32">
             0x{{ line.details.instruction.toString(16) }}
           </div>
         </div>

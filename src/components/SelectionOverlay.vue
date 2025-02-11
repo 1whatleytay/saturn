@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute top-0 pointer-events-none">
+  <div class="pointer-events-none absolute top-0">
     <div class="absolute" :style="{ top: `${props.range.top}px` }">
       <div
         v-for="(text, index) in props.range.ranges"
@@ -11,7 +11,7 @@
           {{ text.leading }}
         </span>
 
-        <span class="rounded opacity-30 px-0.5 -mx-0.5 bg-blue-500">
+        <span class="-mx-0.5 rounded bg-blue-500 px-0.5 opacity-30">
           <span class="opacity-0">
             {{ text.body }}
           </span>

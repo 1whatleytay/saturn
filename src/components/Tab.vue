@@ -1,6 +1,6 @@
 <template>
   <button
-    class="dark:hover:bg-neutral-700 hover:bg-neutral-300 dark:text-slate-300 text-slate-800 flex items-center transition-[border-color] duration-200 space-x-4 h-10 px-6 text-xs font-medium border-b-2"
+    class="flex h-10 items-center space-x-4 border-b-2 px-6 text-xs font-medium text-slate-800 transition-[border-color] duration-200 hover:bg-neutral-300 dark:text-slate-300 dark:hover:bg-neutral-700"
     :class="{
       'border-orange-400 dark:bg-neutral-800': props.selected,
       'border-transparent': !props.selected,
@@ -16,14 +16,14 @@
     <button
       v-if="props.deletable"
       @click.stop="emit('delete')"
-      class="ml-3 translate-x-1 w-4 h-4 hover:bg-orange-400 text-lg p-0.5 hover:text-black rounded-full text-center group"
+      class="group ml-3 h-4 w-4 translate-x-1 rounded-full p-0.5 text-center text-lg hover:bg-orange-400 hover:text-black"
     >
       <span
-        class="w-2 h-2 block rounded-full dark:bg-gray-300 bg-gray-700 mx-auto"
+        class="mx-auto block h-2 w-2 rounded-full bg-gray-700 dark:bg-gray-300"
         :class="{ 'block group-hover:hidden': marked, hidden: !marked }"
       />
       <XMarkIcon
-        class="w-3 h-3"
+        class="h-3 w-3"
         :class="{ 'hidden group-hover:block': marked }"
       />
     </button>
