@@ -22,7 +22,7 @@ import {
   createDefaultVim,
 } from './lezer-mips/modes'
 import { suggestionsContext } from './lezer-mips/suggestions'
-import { keymap } from '@codemirror/view'
+import { highlightActiveLine, keymap } from '@codemirror/view'
 import { indentWithTab } from '@codemirror/commands'
 import { createCollab, joinYTab } from './lezer-mips/collab'
 import { saveTab } from './events/events'
@@ -114,7 +114,7 @@ export function createState(
       Mips(),
       createCollab(collab),
       breakpointGutter,
-      basicSetup,
+      (basicSetup as Extension[]).filter(x => x !== highlightActiveLine()),
       writable ? [] : EditorState.readOnly.of(true),
     ],
   })
