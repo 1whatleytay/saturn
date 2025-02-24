@@ -8,7 +8,7 @@
 
     <div
       ref="grabber"
-      class="fixed bottom-0 z-30 flex max-h-screen w-full flex-col border-t border-neutral-700 bg-neutral-200 dark:bg-neutral-900"
+      class="fixed bottom-0 z-30 flex max-h-screen w-full flex-col border-t border-neutral-700 bg-white dark:bg-neutral-900"
       :style="{
         height: `${properties.height}px`,
         opacity: properties.height > closingHeight ? '1' : '0',

@@ -3,7 +3,7 @@ import { AccessFile } from '.'
 import Worker from './file-worker?worker'
 
 const worker = new Worker()
-const storage = navigator.storage.getDirectory()
+const storage = navigator.storage?.getDirectory()
 
 let showFileSaveResolve: ((t: string) => void) | null = null
 export const confirm = (t: string) => {
@@ -11,6 +11,10 @@ export const confirm = (t: string) => {
 }
 
 export const getOpenableFiles = async () => {
+  if (!storage) {
+    return []
+  }
+
   const files = (await storage).keys()
   const out = []
   for await (const key of files) {

@@ -33,7 +33,7 @@
     <div class="h-12 w-full" />
 
     <div
-      class="absolute bottom-0 right-0 mb-6 mr-6 overflow-hidden rounded border border-neutral-800 bg-neutral-200 text-xs text-neutral-800 dark:bg-neutral-900"
+      class="absolute bottom-0 right-0 mb-6 mr-6 overflow-hidden rounded border border-neutral-800 bg-white text-xs text-neutral-800 dark:bg-neutral-900"
     >
       <button
         class="px-3 py-1 transition-colors"

@@ -1,7 +1,7 @@
 <template>
   <div class="flex grow flex-col content-start overflow-hidden text-sm">
     <div
-      class="flex w-full items-center border-b border-neutral-700 bg-neutral-200 py-2 dark:bg-neutral-900"
+      class="flex w-full items-center border-b border-neutral-700 bg-white py-2 dark:bg-neutral-900"
     >
       <label for="address" class="px-4 py-2 text-xs font-bold">Address</label>
       <input
