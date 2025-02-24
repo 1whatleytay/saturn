@@ -1,24 +1,24 @@
 <template>
-  <div class="text-sm overflow-x-auto flex flex-wrap grow content-start p-4">
-    <div class="text-base font-bold mb-4 flex items-center w-full">
+  <div class="flex grow flex-wrap content-start overflow-x-auto p-4 text-sm">
+    <div class="mb-4 flex w-full items-center text-base font-bold">
       Tests
 
       <button
-        class="ml-auto text-neutral-300 px-4 py-2 rounded-lg flex items-center transition-colors bg-neutral-800 hover:bg-slate-800"
+        class="ml-auto flex items-center rounded-lg bg-neutral-800 px-4 py-2 text-neutral-300 transition-colors hover:bg-slate-800"
         @click="runTests()"
       >
-        <PlayIcon class="text-green-300 font-bold w-4 h-4 mr-2" />
+        <PlayIcon class="mr-2 h-4 w-4 font-bold text-green-300" />
 
-        <span class="text-sm uppercase font-bold"> Run Tests </span>
+        <span class="text-sm font-bold uppercase"> Run Tests </span>
       </button>
     </div>
 
     <div class="w-full">
       <div
         v-if="!state.items.length"
-        class="dark:bg-neutral-800 bg-neutral-300 w-full rounded-lg p-4 flex items-center mb-2"
+        class="mb-2 flex w-full items-center rounded-lg bg-neutral-300 p-4 dark:bg-neutral-800"
       >
-        <ExclamationCircleIcon class="w-6 h-6 mr-4" />
+        <ExclamationCircleIcon class="mr-4 h-6 w-6" />
 
         No tests configured.
       </div>
@@ -26,21 +26,21 @@
       <div
         v-for="item in state.items"
         :key="item.name"
-        class="dark:bg-neutral-800 bg-neutral-300 w-full rounded-lg px-4 py-3 flex items-center mb-2.5"
+        class="mb-2.5 flex w-full items-center rounded-lg bg-neutral-300 px-4 py-3 dark:bg-neutral-800"
       >
         <div v-if="item.result === 'Unset'">
-          <EllipsisHorizontalCircleIcon class="w-5 h-5 text-blue-400" />
+          <EllipsisHorizontalCircleIcon class="h-5 w-5 text-blue-400" />
         </div>
 
         <div v-if="item.result === 'Passed'">
-          <CheckCircleIcon class="w-5 h-5 text-green-400 animate-bump" />
+          <CheckCircleIcon class="h-5 w-5 animate-bump text-green-400" />
         </div>
 
         <div v-if="item.result === 'Failed'">
-          <XCircleIcon class="w-5 h-5 text-red-400 animate-bump" />
+          <XCircleIcon class="h-5 w-5 animate-bump text-red-400" />
         </div>
 
-        <div class="ml-3 font-semibold text-md">
+        <div class="text-md ml-3 font-semibold">
           {{ item.name }}
         </div>
       </div>

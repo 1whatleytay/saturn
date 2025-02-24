@@ -1,24 +1,24 @@
 <template>
   <button
-    class="dark:text-neutral-300 text-neutral-800 px-4 py-3 rounded-lg flex items-center transition-colors"
+    class="flex items-center rounded-lg px-4 py-3 text-neutral-800 transition-colors dark:text-neutral-300"
     :class="{
       [props.classes]: true,
-      'dark:bg-neutral-800 bg-neutral-300': !props.modelValue,
-      'dark:bg-slate-800 bg-slate-300': props.modelValue,
+      'bg-neutral-300 dark:bg-neutral-800': !props.modelValue,
+      'bg-slate-300 dark:bg-slate-800': props.modelValue,
     }"
     @click="emit('update:modelValue', !props.modelValue)"
   >
     <span
-      class="w-4 h-4 block rounded ring-2 ring-neutral-600 mr-4 flex items-center justify-center"
+      class="mr-4 block flex h-4 w-4 items-center justify-center rounded ring-2 ring-neutral-600"
       :class="{ 'animate-bump ring-slate-600': props.modelValue }"
     >
       <CheckIcon
         v-if="props.modelValue"
-        class="dark:text-gray-300 text-gray-800 font-bold w-3 h-3"
+        class="h-3 w-3 font-bold text-gray-800 dark:text-gray-300"
       />
     </span>
 
-    <span class="text-sm uppercase font-bold">
+    <span class="text-sm font-bold uppercase">
       {{ props.title }}
     </span>
   </button>

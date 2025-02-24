@@ -1,7 +1,7 @@
 <template>
   <div
     ref="code"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2 bg-neutral-100 dark:bg-neutral-900"
+    class="flex flex-auto flex-grow overflow-auto bg-neutral-100 pt-2 font-mono text-sm dark:bg-neutral-900"
     :style="{ '--font-size': settings.editor.fontSize + 'px' }"
   ></div>
 </template>
@@ -66,7 +66,6 @@ onMounted(() => {
     () => settings.editor.fontSize,
     () => view.requestMeasure(),
   )
-
   ;(window as any).host = () => {
     view.dispatch({ effects: [hostYTab(tab()!)] })
   }

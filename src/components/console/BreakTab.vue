@@ -1,52 +1,52 @@
 <template>
   <div
-    class="text-sm flex flex-col grow overflow-hidden content-start overflow-y-scroll"
+    class="flex grow flex-col content-start overflow-hidden overflow-y-scroll text-sm"
   >
-    <div class="text-2xl font-bold w-full px-8 py-4">
+    <div class="w-full px-8 py-4 text-2xl font-bold">
       {{ consoleData.mode ?? 'Debug' }}
     </div>
 
     <div class="flex">
       <div
         v-if="!state.instructions && !state.stack"
-        class="px-8 dark:text-neutral-500 text-neutral-800"
+        class="px-8 text-neutral-800 dark:text-neutral-500"
       >
         To view debug information, set breakpoints or pause during execution.
       </div>
 
-      <div class="px-8 flex-grow" v-if="state.instructions">
-        <div class="text-base select-auto mt-3">
-          <div class="text-lg font-semibold mb-2 flex items-center">
+      <div class="flex-grow px-8" v-if="state.instructions">
+        <div class="mt-3 select-auto text-base">
+          <div class="mb-2 flex items-center text-lg font-semibold">
             Instruction
 
             <button
-              class="ml-auto px-2 py-1 text-xs font-normal rounded border border-gray-700 shrink-0 flex items-center"
+              class="ml-auto flex shrink-0 items-center rounded border border-gray-700 px-2 py-1 text-xs font-normal"
               @click="stepOne()"
               title="Step One"
               :class="{
-                'dark:text-gray-300 text-gray-800 cursor-default': !allowResume,
-                'dark:text-sky-300 text-sky-800 dark:hover:bg-slate-800 hover:bg-slate-400':
+                'cursor-default text-gray-800 dark:text-gray-300': !allowResume,
+                'text-sky-800 hover:bg-slate-400 dark:text-sky-300 dark:hover:bg-slate-800':
                   allowResume,
               }"
               :disabled="!allowResume"
             >
-              <ChevronRightIcon class="w-4 h-4 mr-1" /> Step 1
+              <ChevronRightIcon class="mr-1 h-4 w-4" /> Step 1
             </button>
           </div>
 
           <div
-            class="font-mono my-1"
+            class="my-1 font-mono"
             v-for="(instruction, index) in state.instructions.instructions"
             :key="index"
           >
             <div
-              class="bg-blue-500 rounded-full w-3 h-3 mr-2 inline-block"
+              class="mr-2 inline-block h-3 w-3 rounded-full bg-blue-500"
               :class="{
                 'opacity-0': state.instructions.currentIndex !== index,
               }"
             />
 
-            <span class="dark:text-sky-400 text-sky-600 font-bold">
+            <span class="font-bold text-sky-600 dark:text-sky-400">
               {{ instruction?.name || 'unk' }}
             </span>
 
@@ -82,7 +82,7 @@
           </div>
 
           <div
-            class="flex items-center flex-wrap mt-4 border-t border-gray-700 p-2"
+            class="mt-4 flex flex-wrap items-center border-t border-gray-700 p-2"
           >
             <div v-for="register in registerParameters">
               <RegisterItem
@@ -97,11 +97,11 @@
         </div>
       </div>
 
-      <div class="px-2 py-4 ml-auto mr-8" v-if="state.stack">
+      <div class="ml-auto mr-8 px-2 py-4" v-if="state.stack">
         <span class="text-lg font-semibold"> Stack </span>
 
         <div
-          class="flex items-center dark:text-neutral-500 text-neutral-800 border-b border-gray-700 p-2"
+          class="flex items-center border-b border-gray-700 p-2 text-neutral-800 dark:text-neutral-500"
         >
           <div class="w-10"></div>
 
@@ -112,20 +112,20 @@
 
         <div
           v-for="value in state.stack.elements"
-          class="flex items-center font-mono my-1"
+          class="my-1 flex items-center font-mono"
         >
-          <div class="w-10 text-xs dark:text-purple-300 text-purple-700">
+          <div class="w-10 text-xs text-purple-700 dark:text-purple-300">
             {{ value.address === state.stack?.sp ? '$sp' : '' }}
           </div>
 
           <div
-            class="w-28 px-2 py-1 text-neutral-400 dark:hover:bg-neutral-800 hover:bg-neutral-300 rounded"
+            class="w-28 rounded px-2 py-1 text-neutral-400 hover:bg-neutral-300 dark:hover:bg-neutral-800"
           >
             0x{{ value.address.toString(16).padStart(8, '0') }}
           </div>
 
           <div
-            class="w-32 px-2 py-1 select-all dark:hover:bg-neutral-800 hover:bg-neutral-300 rounded"
+            class="w-32 select-all rounded px-2 py-1 hover:bg-neutral-300 dark:hover:bg-neutral-800"
           >
             0x{{ value.value.toString(16).padStart(8, '0') }}
           </div>

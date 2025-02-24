@@ -10,11 +10,11 @@
     <FileOpenDialog title="Open File" />
 
     <div
-      class="h-10 flex items-start dark:bg-neutral-900 bg-neutral-200 w-full fixed z-20 top-0 shadow-md dark:shadow-none text-xs"
+      class="fixed top-0 z-20 flex h-10 w-full items-start bg-neutral-200 text-xs shadow-md dark:bg-neutral-900 dark:shadow-none"
     >
       <MenuButton v-if="shouldShowMenu" @create="create" />
 
-      <div class="flex flex-grow overflow-x-auto no-scrollbar items-start">
+      <div class="no-scrollbar flex flex-grow items-start overflow-x-auto">
         <Tab
           v-for="tab in tabsState.tabs"
           :ref="(component) => refTab(tab.uuid, component)"
@@ -30,17 +30,17 @@
         />
 
         <button
-          class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center font-black"
+          class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           @click="create"
         >
-          <PlusIcon class="w-4 h-4" />
+          <PlusIcon class="h-4 w-4" />
         </button>
       </div>
 
       <TabBarItems class="ml-auto shrink-0" />
     </div>
 
-    <div class="w-full h-10 border-b-2 opacity-0" />
+    <div class="h-10 w-full border-b-2 opacity-0" />
   </div>
 </template>
 

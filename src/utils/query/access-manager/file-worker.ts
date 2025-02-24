@@ -1,10 +1,10 @@
 const storage = navigator.storage.getDirectory()
 
 globalThis.onmessage = async (event) => {
-    const { path, content } = event.data
-    const astorage = await storage
-    const file = await astorage.getFileHandle(path, { create: true })
-    const writable = await file.createSyncAccessHandle()
-    writable.write(content)
-    writable.close()
+  const { path, content } = event.data
+  const astorage = await storage
+  const file = await astorage.getFileHandle(path, { create: true })
+  const writable = await file.createSyncAccessHandle()
+  writable.write(content)
+  writable.close()
 }

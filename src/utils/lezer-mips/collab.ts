@@ -125,7 +125,6 @@ export const joinYTab = (editor: Tabs, join: string): EditorTab => {
 
   return tab
 }
-
 ;(window as any).join = (x: string) => {
   const tab = joinYTab(tabsState, x)
 

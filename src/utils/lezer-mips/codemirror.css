@@ -11,7 +11,7 @@
     border-left-width: 2px;
   }
   .cm-gutters {
-    @apply dark:bg-neutral-900 bg-neutral-100 border-none;
+    @apply border-none bg-neutral-100 dark:bg-neutral-900;
   }
   .cm-completionDetail {
     margin-left: auto;
@@ -21,16 +21,16 @@
     margin-right: 1.5rem;
   }
   .cm-tooltip-autocomplete {
-    @apply dark:bg-neutral-900 rounded-lg border border-neutral-700;
+    @apply rounded-lg border border-neutral-700 dark:bg-neutral-900;
   }
   .cm-tooltip.cm-tooltip-autocomplete > ul {
     padding: 0.5rem;
   }
   .cm-tooltip-autocomplete > ul > li[aria-selected] {
-    @apply dark:bg-neutral-700 bg-neutral-300 dark:text-slate-100 text-slate-900;
+    @apply bg-neutral-300 text-slate-900 dark:bg-neutral-700 dark:text-slate-100;
   }
   .cm-completionIcon {
-    @apply rounded w-4 h-4 p-0 mr-1 flex items-center justify-center;
+    @apply mr-1 flex h-4 w-4 items-center justify-center rounded p-0;
   }
   .cm-completionIcon-instruction {
     @apply bg-blue-400;
@@ -65,15 +65,15 @@
     width: 100%;
   }
   .cm-search {
-    @apply dark:bg-neutral-900 border-t dark:border-neutral-700;
+    @apply border-t dark:border-neutral-700 dark:bg-neutral-900;
   }
   .cm-button {
-    @apply rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 dark:active:bg-slate-700 active:bg-slate-400 dark:hover:bg-neutral-800 dark:text-neutral-300 text-neutral-600;
+    @apply ml-4 rounded border border-neutral-700 px-2 py-1 text-xs font-bold text-neutral-600 active:bg-slate-400 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:active:bg-slate-700;
     @apply font-sans;
     background-image: none;
   }
   .cm-search > label {
-    @apply dark:text-neutral-300 text-neutral-600 rounded px-2 py-1 border border-neutral-700 font-bold text-xs ml-4 dark:active:bg-slate-700 active:bg-slate-400 dark:hover:bg-neutral-800;
+    @apply ml-4 rounded border border-neutral-700 px-2 py-1 text-xs font-bold text-neutral-600 active:bg-slate-400 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:active:bg-slate-700;
     @apply inline-flex;
     vertical-align: middle;
   }
