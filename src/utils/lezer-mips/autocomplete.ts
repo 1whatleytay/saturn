@@ -3,6 +3,11 @@ import { suggestions } from './suggestions'
 import { SuggestionType } from '../languages/suggestions'
 
 export function myCompletions(context: CompletionContext) {
+  // if we're in a string or comment token, don't show completions
+  if (context.tokenBefore(['String', 'LineComment'])) {
+    return null
+  }
+
   let word = context.matchBefore(/[a-zA-Z$._]*/)!
   if (word.from == word.to && !context.explicit) return null
   if (word.text.startsWith('$')) {
