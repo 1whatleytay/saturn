@@ -70,27 +70,27 @@ onMounted(() => {
   ;(window as any).host = () => {
     view.dispatch({ effects: [hostYTab(tab()!)] })
   }
-  // https://gist.github.com/shimondoodkin/1081133
-  // if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
-  //   view.contentDOM.addEventListener(
-  //     'blur',
-  //     (e): void => {
-  //       if (e.relatedTarget) return
-  //       console.log("hi")
 
-  //       var editableFix = document.createElement('input')
-  //       editableFix.style =
-  //         'width:1px;height:1px;border:none;margin:0;padding:0;'
-  //       editableFix.tabIndex = -1
-  //       view.contentDOM.appendChild(editableFix)
-  //       editableFix.focus()
-  //       editableFix.setSelectionRange(0, 0)
-  //       editableFix.blur()
-  //       editableFix.remove()
-  //     },
-  //     false,
-  //   )
-  // }
+  // https://gist.github.com/shimondoodkin/1081133
+  if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
+    view.contentDOM.addEventListener(
+      'blur',
+      (e): void => {
+        if (!e.relatedTarget) return
+
+        var editableFix = document.createElement('input')
+        editableFix.setAttribute(
+          'style',
+          'width:1px;height:1px;border:none;margin:0;padding:0;',
+        )
+        document.body.appendChild(editableFix)
+        editableFix.setSelectionRange(0, 0)
+        editableFix.blur()
+        editableFix.remove()
+      },
+      false,
+    )
+  }
 
   watch(
     () => errorHighlights.state.highlight,

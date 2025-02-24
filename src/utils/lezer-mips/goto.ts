@@ -1,7 +1,7 @@
 import { EditorView } from 'codemirror'
 import { RangeSet, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, WidgetType } from '@codemirror/view'
-import { actionKey } from '../query/shortcut-key'
+import { actionKey, hasActionKey } from '../query/shortcut-key'
 import { suggestions } from './suggestions'
 import { MipsHighlighter } from '../languages/mips/language'
 import { SuggestionType } from '../languages/suggestions'
@@ -184,8 +184,8 @@ export const goto = [
       }
     },
 
-    mousedown(this: GotoState, _event, view) {
-      if (this.inspecting && this.pos !== undefined) {
+    mousedown(this: GotoState, event, view) {
+      if (hasActionKey(event) && this.pos !== undefined) {
         const result = checkForGotoDestination(this.pos, view)
 
         if (result) {
@@ -205,10 +205,18 @@ export const goto = [
       this.pos =
         view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? undefined
 
-      if (this.pos !== undefined && (this.inspecting ?? false)) {
-        view.dispatch({
-          effects: gotoEffect.of(checkForGotoDestination(this.pos, view)),
-        })
+      if (this.pos !== undefined) {
+        if (hasActionKey(event)) {
+          this.inspecting = true
+          view.dispatch({
+            effects: gotoEffect.of(checkForGotoDestination(this.pos, view)),
+          })
+        } else if (this.inspecting) {
+          this.inspecting = false
+          view.dispatch({
+            effects: gotoEffect.of(null),
+          })
+        }
       }
     },
 

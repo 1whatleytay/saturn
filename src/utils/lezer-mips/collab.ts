@@ -4,8 +4,13 @@ import { createState, EditorTab, Tabs } from '../tabs'
 import { tabsState } from '../../state/state'
 import { markRaw } from 'vue'
 import { ChangeSpec, Compartment, Extension } from '@codemirror/state'
-import { yCollab, ySync, ySyncAnnotation } from 'y-codemirror.next'
-import { EditorView, ViewPlugin } from '@codemirror/view'
+import {
+  yCollab,
+  ySync,
+  ySyncAnnotation,
+  yUndoManagerKeymap,
+} from 'y-codemirror.next'
+import { EditorView, keymap, ViewPlugin } from '@codemirror/view'
 import { diff } from 'fast-myers-diff'
 
 export const usercolors = [
@@ -75,17 +80,20 @@ const createExtensions = (id: string) => {
   return {
     extensions: [
       yCollab(ytext, provider.awareness, { undoManager }),
+      keymap.of(yUndoManagerKeymap),
       syncPlugin(ytext),
     ],
     ytext,
+    undoManager,
   }
 }
 
 export const hostYTab = (tab: EditorTab) => {
-  const { extensions, ytext } = createExtensions(tab.uuid)
+  const { extensions, ytext, undoManager } = createExtensions(tab.uuid)
 
   if (ytext.length === 0) {
     ytext.insert(0, tab.doc)
+    undoManager.clear()
   }
 
   console.log(tab.uuid)
