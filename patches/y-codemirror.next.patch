@@ -1,0 +1,32 @@
+diff --git a/dist/src/index.d.ts b/dist/src/index.d.ts
+index c6fd0be505aea237910a171ef878506597a27702..a4a7f2f44b4b796e7f4fbc33876179801ec8d7fc 100644
+--- a/dist/src/index.d.ts
++++ b/dist/src/index.d.ts
+@@ -7,7 +7,8 @@ import { yRemoteSelectionsTheme } from "./y-remote-selections.js";
+ import { ySync } from "./y-sync.js";
+ import { ySyncFacet } from "./y-sync.js";
+ import { YSyncConfig } from "./y-sync.js";
++import { ySyncAnnotation } from "./y-sync.js";
+ import { yUndoManagerKeymap } from "./y-undomanager.js";
+ import * as Y from "yjs";
+ import * as cmState from "@codemirror/state";
+-export { YRange, yRemoteSelections, yRemoteSelectionsTheme, ySync, ySyncFacet, YSyncConfig, yUndoManagerKeymap };
++export { YRange, yRemoteSelections, yRemoteSelectionsTheme, ySync, ySyncFacet, YSyncConfig, ySyncAnnotation, yUndoManagerKeymap };
+diff --git a/src/index.js b/src/index.js
+index b6fc948ff6b6813f1df66318d727cdccae65f0bf..3444ff75c8a0ff39e8c184fe1f57d31a7554fe7e 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -4,11 +4,11 @@ import * as cmView from '@codemirror/view'
+ import * as cmState from '@codemirror/state' // eslint-disable-line
+ 
+ import { YRange } from './y-range.js'
+-import { ySync, ySyncFacet, YSyncConfig } from './y-sync.js'
++import { ySync, ySyncFacet, YSyncConfig, ySyncAnnotation } from './y-sync.js'
+ import { yRemoteSelections, yRemoteSelectionsTheme } from './y-remote-selections.js'
+ import { yUndoManager, yUndoManagerFacet, YUndoManagerConfig, undo, redo, yUndoManagerKeymap } from './y-undomanager.js'
+ 
+-export { YRange, yRemoteSelections, yRemoteSelectionsTheme, ySync, ySyncFacet, YSyncConfig, yUndoManagerKeymap }
++export { YRange, yRemoteSelections, yRemoteSelectionsTheme, ySync, ySyncFacet, YSyncConfig, ySyncAnnotation, yUndoManagerKeymap }
+ 
+ /**
+  * @param {Y.Text} ytext

@@ -14,13 +14,30 @@
     "cargo-bump": "cd src-backend && cargo update && cd ../src-tauri && cargo update && cd ../src-wasm && cargo update"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.4",
+    "@codemirror/commands": "^6.8.0",
+    "@codemirror/language": "^6.10.8",
+    "@codemirror/lint": "^6.8.4",
+    "@codemirror/state": "^6.5.1",
+    "@codemirror/view": "^6.36.2",
     "@heroicons/vue": "^2.2.0",
+    "@lezer/generator": "^1.7.2",
+    "@lezer/highlight": "^1.2.1",
+    "@lezer/lr": "^1.4.2",
+    "@replit/codemirror-minimap": "^0.5.2",
+    "@replit/codemirror-vim": "^6.2.1",
     "@tauri-apps/api": "^2.2.0",
+    "codemirror": "^6.0.1",
     "date-fns": "^4.1.0",
+    "fast-myers-diff": "^3.2.0",
     "fuse.js": "^7.0.0",
     "midicube": "^0.6.2",
+    "reka-ui": "1.0.0-alpha.8",
     "uuid": "^10.0.0",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "y-codemirror.next": "^0.3.5",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.23"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.2.5",
@@ -30,6 +47,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.1",
     "prettier": "3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.10",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
@@ -38,5 +56,10 @@
     "vue-tsc": "^2.2.0",
     "wasm-pack": "^0.13.1"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@10.1.0",
+  "pnpm": {
+    "patchedDependencies": {
+      "y-codemirror.next": "patches/y-codemirror.next.patch"
+    }
+  }
 }

@@ -10,7 +10,6 @@ import {
   type InstructionDetails,
   type InstructionLine,
   type LastDisplay,
-  type Shortcut,
 } from './mips'
 import {
   AssembleBinaryData,
@@ -235,10 +234,6 @@ function readDisplay({ width, height, address, register }: ReadDisplayData) {
   return runner.read_display(address, register ?? undefined, width, height)
 }
 
-function platformShortcuts(): Shortcut[] {
-  return backend.get_shortcuts()
-}
-
 async function dispatchOp(data: MessageData): Promise<any> {
   switch (data.op) {
     case MessageOp.AssembleRegions:
@@ -287,8 +282,6 @@ async function dispatchOp(data: MessageData): Promise<any> {
       return rewind(data)
     case MessageOp.ReadDisplay:
       return readDisplay(data)
-    case MessageOp.PlatformShortcuts:
-      return platformShortcuts()
   }
 }
 

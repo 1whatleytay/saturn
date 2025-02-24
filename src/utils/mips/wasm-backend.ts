@@ -13,7 +13,6 @@ import {
   MipsBackend,
   MipsCallbacks,
   MipsExecution,
-  Shortcut,
 } from './mips'
 import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
@@ -132,12 +131,6 @@ export class WasmBackend implements MipsBackend {
         result.reject(response.error)
         break
     }
-  }
-
-  shortcuts(): Promise<Shortcut[]> {
-    return this.sendRequest<Shortcut[]>({
-      op: MessageOp.PlatformShortcuts,
-    })
   }
 
   async assembleRegions(

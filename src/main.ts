@@ -3,10 +3,13 @@ import { createApp } from 'vue'
 import './style.css'
 
 import App from './App.vue'
-import { setupEvents } from './utils/events'
-import { setupShortcuts } from './utils/platform-shortcuts'
 import { setupWindow } from './utils/window'
 import { setupBackend } from './state/backend'
+import {
+  setupTauriEvents,
+  setupTauriShortcuts,
+} from './utils/events/tauri-shortcuts'
+import { setupWebShortcuts } from './utils/events/web-shortcuts'
 
 createApp(App).mount('#app')
 
@@ -14,9 +17,9 @@ setupWindow()
 
 if (window.__TAURI_INTERNALS__) {
   // Needs backend tying.
-  setupEvents().then(() => {})
+  setupTauriEvents().then(() => setupTauriShortcuts())
+} else {
+  setupWebShortcuts()
 }
 
-setupBackend().then((backend) => {
-  setupShortcuts(backend).then(() => {})
-})
+setupBackend().then(() => {})

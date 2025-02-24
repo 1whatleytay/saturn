@@ -1,0 +1,87 @@
+.cm-editor {
+  @apply w-full;
+  font-size: var(--font-size);
+
+  .cm-content {
+    @apply caret-orange-400;
+  }
+  .cm-cursor,
+  .cm-dropCursor {
+    @apply border-orange-400;
+    border-left-width: 2px;
+  }
+  .cm-gutters {
+    @apply border-none bg-neutral-100 dark:bg-neutral-900;
+  }
+  .cm-completionDetail {
+    margin-left: auto;
+    @apply text-neutral-400;
+  }
+  .cm-completionLabel {
+    margin-right: 1.5rem;
+  }
+  .cm-tooltip-autocomplete {
+    @apply rounded-lg border border-neutral-700 dark:bg-neutral-900;
+  }
+  .cm-tooltip.cm-tooltip-autocomplete > ul {
+    padding: 0.5rem;
+  }
+  .cm-tooltip-autocomplete > ul > li[aria-selected] {
+    @apply bg-neutral-300 text-slate-900 dark:bg-neutral-700 dark:text-slate-100;
+  }
+  .cm-completionIcon {
+    @apply mr-1 flex h-4 w-4 items-center justify-center rounded p-0;
+  }
+  .cm-completionIcon-instruction {
+    @apply bg-blue-400;
+  }
+  .cm-completionIcon-instruction::after {
+    content: 'I';
+  }
+  .cm-completionIcon-label {
+    @apply bg-yellow-400;
+  }
+  .cm-completionIcon-label::after {
+    content: 'L';
+  }
+  .cm-completionIcon-data {
+    @apply bg-red-400;
+  }
+  .cm-completionIcon-data::after {
+    content: 'D';
+  }
+  .cm-completionIcon-register {
+    @apply bg-orange-400;
+  }
+  .cm-completionIcon-register::after {
+    content: 'R';
+  }
+  .cm-tooltip-autocomplete > ul > li {
+    padding: 0.5rem 0px;
+    border-radius: 0.25rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  .cm-search {
+    @apply border-t dark:border-neutral-700 dark:bg-neutral-900;
+  }
+  .cm-button {
+    @apply ml-4 rounded border border-neutral-700 px-2 py-1 text-xs font-bold text-neutral-600 active:bg-slate-400 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:active:bg-slate-700;
+    @apply font-sans;
+    background-image: none;
+  }
+  .cm-search > label {
+    @apply ml-4 rounded border border-neutral-700 px-2 py-1 text-xs font-bold text-neutral-600 active:bg-slate-400 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:active:bg-slate-700;
+    @apply inline-flex;
+    vertical-align: middle;
+  }
+  .cm-search input[type='checkbox'] {
+    margin: 0;
+  }
+}
+
+.cm-editor.cm-focused {
+  @apply !outline-none;
+}

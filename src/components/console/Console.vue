@@ -8,7 +8,7 @@
 
     <div
       ref="grabber"
-      class="w-full fixed bottom-0 z-30 dark:bg-neutral-900 bg-neutral-200 border-t border-neutral-700 flex flex-col max-h-screen"
+      class="fixed bottom-0 z-30 flex max-h-screen w-full flex-col border-t border-neutral-700 bg-white dark:bg-neutral-900"
       :style="{
         height: `${properties.height}px`,
         opacity: properties.height > closingHeight ? '1' : '0',
@@ -19,8 +19,8 @@
         @mousedown="handleDown"
       />
 
-      <div class="h-10 flex items-center text-sm font-bold text-neutral-400">
-        <div class="rounded-full py-0.5 px-4 mx-4" :class="[modeClass]">
+      <div class="flex h-10 items-center text-sm font-bold text-neutral-400">
+        <div class="mx-4 rounded-full px-4 py-0.5" :class="[modeClass]">
           {{ modeString }}
         </div>
 
@@ -55,10 +55,10 @@
         />
 
         <button
-          class="w-10 h-10 ml-auto dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
+          class="ml-auto flex h-10 w-10 shrink-0 items-center justify-center text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           @click="close"
         >
-          <XMarkIcon class="w-4 h-4" />
+          <XMarkIcon class="h-4 w-4" />
         </button>
       </div>
 

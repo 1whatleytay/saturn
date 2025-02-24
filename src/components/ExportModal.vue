@@ -1,32 +1,32 @@
 <template>
   <Modal :show="props.show" @close="emit('close')">
     <div
-      class="max-w-2xl dark:bg-neutral-900 bg-neutral-200 rounded-xl px-8 py-6 mx-auto flex flex-col shadow pointer-events-auto overflow-y-scroll max-h-[84vh]"
+      class="pointer-events-auto mx-auto flex max-h-[84vh] max-w-2xl flex-col overflow-y-scroll rounded-xl bg-neutral-200 px-8 py-6 shadow dark:bg-neutral-900"
     >
       <div
-        class="text-2xl font-semibold flex items-center dark:bg-neutral-900 bg-neutral-200 w-full my-2 shrink-0"
+        class="my-2 flex w-full shrink-0 items-center bg-neutral-200 text-2xl font-semibold dark:bg-neutral-900"
       >
-        <DocumentArrowUpIcon class="w-7 h-7 mr-3 shrink-0" /> Export Regions
+        <DocumentArrowUpIcon class="mr-3 h-7 w-7 shrink-0" /> Export Regions
 
         <button
-          class="w-8 h-8 ml-auto rounded dark:hover:bg-slate-800 hover:bg-slate-300 dark:text-slate-300 text-slate-800 shrink-0 flex items-center justify-center"
+          class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           @click="emit('close')"
         >
-          <XMarkIcon class="w-4 h-4" />
+          <XMarkIcon class="h-4 w-4" />
         </button>
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Output Format</div>
+        <div class="text-sm font-bold uppercase">Output Format</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           Plain format will export binary, while HexV3 is designed for use with
           Logism Evolution.
         </div>
 
         <select
           id="data-type"
-          class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
+          class="my-2 w-48 appearance-none rounded bg-neutral-800 px-4 py-2 text-sm font-bold uppercase text-neutral-300"
           :value="state.kind"
           @input="setKind"
         >
@@ -37,11 +37,11 @@
 
       <div
         class="mt-8"
-        :class="{ 'opacity-50 cursor-not-allowed': state.kind !== 'hex_v3' }"
+        :class="{ 'cursor-not-allowed opacity-50': state.kind !== 'hex_v3' }"
       >
-        <div class="font-bold uppercase text-sm">Bit Encoding</div>
+        <div class="text-sm font-bold uppercase">Bit Encoding</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           Encoding type for HexV3 export. For 32-bit memory modules, try using
           32-bit Little Endian.
         </div>
@@ -49,7 +49,7 @@
         <select
           id="data-type"
           v-if="state.kind === 'hex_v3'"
-          class="appearance-none uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
+          class="my-2 w-48 appearance-none rounded bg-neutral-800 px-4 py-2 text-sm font-bold uppercase text-neutral-300"
           :value="state.encoding"
           :disabled="state.kind !== 'hex_v3'"
           @input="setEncoding"
@@ -61,16 +61,16 @@
 
         <div
           v-else
-          class="uppercase font-bold text-sm bg-neutral-800 text-neutral-300 px-4 py-2 my-2 w-48 rounded"
+          class="my-2 w-48 rounded bg-neutral-800 px-4 py-2 text-sm font-bold uppercase text-neutral-300"
         >
           Plain Encoding
         </div>
       </div>
 
       <div class="mt-8">
-        <div class="font-bold uppercase text-sm">Continuous Export</div>
+        <div class="text-sm font-bold uppercase">Continuous Export</div>
 
-        <div class="dark:text-gray-300 text-gray-800 text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
           A continuous export will create one large file with all regions back
           to back.
         </div>
@@ -82,13 +82,13 @@
         />
       </div>
 
-      <div class="flex items-center mt-4">
+      <div class="mt-4 flex items-center">
         <div class="text-sm text-gray-400">
           Continuous exports may result in large file exports (> 800MB).
         </div>
 
         <button
-          class="rounded px-6 py-3 bg-gray-800 hover:bg-gray-700 transition-colors uppercase font-bold text-sm ml-auto active:bg-slate-700"
+          class="ml-auto rounded bg-gray-800 px-6 py-3 text-sm font-bold uppercase transition-colors hover:bg-gray-700 active:bg-slate-700"
           @click="exportRegions()"
         >
           Export
@@ -110,7 +110,6 @@ import {
   pushConsole,
 } from '../state/console-data'
 import { backend } from '../state/backend'
-import { collectLines } from '../utils/tabs'
 import {
   exportHexContents,
   exportHexRegions,
@@ -119,6 +118,7 @@ import { postBuildMessage } from '../utils/debug'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 import { settings } from '../state/state'
 import ToggleField from './console/ToggleField.vue'
+import { toRaw } from 'vue'
 
 const props = defineProps<{
   show: boolean
@@ -175,9 +175,9 @@ async function exportRegions() {
   }
 
   const result = await backend.assembleRegions(
-    collectLines(current.lines),
+    current.doc,
     current.path,
-    state,
+    toRaw(state),
   )
 
   if (result.regions) {

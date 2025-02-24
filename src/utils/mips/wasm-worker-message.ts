@@ -26,7 +26,6 @@ export enum MessageOp {
   WakeSync,
   Rewind,
   ReadDisplay,
-  PlatformShortcuts,
 }
 
 export interface AssembleRegionsData {
@@ -165,10 +164,6 @@ export interface ReadDisplayData {
   register: number | null
 }
 
-export interface PlatformShortcutsData {
-  op: MessageOp.PlatformShortcuts
-}
-
 export type MessageData =
   | AssembleRegionsData
   | AssembleTextData
@@ -193,7 +188,6 @@ export type MessageData =
   | WakeSyncData
   | RewindData
   | ReadDisplayData
-  | PlatformShortcutsData
 
 export enum MessageEventOp {
   ConsoleWrite,

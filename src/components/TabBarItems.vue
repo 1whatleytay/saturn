@@ -2,79 +2,79 @@
   <div v-if="profile ?? false" class="flex items-center">
     <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
-      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-sky-300 text-sky-700"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-sky-700 hover:bg-slate-300 dark:text-sky-300 dark:hover:bg-slate-800"
       @click="build()"
       title="Build"
     >
-      <ArrowDownIcon class="w-4 h-4" />
+      <ArrowDownIcon class="h-4 w-4" />
     </button>
 
     <button
       v-if="!!consoleData.execution"
-      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-red-300 text-red-700"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-red-700 hover:bg-slate-300 dark:text-red-300 dark:hover:bg-slate-800"
       @click="stop()"
       title="Stop"
     >
-      <StopIcon class="w-4 h-4" />
+      <StopIcon class="h-4 w-4" />
     </button>
 
     <button
       v-if="!!consoleData.execution"
-      class="w-10 h-10 dark:hover:bg-slate-800 hover:bg-slate-300 shrink-0 flex items-center justify-center font-black dark:text-yellow-200 text-yellow-800"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-yellow-800 hover:bg-slate-300 dark:text-yellow-200 dark:hover:bg-slate-800"
       @click="pause()"
       title="Pause"
     >
-      <PauseIcon class="w-4 h-4" />
+      <PauseIcon class="h-4 w-4" />
     </button>
 
     <button
       v-if="!!consoleData.execution && consoleData.execution.timeTravel"
-      class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black"
       @click="rewind()"
       :class="{
-        'dark:text-gray-300 text-gray-700 cursor-default': !allowRewind,
-        'dark:text-teal-300 text-teal-700 dark:hover:bg-slate-800 hover:bg-slate-300':
+        'cursor-default text-gray-700 dark:text-gray-300': !allowRewind,
+        'text-teal-700 hover:bg-slate-300 dark:text-teal-300 dark:hover:bg-slate-800':
           allowRewind,
       }"
       :disabled="!allowRewind"
       title="Step Back"
     >
-      <ChevronLeftIcon class="w-4 h-4" />
+      <ChevronLeftIcon class="h-4 w-4" />
     </button>
 
     <button
       v-if="!!consoleData.execution"
-      class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black"
       @click="step()"
       :class="{
-        'dark:text-gray-300 text-gray-700 cursor-default': !allowResume,
-        'dark:text-teal-300 text-teal-700 dark:hover:bg-slate-800 hover:bg-slate-300':
+        'cursor-default text-gray-700 dark:text-gray-300': !allowResume,
+        'text-teal-700 hover:bg-slate-300 dark:text-teal-300 dark:hover:bg-slate-800':
           allowResume,
       }"
       :disabled="!allowResume"
       title="Step"
     >
-      <ChevronRightIcon class="w-4 h-4" />
+      <ChevronRightIcon class="h-4 w-4" />
     </button>
 
     <button
-      class="w-10 h-10 shrink-0 flex items-center justify-center font-black"
+      class="flex h-10 w-10 shrink-0 items-center justify-center font-black"
       :class="{
-        'dark:text-gray-300 text-gray-700 cursor-default dark:bg-neutral-800 bg-neutral-400':
+        'cursor-default bg-neutral-400 text-gray-700 dark:bg-neutral-800 dark:text-gray-300':
           !allowResume,
-        'dark:text-green-300 text-green-700 dark:hover:bg-slate-800 hover:bg-slate-300':
+        'text-green-700 hover:bg-slate-300 dark:text-green-300 dark:hover:bg-slate-800':
           allowResume,
       }"
       @click="resume()"
       :disabled="!allowResume"
       title="Run"
     >
-      <PlayIcon class="w-4 h-4" />
+      <PlayIcon class="h-4 w-4" />
     </button>
 
     <div
       v-if="profileText"
-      class="h-10 px-4 flex items-center text-xs font-medium max-w-xs text-neutral-600 shrink-0"
+      class="flex h-10 max-w-xs shrink-0 items-center px-4 text-xs font-medium text-neutral-600"
     >
       {{ profileText }}
     </div>

@@ -1,8 +1,6 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex h-full flex-col">
     <TabBar />
-
-    <FindWindow />
 
     <EditorBody />
 
@@ -14,6 +12,4 @@
 import TabBar from './TabBar.vue'
 import EditorBody from './EditorBody.vue'
 import DebugWindow from './console/Console.vue'
-import FindWindow from './FindWindow.vue'
-import BuildInfo from './BuildInfo.vue'
 </script>

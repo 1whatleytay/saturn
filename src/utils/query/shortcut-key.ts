@@ -10,7 +10,7 @@ const ie = !!(ie_upto10 || ie_11up || ie_edge)
 const safari = !ie && /Apple Computer/.test(nav.vendor)
 const ios =
   safari && (/Mobile\/\w+/.test(nav.userAgent) || nav.maxTouchPoints > 2)
-export const isMetaKey = ios || /Mac/.test(nav.platform)
+const isMetaKey = ios || /Mac/.test(nav.platform)
 
 interface ActionMarkedEvent {
   metaKey: boolean
@@ -21,6 +21,8 @@ interface AltMarkedEvent {
   altKey: boolean
   ctrlKey: boolean
 }
+
+export const actionKey = isMetaKey ? 'Meta' : 'Control'
 
 export function hasActionKey(event: ActionMarkedEvent): boolean {
   return isMetaKey ? event.metaKey : event.ctrlKey

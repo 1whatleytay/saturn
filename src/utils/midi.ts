@@ -1,5 +1,3 @@
-import { core } from '@tauri-apps/api'
-
 import * as MIDI from 'midicube'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { backend } from '../state/backend'

@@ -15,7 +15,6 @@ import {
   MipsBackend,
   MipsCallbacks,
   MipsExecution,
-  Shortcut,
 } from './mips'
 import { ExportRegionsOptions } from '../settings'
 
@@ -244,10 +243,6 @@ export class TauriBackend implements MipsBackend {
     }
 
     this.unListen = []
-  }
-
-  async shortcuts(): Promise<Shortcut[]> {
-    return (await invoke('platform_shortcuts')) as Shortcut[]
   }
 
   waitReady(): Promise<void> {

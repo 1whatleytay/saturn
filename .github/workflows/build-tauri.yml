@@ -17,7 +17,7 @@ jobs:
         run: corepack enable
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 23
           cache: 'pnpm'
       - uses: dtolnay/rust-toolchain@stable
       - if: matrix.platform == 'macos-latest'

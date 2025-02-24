@@ -1,16 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-
-export interface AccessFile<T> {
-  path: string
-  name: string | null
-  extension: string | null
-  data: T
-}
-
-export interface AccessFilter {
-  name: string
-  extensions: string[]
-}
+import { AccessFile, AccessFilter } from '.'
 
 export const assemblyFilter: AccessFilter[] = [
   {
@@ -93,7 +82,5 @@ export async function accessReadFile(
 }
 
 export async function accessSync(paths: string[]) {
-  if (window.__TAURI_INTERNALS__) {
-    await invoke('access_sync', { paths })
-  }
+  await invoke('access_sync', { paths })
 }

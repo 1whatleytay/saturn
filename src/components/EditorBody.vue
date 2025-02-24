@@ -1,402 +1,156 @@
 <template>
   <div
-    ref="scroll"
-    class="font-mono text-sm flex-auto flex-grow overflow-auto flex pt-2"
-    @scroll="handleScroll"
-    @resize="updateBounds"
-  >
-    <div
-      class="w-20 pr-4 mr-2 text-xs text-slate-400 font-medium shrink-0 z-10 absolute left-0 pt-2"
-      @click.self
-      @wheel.stop
-      :style="{ top: `${state.lineOffset}px` }"
-    >
-      <div :style="{ height: `${topPadding}px` }" />
-
-      <div
-        v-for="i in renderCount"
-        :key="getIndex(i)"
-        @click="toggleBreakpoint(getIndex(i))"
-        class="w-full h-6 text-right flex items-center justify-end cursor-pointer pointer-events-auto group"
-      >
-        <div
-          class="rounded-full bg-red-700 w-3 h-3 mr-auto ml-3"
-          :class="{
-            'opacity-100 group-hover:opacity-100': hasBreakpoint(getIndex(i)),
-            'opacity-0 group-hover:opacity-30': !hasBreakpoint(getIndex(i)),
-          }"
-        />
-
-        {{ getIndex(i) + 1 }}
-      </div>
-    </div>
-
-    <div class="w-20 pr-2 mr-2 shrink-0"></div>
-
-    <div
-      ref="code"
-      class="flex-grow cursor-text text-sm relative outline-none whitespace-pre"
-      @mousedown.prevent="handleDown"
-    >
-      <input
-        type="text"
-        autocomplete="off"
-        ref="input"
-        spellcheck="false"
-        :value="''"
-        tabindex="0"
-        class="opacity-0 pointer-events-none fixed top-0 left-0 peer"
-        @keydown="handleKey"
-        @copy.prevent="handleCopy"
-        @cut.prevent="handleCut"
-        @paste.prevent="handlePaste"
-      />
-
-      <div :style="{ height: `${topPadding}px` }" />
-
-      <div
-        v-for="i in renderCount"
-        :key="getIndex(i)"
-        class="h-6 flex items-center pr-16"
-        :class="lineStyling(i)"
-      >
-        <div>
-          <span
-            v-for="(token, index) in storage.highlights[getIndex(i)]"
-            :key="index"
-            :class="[token.color]"
-          >
-            {{ token.text }}
-          </span>
-        </div>
-      </div>
-
-      <div :style="{ height: `${bottomPadding}px` }" />
-      <div class="h-32" />
-
-      <Cursor :position="position" :start="renderStart" :count="renderCount" />
-      <SelectionOverlay v-if="computedRanges" :range="computedRanges" />
-      <Suggestions />
-      <FindOverlay :start="renderStart" :count="renderCount" />
-      <SymbolHighlightOverlay :start="renderStart" :count="renderCount" />
-      <GotoOverlay
-        v-if="gotoHighlights.state.highlight"
-        @click="jumpGoto"
-        :highlight="gotoHighlights.state.highlight"
-      />
-      <ErrorOverlay
-        v-if="errorHighlights.state.highlight"
-        :highlight="errorHighlights.state.highlight"
-      />
-    </div>
-  </div>
+    ref="code"
+    class="flex flex-auto flex-grow overflow-auto bg-neutral-100 pt-2 font-mono text-sm dark:bg-neutral-900"
+    :style="{ '--font-size': settings.editor.fontSize + 'px' }"
+  ></div>
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  watch,
-} from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { errorHighlights, tab, settings } from '../state/state'
+import { isSyncing } from '../utils/tabs'
+
+import { EditorView } from 'codemirror'
+import { clearHighlightedLine } from '../utils/lezer-mips'
 import { consoleData } from '../state/console-data'
-import { setBreakpoint } from '../utils/debug'
-import { useVirtualize } from '../utils/virtualization'
-import {
-  cursorCoordinates,
-  dragTo,
-  dropCursor,
-  dropSelection,
-  find,
-  getSelection,
-  goto,
-  gotoHighlights,
-  handleKey,
-  errorHighlights,
-  lineStart,
-  pasteText,
-  position,
-  range,
-  storage,
-  tab,
-  tabBody,
-} from '../state/state'
+import { setHighlightedLine } from '../utils/lezer-mips'
+import { setMinimap, setVim, setTheme } from '../utils/lezer-mips/modes'
+import { Diagnostic, setDiagnostics } from '@codemirror/lint'
+import { hostYTab } from '../utils/lezer-mips/collab'
 
-import Cursor from './Cursor.vue'
-import FindOverlay from './FindOverlay.vue'
-import GotoOverlay from './GotoOverlay.vue'
-import ErrorOverlay from './ErrorOverlay.vue'
-import Suggestions from './Suggestions.vue'
-import SelectionOverlay from './SelectionOverlay.vue'
-import { hasActionKey } from '../utils/query/shortcut-key'
-import SymbolHighlightOverlay from './SymbolHighlightOverlay.vue'
-
-const lineHeight = 24 // h-6 -> 1.5rem -> 24px
-
-const state = reactive({
-  lineOffset: 0,
-})
-
-let mouseDown = false
-
-const {
-  getIndex,
-  renderStart,
-  renderCount,
-  topPadding,
-  bottomPadding,
-  update,
-} = useVirtualize(lineHeight, () => tabBody.value.length)
-
-const computedRanges = computed(() => {
-  return range(renderStart.value, renderCount.value)
-})
-
-function lineStyling(i: number): Record<string, boolean> {
-  const index = getIndex(i)
-  const breakpoint = hasBreakpoint(index)
-  const isStopped = index === stoppedIndex.value
-
-  return {
-    'dark:bg-breakpoint-neutral bg-breakpoint-neutral-light':
-      breakpoint && !isStopped,
-    'dark:bg-breakpoint-stopped bg-breakpoint-stopped-light': isStopped,
-    'bg-yellow-500 bg-opacity-5':
-      !breakpoint && !isStopped && !(tab()?.writable ?? true),
-  }
-}
-
-const scroll = ref(null as HTMLElement | null)
 const code = ref(null as HTMLElement | null)
-const input = ref(null as HTMLElement | null)
-
-const stoppedIndex = computed(() => {
-  const profile = tab()?.profile
-  const registers = consoleData.registers
-  const execution = consoleData.execution
-
-  if (!profile || !registers || !execution) {
-    return null
-  }
-
-  // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
-  let point = execution.breakpoints?.pcToGroup.get(registers.pc)?.line
-
-  if (point === undefined && consoleData.hintPc != null) {
-    point = execution.breakpoints?.pcToGroup.get(consoleData.hintPc)?.line
-  }
-
-  return point ?? null
-})
-
-function updateBounds() {
-  if (!scroll.value) {
-    return
-  }
-
-  update(scroll.value.scrollTop, scroll.value.clientHeight)
-}
-
-watch(
-  () => tabBody.value,
-  () => {
-    updateBounds()
-  },
-)
-
-function handleScroll() {
-  if (!scroll.value) {
-    return
-  }
-
-  updateBounds()
-  state.lineOffset = scroll.value.offsetTop - scroll.value.scrollTop
-}
-
-function editorCoordinates(event: MouseEvent): { x: number; y: number } {
-  if (code.value) {
-    return {
-      x: event.pageX - code.value.offsetLeft + (scroll.value?.scrollLeft ?? 0),
-      y: event.pageY - code.value.offsetTop + (scroll.value?.scrollTop ?? 0),
-    }
-  }
-
-  return { x: 0, y: 0 }
-}
-
-function hasBreakpoint(index: number): boolean {
-  return tab()?.breakpoints.includes(index) ?? false
-}
-
-async function toggleBreakpoint(index: number) {
-  const state = tab()
-
-  if (!state) {
-    return
-  }
-
-  const remove = state.breakpoints.includes(index)
-
-  await setBreakpoint(index, remove)
-}
-
-function handleDown(event: MouseEvent) {
-  input.value?.focus()
-
-  const { x, y } = editorCoordinates(event)
-
-  mouseDown = true
-  dropCursor(x, y, event.detail, event.shiftKey)
-}
-
-let lastX = null as number | null
-let lastY = null as number | null
-
-const handleMove = (event: MouseEvent) => {
-  const checkGoto = hasActionKey(event)
-  const click = (event.buttons & 1) > 0 && mouseDown
-
-  if (checkGoto || click) {
-    const { x, y } = editorCoordinates(event)
-
-    // goto should only happen if the user moves the mouse
-    // (Cmd + C should not search goto, it's expensive)
-    if ((checkGoto && lastX !== event.pageX) || lastY !== event.pageY) {
-      const { line, index } = cursorCoordinates(x, y)
-
-      goto.hover(line, index)
-    }
-
-    if (click) {
-      dragTo(x, y)
-    }
-  }
-
-  lastX = event.pageX
-  lastY = event.pageY
-
-  if (!checkGoto) {
-    goto.dismiss()
-  }
-
-  if (!click) {
-    mouseDown = false
-  }
-}
-
-function jumpGoto() {
-  const index = goto.jump()
-  const cursor = tab()?.cursor
-
-  if (index && cursor) {
-    cursor.line = index.line
-    cursor.index = index.index
-
-    cursor.highlight = null
-  }
-}
-
-const handleUp = () => {
-  mouseDown = false
-}
-
-function handleCopy(event: ClipboardEvent) {
-  if (!event.clipboardData) {
-    return
-  }
-
-  const selection = getSelection()
-
-  if (selection) {
-    event.clipboardData.setData('text/plain', selection)
-  }
-}
-
-function handleCut(event: ClipboardEvent) {
-  if (!event.clipboardData) {
-    return
-  }
-
-  const selection = getSelection()
-  dropSelection()
-
-  if (selection) {
-    event.clipboardData.setData('text/plain', selection)
-  }
-}
-
-function handlePaste(event: ClipboardEvent) {
-  if (event.clipboardData) {
-    const value = event.clipboardData.getData('text/plain')
-
-    pasteText(value)
-  }
-}
 
 onMounted(() => {
-  handleScroll()
+  const view = new EditorView({
+    state: undefined,
+    parent: code.value!,
+  })
 
-  setTimeout(handleScroll, 0)
+  watch(
+    () => tab()?.state,
+    (state) => {
+      if (!isSyncing() && state) {
+        view.setState(state!)
 
-  window.addEventListener('mousemove', handleMove)
-  window.addEventListener('mouseup', handleUp)
-})
+        // sync global settings on tab switch
+        view.dispatch({
+          effects: [
+            setTheme(settings.editor.darkMode),
+            setVim(settings.editor.vimMode),
+            setMinimap(settings.editor.showMinimap),
+          ],
+        })
+      }
+    },
+    { flush: 'sync', immediate: true },
+  )
 
-onUnmounted(() => {
-  window.removeEventListener('mousemove', handleMove)
-  window.removeEventListener('mouseup', handleUp)
-})
+  watch(
+    () => settings.editor.darkMode,
+    (theme: boolean) => view.dispatch({ effects: [setTheme(theme)] }),
+  )
 
-const bottomCursorSpace = 42
+  watch(
+    () => settings.editor.vimMode,
+    (vimMode: boolean) => view.dispatch({ effects: [setVim(vimMode)] }),
+  )
 
-function makeVisible(offset: number) {
-  if (scroll.value) {
-    if (offset < scroll.value.scrollTop) {
-      scroll.value.scrollTop = offset
-    } else if (
-      offset >
-      scroll.value.scrollTop + scroll.value.clientHeight - bottomCursorSpace
-    ) {
-      scroll.value.scrollTop =
-        offset - scroll.value.clientHeight + bottomCursorSpace
-    }
+  watch(
+    () => settings.editor.showMinimap,
+    (minimap: boolean) => view.dispatch({ effects: [setMinimap(minimap)] }),
+  )
+
+  watch(
+    () => settings.editor.fontSize,
+    () => view.requestMeasure(),
+  )
+  ;(window as any).host = () => {
+    view.dispatch({ effects: [hostYTab(tab()!)] })
   }
-}
 
-const updateAndShow = async (value: number) => {
-  await nextTick()
+  // https://gist.github.com/shimondoodkin/1081133
+  if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
+    view.contentDOM.addEventListener(
+      'blur',
+      (e): void => {
+        if (!e.relatedTarget) return
 
-  makeVisible(value)
-}
+        var editableFix = document.createElement('input')
+        editableFix.setAttribute(
+          'style',
+          'width:1px;height:1px;border:none;margin:0;padding:0;',
+        )
+        document.body.appendChild(editableFix)
+        editableFix.setSelectionRange(0, 0)
+        editableFix.blur()
+        editableFix.remove()
+      },
+      false,
+    )
+  }
 
-watch(
-  () => position.value.offsetX,
-  () => updateAndShow(position.value.offsetY),
-)
-watch(() => position.value.offsetY, updateAndShow)
+  watch(
+    () => errorHighlights.state.highlight,
+    (highlight) => {
+      const diagnostics: Diagnostic[] = []
+      if (highlight) {
+        let lineI = highlight.line + 1
+        let line
+        do {
+          line = view.state.doc.line(lineI)
+          lineI++
+        } while (/^\s*$/.test(line.text))
 
-watch(
-  () => stoppedIndex.value,
-  (index) => {
-    if (index) {
-      const start = lineStart(index)
+        let offset = highlight.offset
+        while (/\s/.test(line.text[offset])) offset++
+        let end = offset
+        while (
+          /[a-zA-Z_\-0-9$.%]/.test(line.text[end]) &&
+          end < line.text.length
+        )
+          end++
 
-      makeVisible(start)
+        diagnostics.push({
+          from: line.from + offset,
+          to: line.from + end,
+          message: highlight.message,
+          severity: 'error',
+        })
+      }
+      view.dispatch(setDiagnostics(view.state, diagnostics))
+    },
+  )
+
+  const stoppedIndex = computed(() => {
+    const profile = tab()?.profile
+    const registers = consoleData.registers
+    const execution = consoleData.execution
+
+    if (!profile || !registers || !execution) {
+      return null
     }
-  },
-)
 
-watch(
-  () => find.state.show,
-  async () => {
-    // Wait until resize occurs...
-    await nextTick()
+    // Reactivity concern here (eh... not too bad, we just want to listen to changes in debug).
+    let point = execution.breakpoints?.pcToGroup.get(registers.pc)?.line
 
-    handleScroll()
-  },
-)
+    if (point === undefined && consoleData.hintPc != null) {
+      point = execution.breakpoints?.pcToGroup.get(consoleData.hintPc)?.line
+    }
+
+    return point ?? null
+  })
+
+  watch(stoppedIndex, (index) => {
+    if (index !== null) {
+      const pos = view.state.doc.line(index + 1).from
+      view.dispatch({
+        effects: [setHighlightedLine.of(pos), EditorView.scrollIntoView(pos)],
+      })
+    } else {
+      view.dispatch({ effects: [clearHighlightedLine.of(null)] })
+    }
+  })
+})
 </script>

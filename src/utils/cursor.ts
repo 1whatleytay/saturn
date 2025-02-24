@@ -1,6 +1,5 @@
 import { Editor, LineRange, SelectionIndex } from './editor'
 import { computed, ComputedRef } from 'vue'
-import { MergeSuggestion, SuggestionsInterface } from './suggestions'
 import { SizeCalculator } from './query/text-size'
 import {
   consumeBackwards,
@@ -38,7 +37,6 @@ export interface CursorInterface {
   cursorCoordinates(x: number, y: number): SelectionIndex
   lineStart(line: number): number
   handleKey(event: KeyboardEvent): void
-  applyMergeSuggestion(suggestion: MergeSuggestion): void
 }
 
 export type CursorResult = CursorInterface & {
@@ -51,8 +49,6 @@ export function useCursor(
   settings: EditorSettings,
   calculator: SizeCalculator,
   lineHeight: number = 24, // precompute this
-  suggestions?: SuggestionsInterface,
-  showSuggestionsAt?: (cursor: SelectionIndex) => void,
 ): CursorResult {
   function toPosition(index: SelectionIndex): CursorPosition {
     const text = editor().lineAt(index.line)
@@ -155,29 +151,6 @@ export function useCursor(
 
   let pressedBackspace = false
 
-  function applyMergeSuggestion(suggestion: MergeSuggestion) {
-    editor().drop({
-      startLine: cursor().line,
-      endLine: cursor().line,
-      startIndex: suggestion.start,
-      endIndex: suggestion.start + suggestion.remove,
-    })
-
-    putCursor(
-      editor().paste(
-        {
-          line: cursor().line,
-          index: suggestion.start,
-        },
-        suggestion.insert,
-      ),
-    )
-
-    editor().commit()
-
-    suggestions?.dismissSuggestions()
-  }
-
   function makeSelection() {
     const value = cursor()
 
@@ -270,12 +243,6 @@ export function useCursor(
     }
   }
 
-  function promptSuggestions() {
-    if ((suggestions?.hasSuggestions() ?? false) && showSuggestionsAt) {
-      showSuggestionsAt(cursor())
-    }
-  }
-
   function putCursor(index: SelectionIndex, to: SelectionIndex = cursor()) {
     const position = alignCursor(index)
 
@@ -314,8 +281,6 @@ export function useCursor(
     }
 
     putCursor({ line, index: move })
-
-    promptSuggestions()
   }
 
   function moveRight(alt: boolean = false, shift: boolean = false) {
@@ -348,15 +313,9 @@ export function useCursor(
     }
 
     putCursor({ line, index: move })
-
-    promptSuggestions()
   }
 
   function moveDown(shift: boolean = false) {
-    if (suggestions && suggestions.hasSuggestions()) {
-      return suggestions.moveIndex(+1)
-    }
-
     const current = cursor()
 
     setSelection(shift)
@@ -365,10 +324,6 @@ export function useCursor(
   }
 
   function moveUp(shift: boolean = false) {
-    if (suggestions && suggestions.hasSuggestions()) {
-      return suggestions.moveIndex(-1)
-    }
-
     setSelection(shift)
 
     putCursor({ line: cursor().line - 1, index: cursor().index })
@@ -382,7 +337,6 @@ export function useCursor(
     const space = grabWhitespace(text)
 
     putCursor({ line: current.line, index: space.leading.length })
-    promptSuggestions()
   }
 
   function moveEnd(shift: boolean = false) {
@@ -396,7 +350,6 @@ export function useCursor(
       line: current.line,
       index: text.length - space.trailing.length,
     })
-    promptSuggestions()
   }
 
   function hitTab(shift: boolean = false) {
@@ -608,8 +561,6 @@ export function useCursor(
       case 'y': {
         const position = editor().redo()
 
-        suggestions?.dismissSuggestions()
-
         if (position) {
           putCursor(position)
           value.highlight = null
@@ -626,8 +577,6 @@ export function useCursor(
         } else {
           position = editor().undo()
         }
-
-        suggestions?.dismissSuggestions()
 
         if (position) {
           putCursor(position)
@@ -679,10 +628,6 @@ export function useCursor(
         break
 
       case 'Escape':
-        if (suggestions && suggestions.hasSuggestions()) {
-          suggestions.dismissSuggestions()
-        }
-
         event.preventDefault()
 
         break
@@ -690,15 +635,7 @@ export function useCursor(
       case 'Tab':
         event.preventDefault()
 
-        if (!event.shiftKey && suggestions && suggestions.flushSuggestions()) {
-          const suggestion = suggestions.mergeSuggestion()
-
-          if (suggestion) {
-            return applyMergeSuggestion(suggestion)
-          }
-        } else {
-          hitTab(event.shiftKey)
-        }
+        hitTab(event.shiftKey)
 
         break
 
@@ -731,8 +668,6 @@ export function useCursor(
           putCursor(nextPosition)
         }
 
-        promptSuggestions()
-
         break
 
       case 'Enter':
@@ -741,20 +676,6 @@ export function useCursor(
             line: value.line,
             index: editor().lineAt(value.line).length,
           })
-
-          suggestions?.dismissSuggestions()
-        } else if (suggestions) {
-          if (settings.enterAutocomplete) {
-            if (suggestions.flushSuggestions()) {
-              const suggestion = suggestions.mergeSuggestion()
-
-              if (suggestion) {
-                return applyMergeSuggestion(suggestion)
-              }
-            }
-          } else {
-            suggestions.dismissSuggestions()
-          }
         }
 
         editor().commit()
@@ -774,10 +695,6 @@ export function useCursor(
         } else if (event.key.length === 1) {
           dropSelection()
           putCursor(editor().put(value, event.key))
-
-          if (showSuggestionsAt) {
-            showSuggestionsAt(cursor())
-          }
         }
 
         break
@@ -855,7 +772,6 @@ export function useCursor(
       }
 
       editor().commit()
-      suggestions?.dismissSuggestions()
 
       putCursor(index)
     }
@@ -898,6 +814,5 @@ export function useCursor(
     dragTo,
     pasteText,
     handleKey,
-    applyMergeSuggestion,
   }
 }

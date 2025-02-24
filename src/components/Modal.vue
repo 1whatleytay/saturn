@@ -1,11 +1,11 @@
 <template>
   <div
-    class="fixed z-40 w-screen h-screen bg-black bg-opacity-40 transition-opacity duration-500"
-    :class="{ 'opacity-0 pointer-events-none': !show }"
+    class="fixed z-[350] h-screen w-screen bg-black bg-opacity-40 transition-opacity duration-500"
+    :class="{ 'pointer-events-none opacity-0': !show }"
     @click="emit('close')"
   />
 
-  <div v-if="show" class="absolute z-50 top-12 w-full pointer-events-none">
+  <div v-if="show" class="pointer-events-none absolute top-12 z-[400] w-full">
     <span class="pointer-events-auto">
       <slot />
     </span>
@@ -13,9 +13,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  show: boolean
-}>()
+const { show } = defineProps<{ show: boolean }>()
 
 const emit = defineEmits(['close'])
 </script>

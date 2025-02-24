@@ -223,17 +223,6 @@ export type InstructionLine =
   | InstructionLineComment
   | InstructionLineLabel
 
-export interface Accelerator {
-  command: boolean
-  shift: boolean
-  key: string
-}
-
-export interface Shortcut {
-  event: string
-  accelerator: Accelerator
-}
-
 export interface MipsCallbacks {
   consoleWrite(text: string, error: boolean): void
   midiPlay(note: MidiNote): void
@@ -242,8 +231,6 @@ export interface MipsCallbacks {
 export interface MipsBackend {
   waitReady(): Promise<void>
 
-  shortcuts(): Promise<Shortcut[]>
-
   setCallbacks(callbacks: MipsCallbacks): Promise<void>
 
   // Insight
@@ -251,7 +238,7 @@ export interface MipsBackend {
     pc: number,
     instruction: number,
   ): Promise<InstructionDetails | null>
-  disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]>
+  disassemblyDetails(bytes: ArrayBufferLike): Promise<InstructionLine[]>
 
   disassembleElf(
     named: string,
