@@ -2,7 +2,7 @@ import { reactive, watch } from 'vue'
 import { BitmapConfig } from './mips/mips'
 import { backend } from '../state/backend'
 
-const settingsVersion = 6
+const settingsVersion = 7
 
 export interface ExportRegionsOptions {
   kind: 'plain' | 'hex_v3'
