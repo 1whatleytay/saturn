@@ -3,13 +3,13 @@
     class="flex items-center rounded-lg px-4 py-3 text-neutral-800 transition-colors dark:text-neutral-300"
     :class="{
       [props.classes]: true,
-      'bg-neutral-300 dark:bg-neutral-800': !props.modelValue,
-      'bg-slate-300 dark:bg-slate-800': props.modelValue,
+      'bg-neutral-100 dark:bg-neutral-800': !props.modelValue,
+      'bg-slate-200 dark:bg-slate-800': props.modelValue,
     }"
     @click="emit('update:modelValue', !props.modelValue)"
   >
     <span
-      class="mr-4 block flex h-4 w-4 items-center justify-center rounded ring-2 ring-neutral-600"
+      class="mr-4 flex h-4 w-4 items-center justify-center rounded ring-2 ring-neutral-600"
       :class="{ 'animate-bump ring-slate-600': props.modelValue }"
     >
       <CheckIcon

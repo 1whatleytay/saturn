@@ -1,10 +1,10 @@
 <template>
   <Modal :show="props.show" @close="emit('close')">
     <div
-      class="pointer-events-auto mx-auto flex max-h-[84vh] max-w-2xl flex-col overflow-y-scroll rounded-xl bg-neutral-200 px-8 py-6 shadow dark:bg-neutral-900"
+      class="pointer-events-auto mx-auto flex max-h-[84vh] max-w-2xl flex-col overflow-y-scroll rounded-xl bg-white px-8 py-6 shadow dark:bg-neutral-900"
     >
       <div
-        class="my-2 flex w-full shrink-0 items-center bg-neutral-200 text-2xl font-semibold dark:bg-neutral-900"
+        class="my-2 flex w-full shrink-0 items-center text-2xl font-semibold"
       >
         <CogIcon class="mr-3 h-7 w-7 shrink-0" /> Settings
 
