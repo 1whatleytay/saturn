@@ -146,7 +146,7 @@ export type TabsResult = TabsInterface & {
 const restoreKey = 'saturn:tabs-state'
 const backupKeyPrefix = 'saturn:tab-backup'
 const backupNameKey = 'saturn:backup-keys'
-const tabsVersion = 1
+const tabsVersion = 2
 const maxBackupLength = 200000
 
 function backupKey(uuid: string): string {
