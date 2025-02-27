@@ -9,8 +9,8 @@ import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view'
 import { lang } from './lezer-lang'
 import { foldOnIndent } from './folding'
-import './codemirror.css'
 import { goto } from './goto'
+import './codemirror.css'
 
 export const clearHighlightedLine = StateEffect.define<null>()
 export const setHighlightedLine = StateEffect.define<number>()
