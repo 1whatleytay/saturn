@@ -57,6 +57,16 @@
           <div class="ml-auto mr-1 pl-[20px] font-mono">⌘+S</div>
         </DropdownMenuItem>
 
+        <DropdownMenuItem
+          @click="download"
+          value="Download File"
+          class="flex items-center rounded hover:bg-neutral-300 dark:hover:bg-neutral-700"
+        >
+          <DocumentArrowUpIcon class="m-2 h-4 w-4" />
+          Download File
+          <div class="ml-auto mr-1 pl-[20px] font-mono">⌘+⇧+D</div>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator
           class="my-2 border-t border-neutral-300 dark:border-neutral-700"
         />
@@ -182,7 +192,7 @@ import {
   openFile,
   saveCurrentTab,
 } from '../utils/events/events'
-import { exportBinary } from '../utils/events/web-shortcuts'
+import { exportBinary, download } from '../utils/events/web-shortcuts'
 
 const emit = defineEmits(['create'])
 </script>
