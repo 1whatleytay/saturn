@@ -19,6 +19,21 @@ import { consoleData, ConsoleType, pushConsole } from '../../state/console-data'
 import { backend } from '../../state/backend'
 import { BinaryResult } from '../mips/mips'
 
+// 'download'
+export async function download() {
+  const current = tab()
+
+  const blob = new Blob([current?.doc?.toString() ?? ''], {
+    type: 'text/plain',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = current?.title ?? 'Untitled.asm'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // 'export'
 export async function exportBinary() {
   const current = tab()
@@ -79,7 +94,8 @@ const bindings: [Accelerator, () => void][] = [
   [command('O'), openFile],
   [command('W'), closeCurrentTab],
   [command('S'), saveCurrentTab],
-  [command('S', true), saveAs], // tauri required
+  [command('S', true), saveAs],
+  [command('D', true), download],
   // [command('F'), () => {}], // not listened to, handled by editor
   [command('B'), build],
   [command('K'), resume],

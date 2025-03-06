@@ -1,5 +1,7 @@
 <template>
   <div class="flex h-full flex-col">
+    <DropZone />
+
     <TabBar />
 
     <EditorBody />
@@ -12,4 +14,5 @@
 import TabBar from './TabBar.vue'
 import EditorBody from './EditorBody.vue'
 import DebugWindow from './console/Console.vue'
+import DropZone from './DropZone.vue'
 </script>

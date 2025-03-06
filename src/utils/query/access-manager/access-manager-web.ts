@@ -1,8 +1,8 @@
 import { showFileOpenDialog, showFileSaveDialog } from '../../../state/state'
 import { AccessFile } from '.'
-import Worker from './file-worker?worker'
+import FileWorker from './file-worker?worker'
 
-const worker = new Worker()
+const worker = new FileWorker()
 const storage = navigator.storage?.getDirectory()
 
 let showFileSaveResolve: ((t: string) => void) | null = null

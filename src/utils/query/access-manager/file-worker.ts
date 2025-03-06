@@ -12,3 +12,5 @@ globalThis.onmessage = async (event) => {
   writable.write(content)
   writable.close()
 }
+
+export {}
