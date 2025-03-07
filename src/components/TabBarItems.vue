@@ -1,5 +1,7 @@
 <template>
   <div v-if="profile ?? false" class="flex items-center">
+    <HostButton />
+  
     <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
       class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-sky-700 hover:bg-slate-300 dark:text-sky-300 dark:hover:bg-slate-800"
@@ -84,6 +86,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
+import HostButton from './HostButton.vue'
 import {
   build,
   pause,

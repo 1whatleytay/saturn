@@ -125,9 +125,17 @@ export const joinYTab = (editor: Tabs, join: string): EditorTab => {
 
   return tab
 }
-;(window as any).join = (x: string) => {
+export const join = (x: string) => {
   const tab = joinYTab(tabsState, x)
 
   tabsState.tabs.push(tab)
   tabsState.selected = tab.uuid
+}
+
+let hostFn: () => void = () => {}
+export const setHostFn = (fn: () => void) => {
+  hostFn = fn
+}
+export const host = () => {
+  hostFn()
 }
