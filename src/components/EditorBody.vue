@@ -68,7 +68,9 @@ onMounted(() => {
   )
 
   setHostFn(() => {
-    view.dispatch({ effects: [hostYTab(tab()!)] })
+    const hostEffect = hostYTab(tab()!)
+    if (hostEffect) view.dispatch({ effects: [hostEffect] })
+    return !!hostEffect
   })
 
   // https://gist.github.com/shimondoodkin/1081133

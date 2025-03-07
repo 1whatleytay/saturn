@@ -60,7 +60,20 @@ const syncPlugin = (ytext: Y.Text) =>
     },
   )
 
+
+// Store the Yjs documents so we can tell if a tab is synced, and so we can update provider awareness later
+const ydocs: Record<string, {
+  provider: WebrtcProvider;
+  extensions: Extension[];
+  ytext: Y.Text;
+  undoManager: Y.UndoManager;
+}> = {}
+
 const createExtensions = (id: string) => {
+  if (ydocs[id]) {
+    throw new Error('Document already exists')
+  }
+
   const ydoc = new Y.Doc()
   const ytext = ydoc.getText('codemirror')
   const provider = new WebrtcProvider(id, ydoc, {
@@ -77,7 +90,8 @@ const createExtensions = (id: string) => {
   })
   const undoManager = new Y.UndoManager(ytext)
 
-  return {
+  ydocs[id] = {
+    provider,
     extensions: [
       yCollab(ytext, provider.awareness, { undoManager }),
       keymap.of(yUndoManagerKeymap),
@@ -86,17 +100,20 @@ const createExtensions = (id: string) => {
     ytext,
     undoManager,
   }
+  return ydocs[id]
 }
 
 export const hostYTab = (tab: EditorTab) => {
+  if (ydocs[tab.uuid]) {
+    return;
+  }
+
   const { extensions, ytext, undoManager } = createExtensions(tab.uuid)
 
   if (ytext.length === 0) {
     ytext.insert(0, tab.doc)
     undoManager.clear()
   }
-
-  console.log(tab.uuid)
 
   return collabCompartment.reconfigure(extensions)
 }
@@ -126,16 +143,21 @@ export const joinYTab = (editor: Tabs, join: string): EditorTab => {
   return tab
 }
 export const join = (x: string) => {
+  if (tabsState.tabs.some((tab) => tab.uuid === x)) {
+    tabsState.selected = x
+    return
+  }
+
   const tab = joinYTab(tabsState, x)
 
   tabsState.tabs.push(tab)
   tabsState.selected = tab.uuid
 }
 
-let hostFn: () => void = () => {}
-export const setHostFn = (fn: () => void) => {
-  hostFn = fn
-}
-export const host = () => {
-  hostFn()
+let hostFn: () => boolean = () => false
+export const setHostFn = (fn: () => boolean) => (hostFn = fn);
+export const host = () => hostFn()
+
+export const isSyncing = (tab: EditorTab) => {
+  return ydocs[tab.uuid] !== undefined
 }

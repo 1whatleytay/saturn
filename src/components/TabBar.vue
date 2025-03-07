@@ -37,7 +37,7 @@
         </button>
       </div>
 
-      <TabBarItems class="ml-auto shrink-0" />
+      <TabBarItems />
     </div>
 
     <div class="h-10 w-full border-b-2 opacity-0" />

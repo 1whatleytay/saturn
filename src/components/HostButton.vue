@@ -14,8 +14,9 @@
         >
           <div class="flex w-full">
             <button
-              class="flex items-center rounded p-2 text-left hover:bg-neutral-300 dark:hover:bg-neutral-700"
+              class="flex items-center rounded p-2 text-left hover:bg-neutral-300 disabled:cursor-not-allowed disabled:hover:bg-inherit dark:hover:bg-neutral-700"
               @click="handleClick()"
+              :disabled="!tabsState.tabs.length"
             >
               Host selected tab
             </button>
@@ -27,6 +28,7 @@
           </div>
           <div
             class="my-2 border-t border-neutral-300 dark:border-neutral-700"
+            v-if="tabsState.tabs.length"
           />
           <button
             @click="tabsState.selected = tab.uuid"
@@ -39,7 +41,7 @@
           >
             {{ tab.title }}
             <span
-              v-if="tab.path?.startsWith('remote://')"
+              v-if="isSyncing(tab)"
               class="ml-auto mr-1 h-2 w-2 rounded-full bg-green-500"
             ></span>
           </button>
@@ -132,7 +134,7 @@ import {
   DialogTrigger,
 } from 'reka-ui'
 import { UserPlusIcon } from '@heroicons/vue/24/solid'
-import { host, join } from '../utils/lezer-mips/collab'
+import { host, isSyncing, join } from '../utils/lezer-mips/collab'
 
 const joinTabOpen = ref(false)
 const joinTabStr = ref('')
@@ -142,21 +144,24 @@ const tabId = ref('')
 
 const timerRef = ref(0)
 
-function handleClick() {
+async function handleClick() {
   const uuid = tab()?.uuid
   if (!uuid) {
     return
   }
 
-  open.value = true
-  navigator.clipboard.writeText(uuid)
-  tabId.value = uuid
-  host()
+  const success = host()
+  if (success) {
+    open.value = true
+    tabId.value = uuid
+    window.clearTimeout(timerRef.value)
+    
+    await navigator.clipboard.writeText(uuid)
 
-  window.clearTimeout(timerRef.value)
-  timerRef.value = window.setTimeout(() => {
-    open.value = false
-  }, 5000)
+    timerRef.value = window.setTimeout(() => {
+      open.value = false
+    }, 5000)
+  }
 }
 
 function myConfirm() {
