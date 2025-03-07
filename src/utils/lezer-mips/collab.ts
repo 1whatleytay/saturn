@@ -2,7 +2,7 @@ import * as Y from 'yjs'
 import { WebrtcProvider } from 'y-webrtc'
 import { createState, EditorTab, Tabs } from '../tabs'
 import { tabsState } from '../../state/state'
-import { markRaw } from 'vue'
+import { markRaw, Raw, Reactive, reactive } from 'vue'
 import { ChangeSpec, Compartment, Extension } from '@codemirror/state'
 import {
   yCollab,
@@ -60,14 +60,18 @@ const syncPlugin = (ytext: Y.Text) =>
     },
   )
 
-
 // Store the Yjs documents so we can tell if a tab is synced, and so we can update provider awareness later
-const ydocs: Record<string, {
-  provider: WebrtcProvider;
-  extensions: Extension[];
-  ytext: Y.Text;
-  undoManager: Y.UndoManager;
-}> = {}
+const ydocs: Reactive<
+  Record<
+    string,
+    Raw<{
+      provider: WebrtcProvider
+      extensions: Extension[]
+      ytext: Y.Text
+      undoManager: Y.UndoManager
+    }>
+  >
+> = reactive({})
 
 const createExtensions = (id: string) => {
   if (ydocs[id]) {
@@ -90,7 +94,7 @@ const createExtensions = (id: string) => {
   })
   const undoManager = new Y.UndoManager(ytext)
 
-  ydocs[id] = {
+  ydocs[id] = markRaw({
     provider,
     extensions: [
       yCollab(ytext, provider.awareness, { undoManager }),
@@ -99,13 +103,13 @@ const createExtensions = (id: string) => {
     ],
     ytext,
     undoManager,
-  }
+  })
   return ydocs[id]
 }
 
 export const hostYTab = (tab: EditorTab) => {
   if (ydocs[tab.uuid]) {
-    return;
+    return
   }
 
   const { extensions, ytext, undoManager } = createExtensions(tab.uuid)
@@ -155,7 +159,7 @@ export const join = (x: string) => {
 }
 
 let hostFn: () => boolean = () => false
-export const setHostFn = (fn: () => boolean) => (hostFn = fn);
+export const setHostFn = (fn: () => boolean) => (hostFn = fn)
 export const host = () => hostFn()
 
 export const isSyncing = (tab: EditorTab) => {

@@ -97,7 +97,7 @@
 
     <ToastRoot
       v-model:open="open"
-      class="data-[state=open]:animate-slideIn data-[state=closed]:animate-hide data-[swipe=end]:animate-swipeOut flex flex-col gap-x-[15px] rounded-lg border p-[15px] shadow-sm data-[swipe=cancel]:translate-x-0 data-[swipe=move]:translate-x-[var(--reka-toast-swipe-move-x)] data-[swipe=cancel]:transition-[transform_200ms_ease-out]"
+      class="data-[state=open]:animate-slideIn data-[state=closed]:animate-hide data-[swipe=end]:animate-swipeOut flex flex-col gap-x-[15px] rounded-lg border bg-white p-[15px] shadow-sm data-[swipe=cancel]:translate-x-0 data-[swipe=move]:translate-x-[var(--reka-toast-swipe-move-x)] data-[swipe=cancel]:transition-[transform_200ms_ease-out] dark:border-neutral-700 dark:bg-neutral-900"
     >
       <ToastTitle class="mb-[5px] text-sm font-medium">Copied</ToastTitle>
       <ToastDescription as-child>
@@ -155,7 +155,7 @@ async function handleClick() {
     open.value = true
     tabId.value = uuid
     window.clearTimeout(timerRef.value)
-    
+
     await navigator.clipboard.writeText(uuid)
 
     timerRef.value = window.setTimeout(() => {
