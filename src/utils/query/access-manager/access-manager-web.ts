@@ -30,6 +30,10 @@ export async function selectSaveDestination(): Promise<AccessFile<undefined> | n
   })
   showFileSaveDialog.value = false
 
+  if (!name) {
+    return null
+  }
+
   return {
     path: name,
     name: name,
