@@ -14,6 +14,8 @@
     >
       <MenuButton v-if="shouldShowMenu" @create="create" />
 
+      <HostButton />
+
       <div class="no-scrollbar flex flex-grow items-start overflow-x-auto">
         <Tab
           v-for="tab in tabsState.tabs"
@@ -37,7 +39,7 @@
         </button>
       </div>
 
-      <TabBarItems class="ml-auto shrink-0" />
+      <TabBarItems />
     </div>
 
     <div class="h-10 w-full border-b-2 opacity-0" />
@@ -65,6 +67,7 @@ import ExportOverlay from './ExportModal.vue'
 import FileSaveDialog from './FileSaveDialog.vue'
 import FileOpenDialog from './FileOpenDialog.vue'
 import MenuButton from './MenuButton.vue'
+import HostButton from './HostButton.vue'
 
 const shouldShowMenu = !window.__TAURI_INTERNALS__
 

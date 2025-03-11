@@ -105,7 +105,7 @@ export function createState(
         }
         syncing = true
         if (update.docChanged) {
-          tab.marked = true
+          tab.marked = !tab.path?.startsWith('remote://') 
           tab.doc = update.state.doc.toString()
         }
         tab.state = markRaw(update.state)
@@ -340,7 +340,9 @@ export function useTabs(): TabsResult {
       if (editor.tabs.length <= 0) {
         editor.selected = null
 
-        await closeWindow()
+        if (window.__TAURI_INTERNALS__) {
+          await closeWindow()
+        }
 
         return
       }

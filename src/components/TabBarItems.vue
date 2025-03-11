@@ -1,5 +1,5 @@
 <template>
-  <div v-if="profile ?? false" class="flex items-center">
+  <div v-if="profile ?? false" class="ml-auto flex shrink-0 items-center">
     <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
       class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-sky-700 hover:bg-slate-300 dark:text-sky-300 dark:hover:bg-slate-800"
