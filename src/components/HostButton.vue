@@ -6,7 +6,7 @@
           <button
             class="flex h-10 w-10 shrink-0 items-center justify-center font-black text-slate-800 hover:bg-slate-300 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            <UserPlusIcon class="h-5 w-5" />
+            <UserPlusIcon class="h-4 w-4" />
           </button>
         </PopoverTrigger>
         <PopoverContent

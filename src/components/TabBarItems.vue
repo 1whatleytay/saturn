@@ -1,5 +1,4 @@
 <template>
-  <HostButton />
   <div v-if="profile ?? false" class="ml-auto flex shrink-0 items-center">
     <button
       v-if="!consoleData.execution && tab()?.profile?.kind === 'asm'"
@@ -85,7 +84,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
-import HostButton from './HostButton.vue'
 import {
   build,
   pause,
