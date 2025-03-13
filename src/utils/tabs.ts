@@ -20,12 +20,14 @@ import {
   createDefaultMinimap,
   createDefaultTheme,
   createDefaultVim,
+  createIndentUnit,
 } from './lezer-mips/modes'
 import { suggestionsContext } from './lezer-mips/suggestions'
 import { highlightActiveLine, keymap } from '@codemirror/view'
-import { indentWithTab } from '@codemirror/commands'
+import { indentLess, insertTab } from '@codemirror/commands'
 import { createCollab, joinYTab } from './lezer-mips/collab'
 import { saveTab } from './events/events'
+import { acceptCompletion, completionStatus } from '@codemirror/autocomplete'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -95,8 +97,18 @@ export function createState(
       createDefaultVim(),
       createDefaultMinimap(),
       createDefaultTheme(),
+      createIndentUnit(),
       suggestionsContext,
-      keymap.of([indentWithTab]),
+      keymap.of([
+        {
+          key: 'Tab',
+          run: (e) => {
+            if (!completionStatus(e.state)) return insertTab(e)
+            else return acceptCompletion(e)
+          },
+          shift: indentLess,
+        },
+      ]),
       EditorView.updateListener.of((update) => {
         const tab = editor.tabs.find((tab) => tab.uuid === uuid)
         if (!tab) {
@@ -105,7 +117,7 @@ export function createState(
         }
         syncing = true
         if (update.docChanged) {
-          tab.marked = !tab.path?.startsWith('remote://') 
+          tab.marked = !tab.path?.startsWith('remote://')
           tab.doc = update.state.doc.toString()
         }
         tab.state = markRaw(update.state)
@@ -114,7 +126,7 @@ export function createState(
       Mips(),
       createCollab(collab),
       breakpointGutter,
-      (basicSetup as Extension[]).filter(x => x !== highlightActiveLine()),
+      (basicSetup as Extension[]).filter((x) => x !== highlightActiveLine()),
       writable ? [] : EditorState.readOnly.of(true),
     ],
   })
