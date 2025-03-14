@@ -1,4 +1,5 @@
-import { Compartment } from '@codemirror/state'
+import { indentUnit } from '@codemirror/language'
+import { Compartment, EditorState } from '@codemirror/state'
 import { showMinimap } from '@replit/codemirror-minimap'
 import { vim as vimSetup } from '@replit/codemirror-vim'
 import { EditorView } from 'codemirror'
@@ -6,6 +7,7 @@ import { EditorView } from 'codemirror'
 const vimCompartment = new Compartment()
 const minimapCompartment = new Compartment()
 const editorTheme = new Compartment()
+const indentUnitCompartment = new Compartment()
 
 const vim = vimSetup()
 
@@ -38,3 +40,11 @@ export const setTheme = (theme: boolean) =>
   editorTheme.reconfigure(theme ? darkTheme : lightTheme)
 
 export const createDefaultTheme = () => editorTheme.of(lightTheme)
+
+export const createIndentUnit = () => indentUnitCompartment.of([])
+
+export const setIndentUnit = (unit: number) =>
+  indentUnitCompartment.reconfigure([
+    indentUnit.of('\t'),
+    EditorState.tabSize.of(unit),
+  ])
