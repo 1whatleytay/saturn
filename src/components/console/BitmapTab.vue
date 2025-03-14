@@ -99,6 +99,14 @@
         To connect the keyboard, click on the display.
       </div>
 
+      <!-- Why does this input exist? -->
+      <!-- On keydown, safari will focus the last input that was focused. -->
+      <!-- We need keydown events to reach the Bitmap display though. -->
+      <!-- So here is an intermediate input that seperates the two. -->
+      <!-- For some reason, this input doesn't get focused, but CodeMirror does. -->
+      <!-- Maybe pointer-events-none? -->
+      <input ref="intermediate" class="pointer-events-none absolute opacity-0" />
+
       <div
         v-if="!state.useProtocol"
         class="mt-auto flex items-center pt-4 text-neutral-500"
@@ -155,6 +163,8 @@ import { settings } from '../../state/state'
 import NumberField from './NumberField.vue'
 import { displayConfig } from '../../utils/settings'
 import { MipsExecution } from '../../utils/mips/mips'
+
+const intermediate = ref(null as HTMLInputElement | null)
 
 const gpRegisterNumber = 28
 
@@ -239,6 +249,10 @@ async function handleKey(event: KeyboardEvent, up: boolean) {
 }
 
 function focusSelf() {
+  // Safari Workaround to break dependency on CodeMirror window.
+  intermediate.value?.focus()
+
+  // Actually focus the display.
   wrapper.value?.focus()
 }
 
