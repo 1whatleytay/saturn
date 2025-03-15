@@ -88,9 +88,7 @@ onMounted(() => {
   if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
     view.contentDOM.addEventListener(
       'blur',
-      (e): void => {
-        if (!e.relatedTarget) return
-
+      (): void => {
         var editableFix = document.createElement('input')
         editableFix.setAttribute(
           'style',
