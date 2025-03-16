@@ -7,22 +7,22 @@ First, please install the following tools:
 
 - [Node](https://nodejs.org/en)
 - [Rust](https://www.rust-lang.org)
-- [Yarn (Classic)](https://yarnpkg.com)
+- [pnpm](https://pnpm.io)
 
 Before development, install dependencies using
 
 ```
-yarn install
+pnpm install
 ```
 
 To run for development, use
 
 ```shell
-yarn tauri dev
+pnpm tauri dev
 ```
 
 To build a binary for your platform, use
 
 ```shell
-yarn tauri build
+pnpm tauri build
 ```
