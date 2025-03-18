@@ -3,8 +3,14 @@ import { suggestions } from './suggestions'
 import { SuggestionType } from '../languages/suggestions'
 
 export function myCompletions(context: CompletionContext) {
-  // if we're in a string or comment token, don't show completions
-  if (context.tokenBefore(['String', 'LineComment'])) {
+  // if we're in a string token, don't show completions
+  if (context.tokenBefore(['String'])) {
+    return null
+  }
+
+  // because line comments sometimes don't show up as tokens in the tree, 
+  // tokenBefore only detects Mips as the token instead of LineComment
+  if (context.matchBefore(/#.*/)) {
     return null
   }
 
