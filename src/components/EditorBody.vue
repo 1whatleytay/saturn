@@ -16,7 +16,12 @@ import { EditorView } from 'codemirror'
 import { clearHighlightedLine } from '../utils/lezer-mips'
 import { consoleData } from '../state/console-data'
 import { setHighlightedLine } from '../utils/lezer-mips'
-import { setMinimap, setVim, setTheme } from '../utils/lezer-mips/modes'
+import {
+  setMinimap,
+  setVim,
+  setTheme,
+  setIndentUnit,
+} from '../utils/lezer-mips/modes'
 import { Diagnostic, setDiagnostics } from '@codemirror/lint'
 import { hostYTab } from '../utils/lezer-mips/collab'
 
@@ -40,6 +45,7 @@ onMounted(() => {
             setTheme(settings.editor.darkMode),
             setVim(settings.editor.vimMode),
             setMinimap(settings.editor.showMinimap),
+            setIndentUnit(settings.editor.tabSize),
           ],
         })
       }
@@ -63,7 +69,12 @@ onMounted(() => {
   )
 
   watch(
-    () => settings.editor.fontSize,
+    () => settings.editor.tabSize,
+    (unit: number) => view.dispatch({ effects: [setIndentUnit(unit)] }),
+  )
+
+  watch(
+    () => [settings.editor.fontSize, settings.editor.tabSize],
     () => view.requestMeasure(),
   )
   ;(window as any).host = () => {
@@ -74,9 +85,7 @@ onMounted(() => {
   if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
     view.contentDOM.addEventListener(
       'blur',
-      (e): void => {
-        if (!e.relatedTarget) return
-
+      (): void => {
         var editableFix = document.createElement('input')
         editableFix.setAttribute(
           'style',
