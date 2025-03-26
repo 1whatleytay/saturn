@@ -24,10 +24,11 @@ import {
 } from './lezer-mips/modes'
 import { suggestionsContext } from './lezer-mips/suggestions'
 import { highlightActiveLine, keymap } from '@codemirror/view'
-import { indentLess, insertTab } from '@codemirror/commands'
+import { indentLess, indentMore } from '@codemirror/commands'
 import { createCollab, joinYTab } from './lezer-mips/collab'
 import { saveTab } from './events/events'
 import { acceptCompletion, completionStatus } from '@codemirror/autocomplete'
+import { indentUnit } from '@codemirror/language'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -103,8 +104,18 @@ export function createState(
         {
           key: 'Tab',
           run: (e) => {
-            if (!completionStatus(e.state)) return insertTab(e)
-            else return acceptCompletion(e)
+            const { state, dispatch } = e
+            if (!completionStatus(state)) {
+              if (state.selection.ranges.some((r) => !r.empty))
+                return indentMore({ state, dispatch })
+              dispatch(
+                state.update(state.replaceSelection(state.facet(indentUnit)), {
+                  scrollIntoView: true,
+                  userEvent: 'input',
+                }),
+              )
+              return true
+            } else return acceptCompletion(e)
           },
           shift: indentLess,
         },
