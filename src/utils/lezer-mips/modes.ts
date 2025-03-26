@@ -45,6 +45,6 @@ export const createIndentUnit = () => indentUnitCompartment.of([])
 
 export const setIndentUnit = (unit: number) =>
   indentUnitCompartment.reconfigure([
-    indentUnit.of('\t'),
+    indentUnit.of(' '.repeat(unit)),
     EditorState.tabSize.of(unit),
   ])
