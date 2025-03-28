@@ -8,7 +8,7 @@ export function myCompletions(context: CompletionContext) {
     return null
   }
 
-  // because line comments sometimes don't show up as tokens in the tree, 
+  // because line comments sometimes don't show up as tokens in the tree,
   // tokenBefore only detects Mips as the token instead of LineComment
   if (context.matchBefore(/#.*/)) {
     return null
