@@ -23,7 +23,6 @@ export interface EditorSettings {
   tabSize: number
   fontSize: number
   consoleFontSize: number
-  enterAutocomplete: boolean
   darkMode: boolean
   showMinimap: boolean
   vimMode: boolean
@@ -71,7 +70,6 @@ function defaultSettings(): Settings {
       tabSize: 4,
       fontSize: 14,
       consoleFontSize: 16,
-      enterAutocomplete: true,
       darkMode: true,
       showMinimap: true,
       vimMode: false,
