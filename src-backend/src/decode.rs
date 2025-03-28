@@ -9,6 +9,7 @@ use titan::unit::instruction::{InstructionDecoder, InstructionParameter};
 #[serde(tag = "type", content = "value")]
 pub enum ParameterItem {
     Register(u32),
+    FPRegister(u32),
     Immediate(u16),
     Address(u32),
     Offset { offset: u16, register: u32 },
@@ -25,6 +26,7 @@ pub struct InstructionDetails {
 fn parameter_to_item(parameter: InstructionParameter) -> ParameterItem {
     match parameter {
         InstructionParameter::Register(name) => ParameterItem::Register(name.to_u32().unwrap()),
+        InstructionParameter::FPRegister(name) => ParameterItem::FPRegister(name.to_u32().unwrap()),
         InstructionParameter::Immediate(imm) => ParameterItem::Immediate(imm),
         InstructionParameter::Address(address) => ParameterItem::Address(address),
         InstructionParameter::Offset(offset, register) => ParameterItem::Offset {
