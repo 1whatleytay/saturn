@@ -22,5 +22,4 @@ import EditorBody from './EditorBody.vue'
 import DebugWindow from './console/Console.vue'
 import DropZone from './DropZone.vue'
 import { tabsState } from '../state/state'
-
 </script>
