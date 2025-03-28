@@ -76,21 +76,6 @@
       </div>
 
       <div class="mt-8">
-        <div class="text-sm font-bold uppercase">Enter Autocomplete</div>
-
-        <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
-          When enabled, autocomplete suggestions will be taken if the user
-          presses the enter key.
-        </div>
-
-        <ToggleField
-          class="my-2"
-          title="Use Enter Autocomplete"
-          v-model="settings.editor.enterAutocomplete"
-        />
-      </div>
-
-      <div class="mt-8">
         <div class="text-sm font-bold uppercase">Dark Mode</div>
 
         <div class="mt-1 text-sm text-gray-800 dark:text-gray-300">
