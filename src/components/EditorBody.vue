@@ -95,6 +95,7 @@ onMounted(() => {
           'width:1px;height:1px;border:none;margin:0;padding:0;',
         )
         document.body.appendChild(editableFix)
+        editableFix.focus()
         editableFix.setSelectionRange(0, 0)
         editableFix.blur()
         editableFix.remove()
