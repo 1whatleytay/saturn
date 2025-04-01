@@ -24,7 +24,9 @@ use std::sync::{Arc, Mutex};
 use titan::assembler::string::assemble_from;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::cpu::Memory;
+use titan::cpu::registers::registers::RawRegisters;
+use titan::cpu::registers::WatchedRegisters;
+use titan::cpu::{Memory, Registers};
 use titan::elf::Elf;
 use titan::execution::executor::ExecutorMode;
 use titan::execution::trackers::empty::EmptyTracker;
@@ -103,10 +105,11 @@ impl Runner {
 
     pub fn swap<
         Listen: ListenResponder + Send + 'static,
-        Track: Tracker<SectionMemory<Listen>> + Send + 'static,
+        Reg: Registers + Send + 'static,
+        Track: Tracker<SectionMemory<Listen>, Reg> + Send + 'static,
     >(
         &self,
-        debugger: Executor<SectionMemory<Listen>, Track>,
+        debugger: Executor<SectionMemory<Listen>, Reg, Track>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -130,7 +133,7 @@ impl Runner {
 
     pub fn swap_watched<Mem: Memory + Send + 'static>(
         &self,
-        debugger: Executor<WatchedMemory<Mem>, HistoryTracker>,
+        debugger: Executor<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -209,7 +212,8 @@ impl Runner {
         if time_travel {
             let memory = WatchedMemory::new(memory);
 
-            let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
+            let mut cpu_state =
+                create_elf_state(&elf, 0x100000, memory, WatchedRegisters::default());
             setup_state(&mut cpu_state);
 
             self.swap_watched(
@@ -221,7 +225,7 @@ impl Runner {
                 time,
             );
         } else {
-            let mut cpu_state = create_elf_state(&elf, 0x100000, memory);
+            let mut cpu_state = create_elf_state(&elf, 0x100000, memory, RawRegisters::default());
             setup_state(&mut cpu_state);
 
             self.swap(
@@ -263,7 +267,8 @@ impl Runner {
         if time_travel {
             let memory = WatchedMemory::new(memory);
 
-            let mut cpu_state = state_from_binary(binary, 0x100000, memory);
+            let mut cpu_state =
+                state_from_binary(binary, 0x100000, memory, WatchedRegisters::default());
             setup_state(&mut cpu_state);
 
             self.swap_watched(
@@ -275,7 +280,8 @@ impl Runner {
                 time,
             );
         } else {
-            let mut cpu_state = state_from_binary(binary, 0x100000, memory);
+            let mut cpu_state =
+                state_from_binary(binary, 0x100000, memory, RawRegisters::default());
             setup_state(&mut cpu_state);
 
             self.swap(
