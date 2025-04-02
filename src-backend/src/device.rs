@@ -2,7 +2,6 @@ use crate::keyboard::KeyboardState;
 use crate::syscall::SyscallState;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::Binary;
-use titan::assembler::registers;
 use titan::assembler::registers::RegisterSlot::{GeneralPointer, StackPointer};
 use titan::cpu::memory::{Mountable, Region};
 use titan::cpu::registers::WhichRegister::Pc;
@@ -57,5 +56,7 @@ pub fn setup_state<Mem: Memory + Mountable, Reg: Registers>(state: &mut State<Me
 
     state.memory.mount(screen);
 
-    state.registers.set_l(GeneralPointer, 0x10008000)
+    state.registers.set_l(GeneralPointer, 0x10008000);
+
+    state.registers.clear();
 }

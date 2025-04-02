@@ -396,16 +396,18 @@ impl<Mem: Memory> ExecutionRewindable
     for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
 {
     fn last_pc(&self) -> Option<u32> {
-        self.debugger.with_tracker(|tracker| {
-            tracker.last().as_ref().map(|entry| {
-                let RegisterEntry(_, value) = entry
-                    .registers
-                    .iter()
-                    .find(|RegisterEntry(name, _)| *name == Pc)
-                    .unwrap();
-                *value
+        self.debugger
+            .with_tracker(|tracker| {
+                tracker.last().map(|entry| {
+                    entry
+                        .registers
+                        .iter()
+                        .find(|RegisterEntry(name, _)| *name == Pc)
+                        .map(|RegisterEntry(_, value)| *value)
+                })
             })
-        })
+            .map(|x| x.unwrap_or_else(|| self.debugger.with_state(|state| state.registers.get(Pc))))
+            .map(|x| x.wrapping_sub(4))
     }
 
     fn rewind(&self, count: u32) -> ResumeResult {
@@ -422,7 +424,7 @@ impl<Mem: Memory> ExecutionRewindable
             self.debugger.pause();
 
             self.debugger.with_state(|state| {
-                entry.apply(&mut state.registers, &mut state.memory.backing);
+                entry.apply(&mut state.registers.backing, &mut state.memory.backing);
             });
         }
 
