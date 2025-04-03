@@ -21,6 +21,9 @@ import {
   selectSaveDestination,
 } from '../query/access-manager'
 import { EditorTab } from '../tabs'
+import { openY } from '../lezer-mips/collab'
+import * as Y from 'yjs'
+import { accessWriteBinary } from '../query/access-manager/access-manager-web'
 
 export enum PromptType {
   NeverPrompt,
@@ -122,6 +125,14 @@ export async function openTab(file: AccessFile<string | Uint8Array>) {
     return
   }
 
+  if (path.endsWith('.yjs')) {
+    const data1 = data as Uint8Array
+    const textDecoder = new TextDecoder()
+    const id = textDecoder.decode(data1.slice(0, 36))
+    openY(id, path, data1.slice(36))
+    return
+  }
+
   switch (typeof data) {
     case 'string':
       createTab(name, data, path)
@@ -137,11 +148,11 @@ export async function saveTab(
   current: EditorTab,
   type: PromptType = PromptType.PromptWhenNeeded,
 ): Promise<boolean> {
-  if (type === PromptType.NeverPrompt && !current.path) {
-    return true
-  }
-
-  if (type === PromptType.ForcePrompt || !current.path) {
+  if (
+    type === PromptType.ForcePrompt ||
+    !current.path ||
+    (type !== PromptType.NeverPrompt && current.path.startsWith('tmp://'))
+  ) {
     const result = await selectSaveDestination('Save File', assemblyFilter)
 
     if (!result) {
@@ -154,13 +165,18 @@ export async function saveTab(
     current.path = path
   }
 
-  if (current.path.startsWith('remote://')) {
-    return false
+  if (current.path.endsWith('.yjs')) {
+    const textEncoder = new TextEncoder()
+    const uuid = textEncoder.encode(current.uuid)
+    const data = Y.encodeStateAsUpdate(current.yjs!)
+    const content = new Uint8Array(uuid.length + data.length)
+    content.set(uuid, 0)
+    content.set(data, 36)
+    await accessWriteBinary(current.path, content)
+  } else {
+    const data = current.doc.toString()
+    await accessWriteText(current.path, data)
   }
-
-  const data = current.doc.toString()
-
-  await accessWriteText(current.path, data)
 
   current.marked = false // Remove "needs saving" marker
 
