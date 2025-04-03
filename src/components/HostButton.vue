@@ -17,8 +17,16 @@
               class="flex items-center rounded p-2 text-left hover:bg-neutral-300 disabled:cursor-not-allowed disabled:hover:bg-inherit dark:hover:bg-neutral-700"
               @click="handleClick()"
               :disabled="!tabsState.tabs.length"
+              v-if="tab()?.yjs == undefined"
             >
               Host selected tab
+            </button>
+            <button
+              class="flex items-center rounded p-2 text-left hover:bg-neutral-300 disabled:cursor-not-allowed disabled:hover:bg-inherit dark:hover:bg-neutral-700"
+              @click="showUuid()"
+              v-else
+            >
+              Copy join link
             </button>
             <DialogTrigger
               class="ml-auto flex items-center rounded p-2 text-left hover:bg-neutral-300 dark:hover:bg-neutral-700"
@@ -30,21 +38,14 @@
             class="my-2 border-t border-neutral-300 dark:border-neutral-700"
             v-if="tabsState.tabs.length"
           />
-          <button
-            @click="tabsState.selected = tab.uuid"
-            class="flex w-full items-center rounded-r p-1 text-left hover:bg-neutral-300 dark:hover:bg-neutral-700"
-            :class="{
-              'border-l-2 border-orange-500': tabsState.selected === tab.uuid,
-            }"
-            v-for="tab in tabsState.tabs"
-            :key="tab.uuid"
-          >
-            {{ tab.title }}
+          <div class="flex w-full items-center rounded-r p-1 text-left">
+            {{ tab()!.title }}
+
             <span
-              v-if="isSyncing(tab)"
+              v-if="isSyncing(tab()!.uuid)"
               class="ml-auto mr-1 h-2 w-2 rounded-full bg-green-500"
             ></span>
-          </button>
+          </div>
         </PopoverContent>
       </PopoverRoot>
 
@@ -152,16 +153,25 @@ async function handleClick() {
 
   const success = host()
   if (success) {
-    open.value = true
-    tabId.value = uuid
-    window.clearTimeout(timerRef.value)
-
-    await navigator.clipboard.writeText(uuid)
-
-    timerRef.value = window.setTimeout(() => {
-      open.value = false
-    }, 5000)
+    showUuid()
   }
+}
+
+async function showUuid() {
+  const uuid = tab()?.uuid
+  if (!uuid) {
+    return
+  }
+
+  open.value = true
+  tabId.value = uuid
+  window.clearTimeout(timerRef.value)
+
+  await navigator.clipboard.writeText(uuid)
+
+  timerRef.value = window.setTimeout(() => {
+    open.value = false
+  }, 5000)
 }
 
 function myConfirm() {

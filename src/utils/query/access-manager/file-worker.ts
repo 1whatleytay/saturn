@@ -5,8 +5,13 @@ globalThis.onmessage = async (event) => {
     return
   }
 
-  const { path, content } = event.data as { path: string; content: Uint8Array }
-  const astorage = await storage
+  let { path, content } = event.data as { path: string; content: Uint8Array }
+
+  let astorage = await storage
+  if (path.startsWith('tmp://')) {
+    path = path.slice(6)
+    astorage = await astorage.getDirectoryHandle('.tmp', { create: true })
+  }
   const file = await astorage.getFileHandle(path, { create: true })
   const writable = await file.createSyncAccessHandle()
   writable.truncate(content.length)
