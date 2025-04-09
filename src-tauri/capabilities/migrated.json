@@ -8,6 +8,7 @@
   "permissions": [
     "core:default",
     "core:window:allow-close",
-    "core:window:allow-destroy"
+    "core:window:allow-destroy",
+    "deep-link:default"
   ]
 }

@@ -22,7 +22,8 @@ use crate::access_manager::{
 };
 use std::sync::{Arc, Mutex};
 use tauri::WindowEvent::{Destroyed, DragDrop};
-use tauri::{DragDropEvent, Manager};
+use tauri::{DragDropEvent, Manager, Url};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::menu::{create_menu, handle_event};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
@@ -50,6 +51,13 @@ fn is_debug() -> bool {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("no main window")
+                .set_focus();
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(Mutex::new(None) as DebuggerBody)
@@ -57,7 +65,35 @@ pub fn run() {
         .manage(Mutex::new(MidiProviderContainer::None))
         .menu(create_menu)
         .setup(|app| {
-            app.manage(AccessManager::load(app.handle().clone()));
+            let map_paths = |paths: Vec<Url>| {
+                paths
+                    .into_iter()
+                    .flat_map(|url| {
+                        if url.scheme() == "file" {
+                            url.to_file_path().ok()
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            };
+
+            let access_manager = AccessManager::load(app.handle().clone());
+
+            let deep_link = app.deep_link();
+
+            if let Ok(Some(paths)) = deep_link.get_current() {
+                access_manager.permit(map_paths(paths));
+            }
+            let handle = app.handle().clone();
+            deep_link.on_open_url(move |event| {
+                let paths = map_paths(event.urls());
+
+                let manager: tauri::State<AccessManager> = handle.state();
+                manager.permit(paths);
+            });
+
+            app.manage(access_manager);
 
             Ok(())
         })

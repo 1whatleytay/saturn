@@ -18,6 +18,17 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "fileAssociations": [
+      {
+        "description": "Saturn MIPS Assembly File",
+        "ext": [
+          "asm",
+          "s"
+        ],
+        "name": "Saturn MIPS Assembly File",
+        "mimeType": "text/plain"
+      }
+    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
