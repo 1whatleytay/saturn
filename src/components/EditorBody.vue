@@ -54,6 +54,18 @@ onMounted(() => {
   )
 
   watch(
+    () => tab()?.doc,
+    (doc) => {
+      if (!isSyncing() && doc) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: doc },
+        })
+      }
+    },
+    { flush: 'sync' },
+  )
+
+  watch(
     () => settings.editor.darkMode,
     (theme: boolean) => view.dispatch({ effects: [setTheme(theme)] }),
   )
@@ -95,6 +107,7 @@ onMounted(() => {
           'width:1px;height:1px;border:none;margin:0;padding:0;',
         )
         document.body.appendChild(editableFix)
+        editableFix.focus()
         editableFix.setSelectionRange(0, 0)
         editableFix.blur()
         editableFix.remove()

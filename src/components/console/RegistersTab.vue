@@ -20,6 +20,7 @@
         <RegisterItem
           v-for="register in section.values"
           :key="register.name"
+          :marked="register.marked"
           :name="register.name"
           :editable="!!consoleData.execution"
           :classes="section.classes"
