@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::{Binary, RegionFlags};
 use titan::assembler::line_details::LineDetails;
-use titan::assembler::registers::RegisterSlot::{GeneralPointer, StackPointer};
+use titan::assembler::registers::RegisterSlot::StackPointer;
 use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::memory::{Mountable, Region};
@@ -15,7 +15,6 @@ use titan::cpu::{Memory, Registers, State};
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
 use titan::execution::elf::inspection::Inspection;
-use titan::unit::register;
 
 pub const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
