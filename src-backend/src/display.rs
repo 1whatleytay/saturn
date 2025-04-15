@@ -2,7 +2,7 @@ use crate::execution::ReadDisplayTarget;
 use num::FromPrimitive;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
-use titan::cpu::{Memory, State};
+use titan::cpu::{Memory, Registers, State};
 use titan::unit::register::RegisterName;
 
 #[derive(Clone, Serialize)]
@@ -38,7 +38,7 @@ impl FlushDisplayState {
         }
     }
 
-    pub fn flush<Mem: Memory>(&mut self, state: &mut State<Mem>) {
+    pub fn flush<Mem: Memory, Reg: Registers>(&mut self, state: &mut State<Mem, Reg>) {
         let address = self.get_target().to_address(&state.registers);
 
         self.data = read_display(address, self.width, self.height, &mut state.memory);

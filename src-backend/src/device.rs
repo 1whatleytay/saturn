@@ -2,23 +2,26 @@ use crate::keyboard::KeyboardState;
 use crate::syscall::SyscallState;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::Binary;
+use titan::assembler::registers::RegisterSlot::{GeneralPointer, StackPointer};
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::{Memory, State};
+use titan::cpu::registers::WhichRegister::Pc;
+use titan::cpu::{Memory, Registers, State};
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
 
-pub struct ExecutionState<Mem: Memory, Track: Tracker<Mem>> {
-    pub debugger: Arc<Executor<Mem, Track>>,
+pub struct ExecutionState<Mem: Memory, Reg: Registers, Track: Tracker<Mem, Reg>> {
+    pub debugger: Arc<Executor<Mem, Reg, Track>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
     pub delegate: Arc<Mutex<SyscallState>>,
     pub finished_pcs: Vec<u32>,
 }
 
-pub fn state_from_binary<Mem: Memory + Mountable>(
+pub fn state_from_binary<Mem: Memory + Mountable, Reg: Registers>(
     binary: Binary,
     heap_size: u32,
     mut memory: Mem,
-) -> State<Mem> {
+    mut registers: Reg,
+) -> State<Mem, Reg> {
     for region in binary.regions {
         let region = Region {
             start: region.address,
@@ -38,14 +41,13 @@ pub fn state_from_binary<Mem: Memory + Mountable>(
 
     memory.mount(heap);
 
-    let mut state = State::new(binary.entry, memory);
+    registers.set_l(StackPointer, heap_end - 4); // give some space
+    registers.set(Pc, binary.entry);
 
-    state.registers.line[29] = heap_end - 4; // give some space
-
-    state
+    State::new(registers, memory)
 }
 
-pub fn setup_state<Mem: Memory + Mountable>(state: &mut State<Mem>) {
+pub fn setup_state<Mem: Memory + Mountable, Reg: Registers>(state: &mut State<Mem, Reg>) {
     let max_screen = 0x8000;
     let screen = Region {
         start: 0x10008000,
@@ -54,5 +56,7 @@ pub fn setup_state<Mem: Memory + Mountable>(state: &mut State<Mem>) {
 
     state.memory.mount(screen);
 
-    state.registers.line[28] = 0x10008000
+    state.registers.set_l(GeneralPointer, 0x10008000);
+
+    state.registers.clear();
 }

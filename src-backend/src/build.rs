@@ -6,10 +6,12 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::{Binary, RegionFlags};
 use titan::assembler::line_details::LineDetails;
+use titan::assembler::registers::RegisterSlot::StackPointer;
 use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::{Memory, State};
+use titan::cpu::registers::WhichRegister::Pc;
+use titan::cpu::{Memory, Registers, State};
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
 use titan::execution::elf::inspection::Inspection;
@@ -129,11 +131,12 @@ pub fn assemble_text(text: &str, path: Option<&str>) -> Result<Binary, SourceErr
     }
 }
 
-pub fn create_elf_state<Mem: Memory + Mountable>(
+pub fn create_elf_state<Mem: Memory + Mountable, Reg: Registers>(
     elf: &Elf,
     heap_size: u32,
     mut memory: Mem,
-) -> State<Mem> {
+    mut registers: Reg,
+) -> State<Mem, Reg> {
     for header in &elf.program_headers {
         let region = Region {
             start: header.virtual_address,
@@ -152,10 +155,10 @@ pub fn create_elf_state<Mem: Memory + Mountable>(
 
     memory.mount(heap);
 
-    let mut state = State::new(elf.header.program_entry, memory);
-    state.registers.line[29] = heap_end;
+    registers.set_l(StackPointer, heap_end);
+    registers.set(Pc, elf.header.program_entry);
 
-    state
+    State::new(registers, memory)
 }
 
 pub fn configure_keyboard(

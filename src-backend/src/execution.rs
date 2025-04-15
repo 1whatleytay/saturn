@@ -7,6 +7,8 @@ use std::collections::HashSet;
 use titan::cpu::error::Error::{CpuTrap, MemoryAlign, MemoryUnmapped};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
+use titan::cpu::registers::WhichRegister::{Hi, Line, Lo, Pc};
+use titan::cpu::registers::{RegisterEntry, WatchedRegisters};
 use titan::cpu::state::Registers;
 use titan::cpu::{Memory, State};
 use titan::execution::executor::{DebugFrame, ExecutorMode};
@@ -26,9 +28,12 @@ pub enum ResumeMode {
     Finished { pc: u32, code: Option<u32> },
 }
 
-fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>) -> String {
+fn format_error<Mem: Memory, Reg: Registers>(
+    error: titan::cpu::error::Error,
+    state: &State<Mem, Reg>,
+) -> String {
     let memory = |reason: MemoryErrorReason| {
-        let pc = state.registers.pc;
+        let pc = state.registers.get(Pc);
 
         let description = state
             .memory
@@ -48,7 +53,7 @@ fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>
         MemoryAlign(_, _) => memory(MemoryErrorReason::Alignment),
         MemoryUnmapped(_) => memory(MemoryErrorReason::Unmapped),
         CpuTrap => {
-            let pc = state.registers.pc.wrapping_sub(4);
+            let pc = state.registers.get(Pc).wrapping_sub(4);
 
             let description = state
                 .memory
@@ -68,7 +73,10 @@ fn format_error<Mem: Memory>(error: titan::cpu::error::Error, state: &State<Mem>
 }
 
 impl ResumeMode {
-    fn from_executor<Mem: Memory>(value: ExecutorMode, state: &State<Mem>) -> Self {
+    fn from_executor<Mem: Memory, Reg: Registers>(
+        value: ExecutorMode,
+        state: &State<Mem, Reg>,
+    ) -> Self {
         match value {
             ExecutorMode::Running => ResumeMode::Running,
             ExecutorMode::Invalid(error) => ResumeMode::Invalid {
@@ -88,13 +96,14 @@ pub struct RegistersResult {
     hi: u32,
 }
 
-impl From<Registers> for RegistersResult {
-    fn from(value: Registers) -> Self {
+impl<T: Registers> From<T> for RegistersResult {
+    fn from(value: T) -> Self {
+        let raw = value.raw();
         RegistersResult {
-            pc: value.pc,
-            line: value.line,
-            lo: value.lo,
-            hi: value.hi,
+            pc: raw.pc,
+            line: raw.line,
+            lo: raw.lo,
+            hi: raw.hi,
         }
     }
 }
@@ -106,11 +115,11 @@ pub struct ResumeResult {
 }
 
 impl ResumeResult {
-    fn from_frame<Mem: Memory>(
+    fn from_frame<Mem: Memory, Reg: Registers>(
         frame: DebugFrame,
         finished_pcs: &[u32],
         result: Option<SyscallResult>,
-        state: &State<Mem>,
+        state: &State<Mem, Reg>,
     ) -> ResumeResult {
         let mode = match result {
             Some(SyscallResult::Failure(message)) => ResumeMode::Invalid { message },
@@ -195,10 +204,10 @@ pub enum ReadDisplayTarget {
 }
 
 impl ReadDisplayTarget {
-    pub fn to_address(self, registers: &Registers) -> u32 {
+    pub fn to_address<Reg: Registers>(self, registers: &Reg) -> u32 {
         match self {
             ReadDisplayTarget::Address(address) => address,
-            ReadDisplayTarget::Register(register) => registers.get(register),
+            ReadDisplayTarget::Register(register) => registers.get_l(register),
         }
     }
 }
@@ -223,8 +232,8 @@ pub trait ExecutionDevice: Send + Sync {
 }
 
 #[async_trait]
-impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice
-    for ExecutionState<Mem, Track>
+impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<Mem, Reg> + Send> ExecutionDevice
+    for ExecutionState<Mem, Reg, Track>
 {
     async fn resume(&self, options: ResumeOptions) -> Result<ResumeResult, ()> {
         let debugger = self.debugger.clone();
@@ -341,10 +350,10 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice
 
     fn write_register(&self, register: u32, value: u32) {
         self.debugger.with_state(|state| match register {
-            0..=31 => state.registers.line[register as usize] = value,
-            32 => state.registers.hi = value,
-            33 => state.registers.lo = value,
-            34 => state.registers.pc = value,
+            0..=31 => state.registers.set(Line(register as u8), value),
+            32 => state.registers.set(Hi, value),
+            33 => state.registers.set(Lo, value),
+            34 => state.registers.set(Pc, value),
             _ => {}
         })
     }
@@ -368,8 +377,8 @@ impl<Mem: Memory + Send, Track: Tracker<Mem> + Send> ExecutionDevice
     }
 }
 
-impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRewindable
-    for ExecutionState<SectionMemory<Listen>, Track>
+impl<Listen: ListenResponder, Reg: Registers, Track: Tracker<SectionMemory<Listen>, Reg>>
+    ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Reg, Track>
 {
     fn last_pc(&self) -> Option<u32> {
         None
@@ -383,10 +392,22 @@ impl<Listen: ListenResponder, Track: Tracker<SectionMemory<Listen>>> ExecutionRe
     }
 }
 
-impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, HistoryTracker> {
+impl<Mem: Memory> ExecutionRewindable
+    for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
+{
     fn last_pc(&self) -> Option<u32> {
         self.debugger
-            .with_tracker(|tracker| tracker.last().as_ref().map(|entry| entry.registers.pc))
+            .with_tracker(|tracker| {
+                tracker.last().map(|entry| {
+                    entry
+                        .registers
+                        .iter()
+                        .find(|RegisterEntry(name, _)| *name == Pc)
+                        .map(|RegisterEntry(_, value)| *value)
+                })
+            })
+            .map(|x| x.unwrap_or_else(|| self.debugger.with_state(|state| state.registers.get(Pc))))
+            .map(|x| x.wrapping_sub(4))
     }
 
     fn rewind(&self, count: u32) -> ResumeResult {
@@ -403,7 +424,7 @@ impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, His
             self.debugger.pause();
 
             self.debugger.with_state(|state| {
-                entry.apply(&mut state.registers, &mut state.memory.backing);
+                entry.apply(&mut state.registers.backing, &mut state.memory.backing);
             });
         }
 
@@ -414,8 +435,14 @@ impl<Mem: Memory> ExecutionRewindable for ExecutionState<WatchedMemory<Mem>, His
     }
 }
 
-impl<Listen: ListenResponder + Send, Track: Tracker<SectionMemory<Listen>> + Send> RewindableDevice
-    for ExecutionState<SectionMemory<Listen>, Track>
+impl<
+        Listen: ListenResponder + Send,
+        Reg: Registers + Send,
+        Track: Tracker<SectionMemory<Listen>, Reg> + Send,
+    > RewindableDevice for ExecutionState<SectionMemory<Listen>, Reg, Track>
 {
 }
-impl<Mem: Memory + Send> RewindableDevice for ExecutionState<WatchedMemory<Mem>, HistoryTracker> {}
+impl<Mem: Memory + Send> RewindableDevice
+    for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
+{
+}
