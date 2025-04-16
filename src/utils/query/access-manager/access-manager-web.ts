@@ -67,11 +67,19 @@ export async function selectOpenFile(): Promise<AccessFile<
   })
   showFileOpenDialog.value = false
 
+  if (!name) {
+    return null
+  }
+
   return await accessReadFile(name)
 }
 
 export async function accessReadText(path: string): Promise<string> {
-  const astorage = await storage
+  let astorage = await storage
+  if (path.startsWith('tmp://')) {
+    path = path.slice(6)
+    astorage = await astorage.getDirectoryHandle('.tmp', { create: true })
+  }
   const file = await astorage.getFileHandle(path)
   const fileContents = await file.getFile()
   return await fileContents.text()
@@ -80,12 +88,17 @@ export async function accessReadText(path: string): Promise<string> {
 export async function accessReadFile(
   path: string,
 ): Promise<AccessFile<string | Uint8Array>> {
-  const astorage = await storage
+  let astorage = await storage
+  if (path.startsWith('tmp://')) {
+    path = path.slice(6)
+    astorage = await astorage.getDirectoryHandle('.tmp', { create: true })
+  }
   const file = await astorage.getFileHandle(path)
   const fileContents = await file.getFile()
-  const data = fileContents.name.endsWith('.elf')
-    ? new Uint8Array(await fileContents.arrayBuffer())
-    : await fileContents.text()
+  const data =
+    path.endsWith('.elf') || path.endsWith('.yjs')
+      ? new Uint8Array(await fileContents.arrayBuffer())
+      : await fileContents.text()
   return {
     path,
     name: path,

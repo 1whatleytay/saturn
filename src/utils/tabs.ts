@@ -10,7 +10,11 @@ import { SelectionIndex, SelectionRange } from './editor'
 import { PromptType } from './events/events'
 import { SaveModalResult, useSaveModal } from './save-modal'
 import { closeWindow } from './window'
-import { accessReadText, accessSync } from './query/access-manager'
+import {
+  accessReadFile,
+  accessReadText,
+  accessSync,
+} from './query/access-manager'
 import { backend } from '../state/backend'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
@@ -25,10 +29,12 @@ import {
 import { suggestionsContext } from './lezer-mips/suggestions'
 import { highlightActiveLine, keymap } from '@codemirror/view'
 import { indentLess, indentMore } from '@codemirror/commands'
-import { createCollab, joinYTab } from './lezer-mips/collab'
+import { createCollab, openY } from './lezer-mips/collab'
 import { saveTab } from './events/events'
 import { acceptCompletion, completionStatus } from '@codemirror/autocomplete'
 import { indentUnit } from '@codemirror/language'
+import * as Y from 'yjs'
+import { tabsState } from '../state/state'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -68,9 +74,10 @@ export interface EditorTab {
   uuid: string
   title: string
   doc: string
+  yjs?: Y.Doc
   state: Raw<EditorState>
   removed: boolean
-  path: string | null
+  path: string
   writable: boolean
   marked: boolean // needs saving
   profile: ExecutionProfile | null
@@ -85,7 +92,6 @@ export function isSyncing(): boolean {
   return syncing
 }
 export function createState(
-  editor: Tabs,
   uuid: string,
   doc: string,
   writable: boolean,
@@ -121,14 +127,14 @@ export function createState(
         },
       ]),
       EditorView.updateListener.of((update) => {
-        const tab = editor.tabs.find((tab) => tab.uuid === uuid)
+        const tab = tabsState.tabs.find((tab) => tab.uuid === uuid)
         if (!tab) {
           console.warn('Editor is rendering a tab that does not exist, strange')
           return
         }
         syncing = true
         if (update.docChanged) {
-          tab.marked = !tab.path?.startsWith('remote://')
+          tab.marked = true
           tab.doc = update.state.doc.toString()
         }
         tab.state = markRaw(update.state)
@@ -168,7 +174,6 @@ export type TabsResult = TabsInterface & {
 
 const restoreKey = 'saturn:tabs-state'
 const backupKeyPrefix = 'saturn:tab-backup'
-const backupNameKey = 'saturn:backup-keys'
 const tabsVersion = 2
 const maxBackupLength = 200000
 
@@ -224,14 +229,25 @@ export function useTabs(): TabsResult {
 
     for (const tab of state.tabs) {
       const title = tab.title || 'Untitled'
-      let data: string | null
+      let data: string | null = null
 
-      if (tab.path) {
-        if (tab.path.startsWith('remote://')) {
-          editor.tabs.push(joinYTab(editor, tab.path.replace('remote://', '')))
+      if (!tab.path) {
+        data = localStorage.getItem(backupKey(tab.uuid))
+        tab.path = 'tmp://' + tab.uuid + '.asm'
+      }
+
+      if (tab.path.endsWith('.yjs')) {
+        try {
+          const bytes = (await accessReadFile(tab.path)).data as Uint8Array
+          openY(tab.uuid, tab.path, bytes.slice(36))
+        } catch (e) {
+          console.error('Could not open Yjs file', e)
+        } finally {
           continue
         }
+      }
 
+      if (!data) {
         try {
           data = await accessReadText(tab.path)
         } catch (e) {
@@ -245,15 +261,9 @@ export function useTabs(): TabsResult {
           // Discard tab.
           continue
         }
-      } else {
-        data = localStorage.getItem(backupKey(tab.uuid))
       }
 
-      if (!data) {
-        continue
-      }
-
-      const state = markRaw(createState(editor, tab.uuid, data, tab.writable))
+      const state = markRaw(createState(tab.uuid, data, tab.writable))
 
       editor.tabs.push({
         uuid: tab.uuid,
@@ -278,29 +288,6 @@ export function useTabs(): TabsResult {
     await accessSync(
       editor.tabs.map((x) => x.path).filter((x): x is string => x !== null),
     )
-  }
-
-  function updateBackups(map: Map<string, string>) {
-    const values = localStorage.getItem(backupNameKey)
-
-    if (values) {
-      const list = JSON.parse(values)
-
-      for (const item of list) {
-        localStorage.removeItem(item)
-      }
-    }
-
-    const result = []
-    for (const key of map.keys()) {
-      result.push(backupKey(key))
-    }
-
-    localStorage.setItem(backupNameKey, JSON.stringify(result))
-
-    for (const [key, value] of map.entries()) {
-      localStorage.setItem(backupKey(key), value)
-    }
   }
 
   function backup() {
@@ -331,9 +318,11 @@ export function useTabs(): TabsResult {
       }
 
       state.tabs.push(restore)
-    }
 
-    updateBackups(map)
+      if (tab.marked) {
+        saveTab(tab, PromptType.NeverPrompt)
+      }
+    }
 
     localStorage.setItem(restoreKey, JSON.stringify(state))
   }
@@ -391,7 +380,7 @@ export function useTabs(): TabsResult {
       return true
     }
 
-    if (tab.marked) {
+    if (tab.path.startsWith('tmp://')) {
       saveModal.present(tab)
 
       return false
@@ -409,7 +398,7 @@ export function useTabs(): TabsResult {
   function createTab(
     named: string,
     content: string,
-    path: string | null = null,
+    path?: string,
     profile: ExecutionProfile | null = defaultAssemblyProfile(),
     writable: boolean = true,
   ) {
@@ -419,9 +408,9 @@ export function useTabs(): TabsResult {
       uuid: id,
       title: named,
       doc: content,
-      state: markRaw(createState(editor, id, content, writable)),
+      state: markRaw(createState(id, content, writable)),
       removed: false,
-      path,
+      path: path ?? `tmp://${id}.asm`,
       writable,
       marked: false,
       profile,
@@ -444,7 +433,7 @@ export function useTabs(): TabsResult {
       breakpoints: value.breakpoints,
     } as ElfExecutionProfile
 
-    createTab(named, lines, null, profile, false)
+    createTab(named, lines, undefined, profile, false)
   }
 
   return {

@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 import { WebrtcProvider } from 'y-webrtc'
-import { createState, EditorTab, Tabs } from '../tabs'
+import { createState, EditorTab } from '../tabs'
 import { tabsState } from '../../state/state'
 import { markRaw, Raw, Reactive, reactive } from 'vue'
 import { ChangeSpec, Compartment, Extension } from '@codemirror/state'
@@ -12,6 +12,7 @@ import {
 } from 'y-codemirror.next'
 import { EditorView, keymap, ViewPlugin } from '@codemirror/view'
 import { diff } from 'fast-myers-diff'
+import { v4 as uuid } from 'uuid'
 
 export const usercolors = [
   { color: '#30bced', light: '#30bced33' },
@@ -68,6 +69,7 @@ const ydocs: Reactive<
       provider: WebrtcProvider
       extensions: Extension[]
       ytext: Y.Text
+      ydoc: Y.Doc
       undoManager: Y.UndoManager
     }>
   >
@@ -75,10 +77,13 @@ const ydocs: Reactive<
 
 const createExtensions = (id: string) => {
   if (ydocs[id]) {
-    throw new Error('Document already exists')
+    return ydocs[id]
   }
 
-  const ydoc = new Y.Doc()
+  const ydoc = new Y.Doc({
+    guid: id,
+  })
+
   const ytext = ydoc.getText('codemirror')
   const provider = new WebrtcProvider(id, ydoc, {
     signaling: [
@@ -102,57 +107,79 @@ const createExtensions = (id: string) => {
       syncPlugin(ytext),
     ],
     ytext,
+    ydoc,
     undoManager,
   })
+
   return ydocs[id]
 }
 
 export const hostYTab = (tab: EditorTab) => {
-  if (ydocs[tab.uuid]) {
-    return
+  if (tab.yjs || ydocs[tab.uuid]) {
+    throw new Error('tab already seems to be hosted')
   }
 
-  const { extensions, ytext, undoManager } = createExtensions(tab.uuid)
+  tab.uuid = uuid()
+
+  const { extensions, ytext, ydoc, undoManager } = createExtensions(tab.uuid)
 
   if (ytext.length === 0) {
     ytext.insert(0, tab.doc)
     undoManager.clear()
   }
 
+  tab.path = tab.path.replace('.asm', '.yjs')
+  tab.yjs = ydoc
+  tab.title = 'shared tab'
+
   return collabCompartment.reconfigure(extensions)
 }
 
-export const joinYTab = (editor: Tabs, join: string): EditorTab => {
-  const { extensions, ytext } = createExtensions(join)
+export const joinYTab = (
+  id: string,
+  named: string,
+  update?: Uint8Array,
+): EditorTab => {
+  const { extensions, ytext, ydoc } = createExtensions(id)
+
+  if (update) {
+    // todo: this won't work if you close and reopen the tab
+    Y.applyUpdate(ydoc, update)
+  }
 
   const content = ytext.toString()
-  const named = '(remote tab)'
 
-  const id = join
+  const state = createState(id, content, true, extensions)
 
-  const state = createState(editor, id, content, true, extensions)
-
-  const tab: EditorTab = {
+  return {
     uuid: id,
     title: named,
     doc: content,
+    yjs: markRaw(ydoc),
     state: markRaw(state),
     removed: false,
-    path: `remote://${join}`,
+    path: `tmp://${id}.yjs`,
     writable: true,
     marked: false,
     profile: { kind: 'asm' },
   }
-
-  return tab
 }
+
 export const join = (x: string) => {
   if (tabsState.tabs.some((tab) => tab.uuid === x)) {
     tabsState.selected = x
     return
   }
 
-  const tab = joinYTab(tabsState, x)
+  const tab = joinYTab(x, 'shared tab')
+
+  tabsState.tabs.push(tab)
+  tabsState.selected = tab.uuid
+}
+
+export const openY = (id: string, path: string, updates: Uint8Array) => {
+  const tab = joinYTab(id, 'shared tab', updates)
+  tab.path = path
 
   tabsState.tabs.push(tab)
   tabsState.selected = tab.uuid
@@ -162,6 +189,6 @@ let hostFn: () => boolean = () => false
 export const setHostFn = (fn: () => boolean) => (hostFn = fn)
 export const host = () => hostFn()
 
-export const isSyncing = (tab: EditorTab) => {
-  return ydocs[tab.uuid] !== undefined
+export const isSyncing = (id: string) => {
+  return ydocs[id]?.provider.awareness.states.size > 1
 }
