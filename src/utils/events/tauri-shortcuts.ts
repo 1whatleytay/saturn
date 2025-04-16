@@ -27,6 +27,7 @@ import { backend } from '../../state/backend'
 import { exportBinaryContents } from '../query/serialize-files'
 import { hasActionKey } from '../query/shortcut-key'
 import { invoke } from '@tauri-apps/api/core'
+import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link'
 
 interface ConsoleEvent {
   uuid?: string
@@ -176,6 +177,23 @@ export async function setupTauriEvents() {
       }
     }
   })
+
+  const fileUrlHandler = async (urls: string[] | null) => {
+    if (!urls) {
+      return
+    }
+    try {
+      for (const url of urls) {
+        const file = await accessReadFile(url.replace('file://', ''))
+        openTab(file)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  await onOpenUrl(fileUrlHandler)
+  await getCurrent().then(fileUrlHandler)
 
   await appWindow.onCloseRequested(async (event) => {
     const ids = tabsState.tabs.map((x) => x.uuid)

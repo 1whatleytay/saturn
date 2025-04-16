@@ -34,6 +34,7 @@ num = "0.4.3"
 saturn_backend = { path = "../src-backend" }
 titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
 async-trait = "0.1.85"
+tauri-plugin-deep-link = "2"
 
 [features]
 default = [ "custom-protocol" ]
@@ -41,3 +42,4 @@ custom-protocol = [ "tauri/custom-protocol" ]
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
