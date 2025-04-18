@@ -35,6 +35,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          sentry: [
+            '@sentry/vue'
+          ],
           codemirror: [
             '@codemirror/autocomplete',
             '@codemirror/lint',

@@ -11,7 +11,16 @@ import {
 } from './utils/events/tauri-shortcuts'
 import { setupWebShortcuts } from './utils/events/web-shortcuts'
 
-createApp(App).mount('#app')
+import * as Sentry from '@sentry/vue'
+
+const app = createApp(App)
+
+Sentry.init({
+  app,
+  dsn: 'https://71a1f02b28493812210b0887fe243c06@o4504600183046144.ingest.us.sentry.io/4509175145693184'
+})
+
+app.mount('#app')
 
 setupWindow()
 
