@@ -19,17 +19,17 @@ import { backend } from '../state/backend'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
-import { Mips } from './lezer-mips'
+import { Mips } from './codemirror/mips'
 import {
   createDefaultMinimap,
   createDefaultTheme,
   createDefaultVim,
   createIndentUnit,
-} from './lezer-mips/modes'
-import { suggestionsContext } from './lezer-mips/suggestions'
+} from './codemirror/modes'
+import { suggestionsContext } from './codemirror/mips/suggestions'
 import { highlightActiveLine, keymap } from '@codemirror/view'
 import { indentLess, indentMore } from '@codemirror/commands'
-import { createCollab, openY } from './lezer-mips/collab'
+import { createCollab, openY } from './codemirror/collab'
 import { saveTab } from './events/events'
 import { acceptCompletion, completionStatus } from '@codemirror/autocomplete'
 import { indentUnit } from '@codemirror/language'

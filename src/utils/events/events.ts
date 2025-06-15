@@ -21,7 +21,7 @@ import {
   selectSaveDestination,
 } from '../query/access-manager'
 import { EditorTab } from '../tabs'
-import { openY } from '../lezer-mips/collab'
+import { openY } from '../codemirror/collab'
 import * as Y from 'yjs'
 import { accessWriteBinary } from '../query/access-manager/access-manager-web'
 

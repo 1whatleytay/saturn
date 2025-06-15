@@ -1,12 +1,12 @@
 import { EditorView } from 'codemirror'
 import { RangeSet, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, WidgetType } from '@codemirror/view'
-import { actionKey, hasActionKey } from '../query/shortcut-key'
+import { actionKey, hasActionKey } from '../../query/shortcut-key'
 import { suggestions } from './suggestions'
-import { MipsHighlighter } from '../languages/mips/language'
-import { SuggestionType } from '../languages/suggestions'
-import { grabWhitespace } from '../languages/language'
-import { suggestionLetter, suggestionStyle } from '../query/suggestion-styles'
+import { MipsHighlighter } from '../../languages/mips/language'
+import { SuggestionType } from '../../languages/suggestions'
+import { grabWhitespace } from '../../languages/language'
+import { suggestionLetter, suggestionStyle } from '../../query/suggestion-styles'
 
 interface GotoState {
   inspecting?: boolean // true if we are holding down the action key

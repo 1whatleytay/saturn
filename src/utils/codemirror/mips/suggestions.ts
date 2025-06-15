@@ -7,8 +7,8 @@ import {
   RangeSet,
 } from '@codemirror/state'
 import { EditorView } from 'codemirror'
-import { MipsHighlighter } from '../languages/mips/language'
-import { Suggestion } from '../languages/suggestions'
+import { MipsHighlighter } from '../../languages/mips/language'
+import { Suggestion } from '../../languages/suggestions'
 
 class InsightValue extends RangeValue {
   eq(other: RangeValue): boolean {

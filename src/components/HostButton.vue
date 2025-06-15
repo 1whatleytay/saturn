@@ -135,7 +135,7 @@ import {
   DialogTrigger,
 } from 'reka-ui'
 import { UserPlusIcon } from '@heroicons/vue/24/solid'
-import { host, isSyncing, join } from '../utils/lezer-mips/collab'
+import { host, isSyncing, join } from '../utils/codemirror/collab'
 
 const joinTabOpen = ref(false)
 const joinTabStr = ref('')

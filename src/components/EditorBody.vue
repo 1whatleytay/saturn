@@ -13,17 +13,17 @@ import { errorHighlights, tab, settings } from '../state/state'
 import { isSyncing } from '../utils/tabs'
 
 import { EditorView } from 'codemirror'
-import { clearHighlightedLine } from '../utils/lezer-mips'
+import { clearHighlightedLine } from '../utils/codemirror/mips'
 import { consoleData } from '../state/console-data'
-import { setHighlightedLine } from '../utils/lezer-mips'
+import { setHighlightedLine } from '../utils/codemirror/mips'
 import {
   setMinimap,
   setVim,
   setTheme,
   setIndentUnit,
-} from '../utils/lezer-mips/modes'
+} from '../utils/codemirror/modes'
 import { Diagnostic, setDiagnostics } from '@codemirror/lint'
-import { hostYTab, setHostFn } from '../utils/lezer-mips/collab'
+import { hostYTab, setHostFn } from '../utils/codemirror/collab'
 
 const code = ref(null as HTMLElement | null)
 

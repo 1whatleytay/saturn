@@ -1,6 +1,6 @@
 import { CompletionContext } from '@codemirror/autocomplete'
 import { suggestions } from './suggestions'
-import { SuggestionType } from '../languages/suggestions'
+import { SuggestionType } from '../../languages/suggestions'
 
 export function myCompletions(context: CompletionContext) {
   // if we're in a string token, don't show completions
