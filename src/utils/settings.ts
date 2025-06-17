@@ -26,6 +26,7 @@ export interface EditorSettings {
   darkMode: boolean
   showMinimap: boolean
   vimMode: boolean
+  language: 'mips' | 'riscv'
 }
 
 export enum RegisterFormat {
@@ -73,6 +74,7 @@ function defaultSettings(): Settings {
       darkMode: true,
       showMinimap: true,
       vimMode: false,
+      language: "mips",
     },
     bitmap: {
       displayWidth: 64,
@@ -113,6 +115,9 @@ function fromStorage(): Settings {
       }
       if (object.editor.showMinimap === undefined) {
         object.editor.showMinimap = true
+      }
+      if (object.editor.language === undefined) {
+        object.editor.language = "mips"
       }
       return object
     }

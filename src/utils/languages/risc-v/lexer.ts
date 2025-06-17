@@ -1,4 +1,5 @@
-import { knownInstructions } from '../../codemirror/mips/tokenizer'
+
+import { knownInstructions, knownRegisters } from '../../codemirror/riscv/tokenizer'
 import { getStyle, HighlightResult, Token, TokenType } from '../language'
 import { MarkedSuggestion, SuggestionType } from '../suggestions'
 
@@ -212,16 +213,6 @@ function readItem(line: string, index: number, initial: boolean): Item {
       }
     }
 
-    case '$': {
-      const count = takeName(line, start + 1)
-
-      return {
-        type: TokenType.Register,
-        known: false,
-        next: start + 1 + count,
-      }
-    }
-
     case '(':
       return {
         type: TokenType.BracketOpen,
@@ -288,6 +279,15 @@ function readItem(line: string, index: number, initial: boolean): Item {
             type: TokenType.Instruction,
             known: knownInstructions.has(line.substring(start, start + count)),
             next: start + count,
+          }
+        }
+
+        if (knownRegisters.has(body)) {
+          return {
+            type: TokenType.Register,
+            known: false,
+            next: start + count,
+            body,
           }
         }
 

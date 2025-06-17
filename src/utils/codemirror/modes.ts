@@ -3,11 +3,17 @@ import { Compartment, EditorState } from '@codemirror/state'
 import { showMinimap } from '@replit/codemirror-minimap'
 import { vim as vimSetup } from '@replit/codemirror-vim'
 import { EditorView } from 'codemirror'
+import { lexer } from './suggestions'
+import { lex as mipslex } from '../languages/mips/lexer'
+import { lex as riscvlex } from '../languages/risc-v/lexer'
+import { lang as mipslang } from './mips'
+import { lang as riscvlang } from './riscv'
 
 const vimCompartment = new Compartment()
 const minimapCompartment = new Compartment()
 const editorTheme = new Compartment()
 const indentUnitCompartment = new Compartment()
+const langCompartment = new Compartment()
 
 const vim = vimSetup()
 
@@ -42,6 +48,12 @@ export const setTheme = (theme: boolean) =>
 export const createDefaultTheme = () => editorTheme.of(lightTheme)
 
 export const createIndentUnit = () => indentUnitCompartment.of([])
+
+const mips = [lexer.of(mipslex), mipslang];
+const riscv = [lexer.of(riscvlex), riscvlang];
+export const createDefaultLang = () => langCompartment.of(mips)
+export const setLang = (lang: 'mips' | 'riscv') =>
+  langCompartment.reconfigure(lang === 'mips' ? mips : riscv)
 
 export const setIndentUnit = (unit: number) =>
   indentUnitCompartment.reconfigure([

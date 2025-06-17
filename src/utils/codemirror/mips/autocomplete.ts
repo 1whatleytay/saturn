@@ -1,5 +1,5 @@
 import { CompletionContext } from '@codemirror/autocomplete'
-import { suggestions } from './suggestions'
+import { suggestions } from '../suggestions'
 import { SuggestionType } from '../../languages/suggestions'
 
 export function myCompletions(context: CompletionContext) {

@@ -13,14 +13,15 @@ import { errorHighlights, tab, settings } from '../state/state'
 import { isSyncing } from '../utils/tabs'
 
 import { EditorView } from 'codemirror'
-import { clearHighlightedLine } from '../utils/codemirror/mips'
+import { clearHighlightedLine } from '../utils/codemirror'
 import { consoleData } from '../state/console-data'
-import { setHighlightedLine } from '../utils/codemirror/mips'
+import { setHighlightedLine } from '../utils/codemirror'
 import {
   setMinimap,
   setVim,
   setTheme,
   setIndentUnit,
+  setLang,
 } from '../utils/codemirror/modes'
 import { Diagnostic, setDiagnostics } from '@codemirror/lint'
 import { hostYTab, setHostFn } from '../utils/codemirror/collab'
@@ -46,6 +47,7 @@ onMounted(() => {
             setVim(settings.editor.vimMode),
             setMinimap(settings.editor.showMinimap),
             setIndentUnit(settings.editor.tabSize),
+            setLang(settings.editor.language),
           ],
         })
       }
@@ -83,6 +85,11 @@ onMounted(() => {
   watch(
     () => settings.editor.tabSize,
     (unit: number) => view.dispatch({ effects: [setIndentUnit(unit)] }),
+  )
+
+  watch(
+    () => settings.editor.language,
+    (language: 'mips' | 'riscv') => view.dispatch({ effects: [setLang(language)] }),
   )
 
   watch(

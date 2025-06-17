@@ -19,14 +19,15 @@ import { backend } from '../state/backend'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
 import { breakpointGutter } from './breakpoints'
-import { Mips } from './codemirror/mips'
+import { Mips } from './codemirror'
 import {
+  createDefaultLang,
   createDefaultMinimap,
   createDefaultTheme,
   createDefaultVim,
   createIndentUnit,
 } from './codemirror/modes'
-import { suggestionsContext } from './codemirror/mips/suggestions'
+import { suggestionsContext } from './codemirror/suggestions'
 import { highlightActiveLine, keymap } from '@codemirror/view'
 import { indentLess, indentMore } from '@codemirror/commands'
 import { createCollab, openY } from './codemirror/collab'
@@ -140,6 +141,7 @@ export function createState(
         tab.state = markRaw(update.state)
         syncing = false
       }),
+      createDefaultLang(),
       Mips(),
       createCollab(collab),
       breakpointGutter,

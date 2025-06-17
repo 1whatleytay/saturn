@@ -1,12 +1,11 @@
 import { EditorView } from 'codemirror'
 import { RangeSet, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, DecorationSet, WidgetType } from '@codemirror/view'
-import { actionKey, hasActionKey } from '../../query/shortcut-key'
-import { suggestions } from './suggestions'
-import { MipsHighlighter } from '../../languages/mips/language'
-import { SuggestionType } from '../../languages/suggestions'
-import { grabWhitespace } from '../../languages/language'
-import { suggestionLetter, suggestionStyle } from '../../query/suggestion-styles'
+import { actionKey, hasActionKey } from '../query/shortcut-key'
+import { lexer, suggestions } from './suggestions'
+import { SuggestionType } from '../languages/suggestions'
+import { grabWhitespace } from '../languages/language'
+import { suggestionLetter, suggestionStyle } from '../query/suggestion-styles'
 
 interface GotoState {
   inspecting?: boolean // true if we are holding down the action key
@@ -108,7 +107,6 @@ const gotoDecoration = StateField.define<DecorationSet>({
 // But I'd like to try to stay consistent with how our tokenizer works today.
 // ... and I don't want to rewrite that code right now.
 // This should be replaced in the future with something more isolated/better.
-const highlighter = new MipsHighlighter()
 
 function checkForGotoDestination(
   pos: number,
@@ -122,7 +120,8 @@ function checkForGotoDestination(
 
   const line = view.state.doc.lineAt(pos)
   const linePos = pos - line.from
-  const { tokens } = highlighter.highlight(line.text)
+  const lex = view.state.facet(lexer)
+  const { tokens } = lex(line.text)
 
   const token = tokens.find(
     (token) =>

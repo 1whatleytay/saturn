@@ -72,12 +72,13 @@
       <PlayIcon class="h-4 w-4" />
     </button>
 
-    <div
+    <button
       v-if="profileText"
       class="flex h-10 max-w-xs shrink-0 items-center px-4 text-xs font-medium text-neutral-600"
+      @click="toggleAssemblyType()"
     >
       {{ profileText }}
-    </div>
+    </button>
   </div>
 </template>
 
@@ -94,7 +95,7 @@ import {
   allowResume,
   allowRewind,
 } from '../utils/debug'
-import { tab } from '../state/state'
+import { settings, tab } from '../state/state'
 
 import {
   ArrowDownIcon,
@@ -107,10 +108,19 @@ import {
 
 const profile = computed(() => tab()?.profile)
 
+function toggleAssemblyType() {
+  settings.editor.language = settings.editor.language === 'mips' ? 'riscv' : 'mips'
+}
+
 const profileText = computed((): string | null => {
   switch (profile.value?.kind) {
     case 'asm':
-      return 'MIPS Assembly'
+      if (settings.editor.language === 'mips') {
+        return 'MIPS Assembly'
+      } else if (settings.editor.language === 'riscv') {
+        return 'RISC-V Assembly'
+      }
+      return 'Assembly'
     case 'elf':
       return 'ELF Debug'
   }

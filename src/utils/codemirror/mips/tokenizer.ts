@@ -1,5 +1,6 @@
 import { Label, Op } from './syntax.grammar.terms'
-const knownInstructions = new Set([
+
+export const knownInstructions = new Set([
   'sll',
   'srl',
   'sra',
@@ -148,7 +149,9 @@ const knownInstructions = new Set([
 ])
 
 export let specializeIdent = (x: string) => {
-  if (x.endsWith(':')) return Label
+  if (x.endsWith(':')) {
+    return Label
+  }
   if (knownInstructions.has(x)) {
     return Op
   }

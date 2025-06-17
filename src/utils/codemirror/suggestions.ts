@@ -5,10 +5,16 @@ import {
   Range,
   RangeValue,
   RangeSet,
+  Facet,
 } from '@codemirror/state'
 import { EditorView } from 'codemirror'
-import { MipsHighlighter } from '../../languages/mips/language'
-import { Suggestion } from '../../languages/suggestions'
+import { Suggestion } from '../languages/suggestions'
+import { HighlightResult } from '../languages/language'
+
+type Lexer = (text: string) => HighlightResult;
+export const lexer = Facet.define<Lexer, Lexer>({
+  combine: (f) => f[0],
+});
 
 class InsightValue extends RangeValue {
   eq(other: RangeValue): boolean {
@@ -42,11 +48,8 @@ interface InsightUpdate {
 
 const insightUpdateEffect = StateEffect.define<InsightUpdate>()
 
-// Used for deriving suggestions. Should probably be replaced with our syntax.grammar lexer soon.
-// Don't really see a reason the syntax.grammar highlighter can't be used here.
-const highlighter = new MipsHighlighter()
-
 function inspect(
+  lex: Lexer,
   startLine: number,
   endLine: number,
   doc: Text,
@@ -61,7 +64,9 @@ function inspect(
 
     const details = doc.line(line)
 
-    const result = highlighter.highlight(details.text)
+    // Used for deriving suggestions. Should probably be replaced with our syntax.grammar lexer soon.
+    // Don't really see a reason the syntax.grammar highlighter can't be used here.
+    const result = lex(details.text)
 
     elements.push(
       ...result.suggestions.map((suggestion) => ({
@@ -90,7 +95,9 @@ export const suggestions = StateField.define<RangeSet<InsightValue> | null>({
     }
 
     if (value === null) {
+      const lex = tr.state.facet(lexer)
       const elements = inspect(
+        lex,
         1,
         tr.startState.doc.lines,
         tr.startState.doc,
@@ -136,6 +143,8 @@ export const suggestionsContext = [
 
     const insights: InsightUpdate[] = []
 
+    const lex = update.state.facet(lexer)
+
     update.changes.iterChanges((_fromA, _toA, fromB, toB) => {
       const startLine = update.state.doc.lineAt(fromB)
       const endLine = update.state.doc.lineAt(toB)
@@ -144,6 +153,7 @@ export const suggestionsContext = [
       // here we will deal with them synchronously
 
       const elements = inspect(
+        lex,
         startLine.number,
         endLine.number,
         update.state.doc,
