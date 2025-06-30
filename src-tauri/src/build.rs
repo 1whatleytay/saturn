@@ -17,12 +17,12 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::{Emitter, Wry};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::cpu::registers::registers::RawRegisters;
-use titan::cpu::registers::WatchedRegisters;
-use titan::cpu::{Memory, Registers};
+use titan::mips::cpu::registers::registers::RawRegisters;
+use titan::mips::cpu::registers::WatchedRegisters;
+use titan::mips::cpu::{Memory, Registers, State};
 use titan::elf::Elf;
 use titan::execution::trackers::empty::EmptyTracker;
-use titan::execution::trackers::history::HistoryTracker;
+use titan::mips::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
 
@@ -43,10 +43,10 @@ fn forward_print(app: tauri::AppHandle<Wry>) -> Box<dyn ConsoleHandler + Send + 
 pub fn swap<
     Listen: ListenResponder + Send + 'static,
     Reg: Registers + Send + 'static,
-    Track: Tracker<SectionMemory<Listen>, Reg> + Send + 'static,
+    Track: Tracker<State<SectionMemory<Listen>, Reg>> + Send + 'static,
 >(
     mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
-    debugger: Executor<SectionMemory<Listen>, Reg, Track>,
+    debugger: Executor<State<SectionMemory<Listen>, Reg>, Track>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -77,7 +77,7 @@ pub fn swap<
 
 pub fn swap_watched<Mem: Memory + Send + 'static>(
     mut pointer: MutexGuard<Option<Arc<dyn RewindableDevice>>>,
-    debugger: Executor<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>,
+    debugger: Executor<State<WatchedMemory<Mem>, WatchedRegisters>, HistoryTracker>,
     finished_pcs: Vec<u32>,
     keyboard: Arc<Mutex<KeyboardState>>,
     console: Box<dyn ConsoleHandler + Send + Sync>,

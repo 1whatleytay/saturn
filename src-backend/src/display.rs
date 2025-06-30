@@ -2,8 +2,8 @@ use crate::execution::ReadDisplayTarget;
 use num::FromPrimitive;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
-use titan::cpu::{Memory, Registers, State};
-use titan::unit::register::RegisterName;
+use titan::mips::cpu::{Memory, Registers, State};
+use titan::mips::unit::register::RegisterName;
 
 #[derive(Clone, Serialize)]
 pub struct FlushDisplayState {

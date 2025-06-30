@@ -6,15 +6,16 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::{Binary, RegionFlags};
 use titan::assembler::line_details::LineDetails;
-use titan::assembler::registers::RegisterSlot::StackPointer;
-use titan::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::cpu::memory::section::SectionMemory;
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::registers::WhichRegister::Pc;
-use titan::cpu::{Memory, Registers, State};
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
 use titan::execution::elf::inspection::Inspection;
+use titan::mips::assembler::registers::RegisterSlot::StackPointer;
+use titan::mips::assembler::string::{assemble_from, assemble_from_path, SourceError};
+use titan::mips::cpu::disassemble::MipsInspectionDisassembler;
+use titan::mips::cpu::registers::WhichRegister::Pc;
+use titan::mips::cpu::{Memory, Registers, State};
 
 pub const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
@@ -195,7 +196,7 @@ pub fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
         }
     };
 
-    let inspection = Inspection::new(named, &elf);
+    let inspection = Inspection::new(named, &elf, &mut MipsInspectionDisassembler);
 
     DisassembleResult {
         error: None,

@@ -2,8 +2,8 @@ use num::ToPrimitive;
 use serde::Serialize;
 use std::io::Cursor;
 use titan::elf::Elf;
-use titan::execution::elf::detailed_inspection::{make_inspection_lines, InspectionLine};
-use titan::unit::instruction::{InstructionDecoder, InstructionParameter};
+use titan::mips::execution::elf::detailed_inspection::{make_inspection_lines, InspectionLine};
+use titan::mips::unit::instruction::{InstructionDecoder, InstructionParameter};
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "value")]

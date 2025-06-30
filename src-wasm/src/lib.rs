@@ -21,19 +21,19 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use titan::assembler::string::assemble_from;
+use titan::mips::assembler::string::assemble_from;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::cpu::registers::registers::RawRegisters;
-use titan::cpu::registers::WatchedRegisters;
-use titan::cpu::{Memory, Registers};
+use titan::mips::cpu::registers::registers::RawRegisters;
+use titan::mips::cpu::registers::WatchedRegisters;
+use titan::mips::cpu::{Memory, Registers, State};
 use titan::elf::Elf;
-use titan::execution::executor::ExecutorMode;
+use titan::execution::ExecutorMode;
 use titan::execution::trackers::empty::EmptyTracker;
-use titan::execution::trackers::history::HistoryTracker;
+use titan::mips::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
-use titan::unit::register::RegisterName;
+use titan::mips::assembler::registers::RegisterSlot;
 use wasm_bindgen::prelude::*;
 
 pub use events::EventHandler;
@@ -106,10 +106,10 @@ impl Runner {
     pub fn swap<
         Listen: ListenResponder + Send + 'static,
         Reg: Registers + Send + 'static,
-        Track: Tracker<SectionMemory<Listen>, Reg> + Send + 'static,
+        Track: Tracker<State<SectionMemory<Listen>, Reg>> + Send + 'static,
     >(
         &self,
-        debugger: Executor<SectionMemory<Listen>, Reg, Track>,
+        debugger: Executor<State<SectionMemory<Listen>, Reg>, Track>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -133,7 +133,7 @@ impl Runner {
 
     pub fn swap_watched<Mem: Memory + Send + 'static>(
         &self,
-        debugger: Executor<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>,
+        debugger: Executor<State<WatchedMemory<Mem>, WatchedRegisters>, HistoryTracker>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -353,7 +353,7 @@ impl Runner {
     ) -> Option<Vec<u8>> {
         if let Some(device) = &self.take_device() {
             let target = if let Some(register) = register {
-                ReadDisplayTarget::Register(RegisterName::from_u8(register)?)
+                ReadDisplayTarget::Register(RegisterSlot::from_u8(register)?)
             } else {
                 ReadDisplayTarget::Address(address)
             };

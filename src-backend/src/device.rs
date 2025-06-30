@@ -2,15 +2,15 @@ use crate::keyboard::KeyboardState;
 use crate::syscall::SyscallState;
 use std::sync::{Arc, Mutex};
 use titan::assembler::binary::Binary;
-use titan::assembler::registers::RegisterSlot::{GeneralPointer, StackPointer};
 use titan::cpu::memory::{Mountable, Region};
-use titan::cpu::registers::WhichRegister::Pc;
-use titan::cpu::{Memory, Registers, State};
-use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
+use titan::execution::trackers::Tracker;
+use titan::mips::assembler::registers::RegisterSlot::{GeneralPointer, StackPointer};
+use titan::mips::cpu::registers::WhichRegister::Pc;
+use titan::mips::cpu::{Memory, Registers, State};
 
-pub struct ExecutionState<Mem: Memory, Reg: Registers, Track: Tracker<Mem, Reg>> {
-    pub debugger: Arc<Executor<Mem, Reg, Track>>,
+pub struct ExecutionState<Mem: Memory, Reg: Registers, Track: Tracker<State<Mem, Reg>>> {
+    pub debugger: Arc<Executor<State<Mem, Reg>, Track>>,
     pub keyboard: Arc<Mutex<KeyboardState>>,
     pub delegate: Arc<Mutex<SyscallState>>,
     pub finished_pcs: Vec<u32>,

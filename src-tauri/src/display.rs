@@ -5,7 +5,7 @@ use saturn_backend::execution::ReadDisplayTarget;
 use tauri::http::method::Method;
 use tauri::http::{Request, Response};
 use tauri::{Manager, UriSchemeContext, Wry};
-use titan::unit::register::RegisterName;
+use titan::mips::assembler::registers::RegisterSlot;
 
 #[tauri::command]
 pub fn configure_display(
@@ -56,7 +56,7 @@ pub fn display_protocol(
         let register = headers.get("register").and_then(|x| x.to_str().ok());
 
         let target = if let Some(register) = register {
-            ReadDisplayTarget::Register(RegisterName::from_u8(register.parse().ok()?)?)
+            ReadDisplayTarget::Register(RegisterSlot::from_u8(register.parse().ok()?)?)
         } else {
             let address = headers.get("address")?.to_str().ok()?;
 

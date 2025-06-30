@@ -20,4 +20,4 @@ rand_chacha = "0.3.1"
 async-trait = "0.1.85"
 log = "0.4.25"
 
-titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+ titan = { git = "https://github.com/1whatleytay/titan.git", branch = "risc-v" }

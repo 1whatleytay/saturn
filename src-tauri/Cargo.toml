@@ -32,7 +32,9 @@ base64 = "0.22.1"
 num = "0.4.3"
 
 saturn_backend = { path = "../src-backend" }
-titan = { git = "https://github.com/1whatleytay/titan.git", branch = "main" }
+
+titan = { git = "https://github.com/1whatleytay/titan.git", branch = "risc-v" }
+
 async-trait = "0.1.85"
 tauri-plugin-deep-link = "2"
 

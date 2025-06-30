@@ -7,16 +7,17 @@ use std::collections::HashSet;
 use titan::cpu::error::Error::{CpuTrap, MemoryAlign, MemoryUnmapped};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::cpu::registers::WhichRegister::{Hi, Line, Lo, Pc};
-use titan::cpu::registers::{RegisterEntry, WatchedRegisters};
-use titan::cpu::state::Registers;
-use titan::cpu::{Memory, State};
-use titan::execution::executor::{DebugFrame, ExecutorMode};
-use titan::execution::trackers::history::HistoryTracker;
+use titan::execution::{DebugFrame, ExecutorMode};
 use titan::execution::trackers::Tracker;
-use titan::unit::instruction::InstructionDecoder;
-use titan::unit::register::RegisterName;
-use titan::unit::suggestions::MemoryErrorReason;
+use titan::mips::cpu::registers::registers::RawRegisters;
+use titan::mips::cpu::registers::WhichRegister::{Hi, Line, Lo, Pc};
+use titan::mips::cpu::registers::{RegisterEntry, WatchedRegisters};
+use titan::mips::cpu::state::Registers;
+use titan::mips::cpu::{Memory, State};
+use titan::mips::execution::trackers::history::HistoryTracker;
+use titan::mips::unit::instruction::InstructionDecoder;
+use titan::mips::unit::register::RegisterName;
+use titan::mips::unit::suggestions::MemoryErrorReason;
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
@@ -116,7 +117,7 @@ pub struct ResumeResult {
 
 impl ResumeResult {
     fn from_frame<Mem: Memory, Reg: Registers>(
-        frame: DebugFrame,
+        frame: DebugFrame<RawRegisters>,
         finished_pcs: &[u32],
         result: Option<SyscallResult>,
         state: &State<Mem, Reg>,
@@ -232,8 +233,8 @@ pub trait ExecutionDevice: Send + Sync {
 }
 
 #[async_trait]
-impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<Mem, Reg> + Send> ExecutionDevice
-    for ExecutionState<Mem, Reg, Track>
+impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> + Send>
+    ExecutionDevice for ExecutionState<Mem, Reg, Track>
 {
     async fn resume(&self, options: ResumeOptions) -> Result<ResumeResult, ()> {
         let debugger = self.debugger.clone();
@@ -377,8 +378,11 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<Mem, Reg> + Send>
     }
 }
 
-impl<Listen: ListenResponder, Reg: Registers, Track: Tracker<SectionMemory<Listen>, Reg>>
-    ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Reg, Track>
+impl<
+        Listen: ListenResponder,
+        Reg: Registers,
+        Track: Tracker<State<SectionMemory<Listen>, Reg>>,
+    > ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Reg, Track>
 {
     fn last_pc(&self) -> Option<u32> {
         None
@@ -438,7 +442,7 @@ impl<Mem: Memory> ExecutionRewindable
 impl<
         Listen: ListenResponder + Send,
         Reg: Registers + Send,
-        Track: Tracker<SectionMemory<Listen>, Reg> + Send,
+        Track: Tracker<State<SectionMemory<Listen>, Reg>> + Send,
     > RewindableDevice for ExecutionState<SectionMemory<Listen>, Reg, Track>
 {
 }
