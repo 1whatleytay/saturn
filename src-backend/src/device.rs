@@ -58,6 +58,16 @@ pub enum ReadDisplayTarget {
     DefaultRegister, // $gp on MIPS and RISC-V
 }
 
+impl ReadDisplayTarget {
+    pub fn from_arguments(use_default_register: bool, address: u32) -> Self {
+        if use_default_register {
+            ReadDisplayTarget::DefaultRegister
+        } else {
+            ReadDisplayTarget::Address(address)
+        }
+    }
+}
+
 #[async_trait]
 pub trait ExecutionDevice: Send + Sync {
     async fn resume(&self, options: ResumeOptions) -> Result<ResumeResult, ()>;

@@ -7,7 +7,6 @@ use saturn_backend::build::{
     TIME_TRAVEL_HISTORY_SIZE,
 };
 use saturn_backend::mips::device::{setup_state, state_from_binary, ExecutionState};
-use saturn_backend::mips::execution::RewindableDevice;
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::regions::{AssembleRegionsOptions, AssembledRegions};
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
@@ -25,6 +24,7 @@ use titan::execution::trackers::empty::EmptyTracker;
 use titan::mips::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
+use saturn_backend::device::RewindableDevice;
 
 struct ForwardPrinter {
     app: tauri::AppHandle<Wry>,

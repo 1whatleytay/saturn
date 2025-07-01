@@ -19,6 +19,7 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use js_sys::Atomics::add;
 use titan::mips::assembler::string::assemble_from;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
@@ -180,11 +181,7 @@ impl Runner {
 
     pub fn configure_display(&self, use_default_register: bool, address: u32, width: u32, height: u32) {
         *self.display.borrow_mut() = Arc::new(Mutex::new(FlushDisplayState {
-            target: if use_default_register {
-                ReadDisplayTarget::DefaultRegister
-            } else {
-                ReadDisplayTarget::Address(address)
-            },
+            target: ReadDisplayTarget::from_arguments(use_default_register, address),
             width,
             height,
             data: None,
@@ -353,11 +350,7 @@ impl Runner {
         height: u32,
     ) -> Option<Vec<u8>> {
         if let Some(device) = &self.take_device() {
-            let target = if use_default_register {
-                ReadDisplayTarget::DefaultRegister
-            } else {
-                ReadDisplayTarget::Address(address)
-            };
+            let target = ReadDisplayTarget::from_arguments(use_default_register, address);
 
             device.read_display(target, width, height)
         } else {

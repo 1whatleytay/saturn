@@ -1,7 +1,7 @@
 use saturn_backend::display::FlushDisplayBody;
-use saturn_backend::mips::execution::{BatchOptions, ResumeOptions, ResumeResult, RewindableDevice};
 use std::sync::{Arc, Mutex};
 use titan::execution::ExecutorMode;
+use saturn_backend::device::{BatchOptions, ResumeOptions, ResumeResult, RewindableDevice};
 
 pub type DebuggerBody = Mutex<Option<Arc<dyn RewindableDevice>>>;
 

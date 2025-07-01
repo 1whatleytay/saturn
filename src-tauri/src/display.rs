@@ -1,16 +1,14 @@
 use crate::state::DebuggerBody;
-use num::FromPrimitive;
-use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::mips::execution::ReadDisplayTarget;
+use saturn_backend::display::{DisplayData, FlushDisplayBody, FlushDisplayState};
 use tauri::http::method::Method;
 use tauri::http::{Request, Response};
 use tauri::{Manager, UriSchemeContext, Wry};
-use titan::mips::assembler::registers::RegisterSlot;
+use saturn_backend::device::ReadDisplayTarget;
 
 #[tauri::command]
 pub fn configure_display(
     address: u32,
-    register: Option<u8>,
+    use_default_register: bool,
     width: u32,
     height: u32,
     state: tauri::State<FlushDisplayBody>,
@@ -18,8 +16,7 @@ pub fn configure_display(
     let mut body = state.lock().unwrap();
 
     *body = FlushDisplayState {
-        address,
-        register,
+        target: ReadDisplayTarget::from_arguments(use_default_register, address),
         width,
         height,
         data: None,
@@ -27,8 +24,8 @@ pub fn configure_display(
 }
 
 #[tauri::command]
-pub fn last_display(state: tauri::State<FlushDisplayBody>) -> FlushDisplayState {
-    state.lock().unwrap().clone()
+pub fn last_display(state: tauri::State<FlushDisplayBody>) -> DisplayData {
+    state.lock().unwrap().clone().clone_data()
 }
 
 pub fn display_protocol(
@@ -53,10 +50,17 @@ pub fn display_protocol(
         let width = headers.get("width")?.to_str().ok()?;
         let height = headers.get("height")?.to_str().ok()?;
         // address is still required as fallback
-        let register = headers.get("register").and_then(|x| x.to_str().ok());
+        let use_default_register = headers.get("use-default-register")
+            .and_then(|x| x.to_str().ok())
+            .map(|x| match x.to_lowercase().as_str() {
+                "true" => true,
+                "false" => false,
+                _ => false,
+            })
+            .unwrap_or(false);
 
-        let target = if let Some(register) = register {
-            ReadDisplayTarget::Register(RegisterSlot::from_u8(register.parse().ok()?)?)
+        let target = if use_default_register {
+            ReadDisplayTarget::DefaultRegister
         } else {
             let address = headers.get("address")?.to_str().ok()?;
 
