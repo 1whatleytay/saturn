@@ -1,78 +1,30 @@
-use crate::mips::device::ExecutionState;
+use crate::riscv::device::ExecutionState;
 use crate::display::read_display;
 use crate::syscall::{SyscallDelegate, SyscallResult};
 use async_trait::async_trait;
 use serde::Serialize;
 use std::collections::HashSet;
-use titan::cpu::error::Error::{CpuTrap, MemoryAlign, MemoryUnmapped};
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
 use titan::execution::{DebugFrame, ExecutorMode};
 use titan::execution::trackers::Tracker;
-use titan::mips::assembler::registers::RegisterSlot;
-use titan::mips::cpu::registers::registers::RawRegisters;
-use titan::mips::cpu::registers::WhichRegister::{Hi, Line, Lo, Pc};
-use titan::mips::cpu::registers::{RegisterEntry, WatchedRegisters};
-use titan::mips::cpu::state::Registers;
-use titan::mips::cpu::{Memory, State};
-use titan::mips::execution::trackers::history::HistoryTracker;
-use titan::mips::unit::instruction::InstructionDecoder;
-use titan::mips::unit::suggestions::MemoryErrorReason;
+use titan::riscv::assembler::registers::RegisterSlot;
+use titan::riscv::cpu::registers::registers::RawRegisters;
+use titan::riscv::cpu::registers::WhichRegister::{Line, Pc};
+use titan::riscv::cpu::registers::{RegisterEntry, WatchedRegisters};
+use titan::riscv::cpu::state::Registers;
+use titan::riscv::cpu::{Memory, State};
+use titan::riscv::execution::trackers::history::HistoryTracker;
 use crate::device::{ExecutionDevice, ExecutionRewindable, PlatformRegisters, ReadDisplayTarget, ResumeMode, ResumeOptions, ResumeResult};
 
-fn format_error<Mem: Memory, Reg: Registers>(
-    error: titan::cpu::error::Error,
-    state: &State<Mem, Reg>,
-) -> String {
-    let memory = |reason: MemoryErrorReason| {
-        let pc = state.registers.get(Pc);
-
-        let description = state
-            .memory
-            .get_u32(pc)
-            .ok()
-            .and_then(|value| InstructionDecoder::decode(pc, value))
-            .and_then(|instruction| instruction.describe_memory_error(reason, &state.registers));
-
-        if let Some(description) = description {
-            description.to_string()
-        } else {
-            error.to_string()
-        }
-    };
-
-    match error {
-        MemoryAlign(_, _) => memory(MemoryErrorReason::Alignment),
-        MemoryUnmapped(_) => memory(MemoryErrorReason::Unmapped),
-        CpuTrap => {
-            let pc = state.registers.get(Pc).wrapping_sub(4);
-
-            let description = state
-                .memory
-                .get_u32(pc)
-                .ok()
-                .and_then(|value| InstructionDecoder::decode(pc, value))
-                .and_then(|instruction| instruction.describe_trap_error(&state.registers));
-
-            if let Some(description) = description {
-                description.to_string()
-            } else {
-                error.to_string()
-            }
-        }
-        _ => error.to_string(),
-    }
-}
-
 impl ResumeMode {
-    fn from_mips_state<Mem: Memory, Reg: Registers>(
-        value: ExecutorMode,
-        state: &State<Mem, Reg>,
+    fn from_risc_v_executor(
+        value: ExecutorMode
     ) -> Self {
         match value {
             ExecutorMode::Running => ResumeMode::Running,
             ExecutorMode::Invalid(error) => ResumeMode::Invalid {
-                message: format_error(error, state),
+                message: error.to_string()
             },
             ExecutorMode::Paused => ResumeMode::Paused,
             ExecutorMode::Breakpoint => ResumeMode::Breakpoint,
@@ -81,35 +33,27 @@ impl ResumeMode {
 }
 
 #[derive(Serialize)]
-pub struct MipsRegistersResult {
+pub struct RiscVRegistersResult {
     pc: u32,
     line: [u32; 32],
-    lo: u32,
-    hi: u32,
-    fp: [u32; 32],
-    cf: u32,
 }
 
-impl<T: Registers> From<T> for MipsRegistersResult {
+impl<T: Registers> From<T> for RiscVRegistersResult {
     fn from(value: T) -> Self {
         let raw = value.raw();
-        MipsRegistersResult {
+        RiscVRegistersResult {
             pc: raw.pc,
             line: raw.line,
-            lo: raw.lo,
-            hi: raw.hi,
-            fp: raw.fp,
-            cf: raw.cf,
         }
     }
 }
 
+
 impl ResumeResult {
-    fn from_mips_frame<Mem: Memory, Reg: Registers>(
+    fn from_risc_v_frame(
         frame: DebugFrame<RawRegisters>,
         finished_pcs: &[u32],
         result: Option<SyscallResult>,
-        state: &State<Mem, Reg>,
     ) -> ResumeResult {
         let mode = match result {
             Some(SyscallResult::Failure(message)) => ResumeMode::Invalid { message },
@@ -119,7 +63,7 @@ impl ResumeResult {
             },
             Some(SyscallResult::Aborted) => ResumeMode::Paused,
             Some(SyscallResult::Exception(error)) => ResumeMode::Invalid {
-                message: format_error(error, state),
+                message: error.to_string(),
             },
             Some(SyscallResult::Unimplemented(code)) => ResumeMode::Invalid {
                 message: format!(
@@ -145,30 +89,30 @@ impl ResumeResult {
                         code: None,
                     }
                 } else {
-                    ResumeMode::from_mips_state(frame.mode, state)
+                    ResumeMode::from_risc_v_executor(frame.mode)
                 }
             }
         };
 
         ResumeResult {
             mode,
-            registers: PlatformRegisters::Mips(frame.registers.into()),
+            registers: PlatformRegisters::RiscV(frame.registers.into()),
         }
     }
 }
 
 impl ReadDisplayTarget {
-    pub fn to_mips_address<Reg: Registers>(self, registers: &Reg) -> u32 {
+    pub fn to_address<Reg: Registers>(self, registers: &Reg) -> u32 {
         match self {
             ReadDisplayTarget::Address(address) => address,
-            ReadDisplayTarget::DefaultRegister => registers.get_l(RegisterSlot::GeneralPointer),
+            ReadDisplayTarget::DefaultRegister => registers.get_l(RegisterSlot::GlobalPointer),
         }
     }
 }
 
 #[async_trait]
 impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> + Send>
-    ExecutionDevice for ExecutionState<Mem, Reg, Track>
+ExecutionDevice for ExecutionState<Mem, Reg, Track>
 {
     async fn resume(&self, options: ResumeOptions) -> Result<ResumeResult, ()> {
         let debugger = self.debugger.clone();
@@ -182,7 +126,7 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> 
         }
 
         let is_breakpoint = debugger.is_breakpoint();
-
+        
         if let Some(mode) = options.change_state {
             debugger.override_mode(mode);
         }
@@ -229,20 +173,17 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> 
 
         if let Some(display) = &options.display {
             let mut lock = display.lock().unwrap();
-            
-            let data = self.read_display(lock.target, lock.width, lock.height);
 
+            let data = self.read_display(lock.target, lock.width, lock.height);
+            
             lock.flush(data);
         }
-
-        debugger.with_state(|state| {
-            Ok(ResumeResult::from_mips_frame(
-                frame,
-                &finished_pcs,
-                result,
-                state,
-            ))
-        })
+        
+        Ok(ResumeResult::from_risc_v_frame(
+            frame,
+            &finished_pcs,
+            result,
+        ))
     }
 
     fn pause(&self) {
@@ -269,7 +210,7 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> 
 
     fn read_display(&self, target: ReadDisplayTarget, width: u32, height: u32) -> Option<Vec<u8>> {
         self.debugger.with_state(|state| {
-            let address = target.to_mips_address(&state.registers);
+            let address = target.to_address(&state.registers);
 
             read_display(address, width, height, &mut state.memory)
         })
@@ -286,8 +227,8 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> 
     fn write_register(&self, register: u32, value: u32) {
         self.debugger.with_state(|state| match register {
             0..=31 => state.registers.set(Line(register as u8), value),
-            32 => state.registers.set(Hi, value),
-            33 => state.registers.set(Lo, value),
+            // 32 => state.registers.set(Hi, value),
+            // 33 => state.registers.set(Lo, value),
             34 => state.registers.set(Pc, value),
             _ => {}
         })
@@ -313,10 +254,10 @@ impl<Mem: Memory + Send, Reg: Registers + Send, Track: Tracker<State<Mem, Reg>> 
 }
 
 impl<
-        Listen: ListenResponder,
-        Reg: Registers,
-        Track: Tracker<State<SectionMemory<Listen>, Reg>>,
-    > ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Reg, Track>
+    Listen: ListenResponder,
+    Reg: Registers,
+    Track: Tracker<State<SectionMemory<Listen>, Reg>>,
+> ExecutionRewindable for ExecutionState<SectionMemory<Listen>, Reg, Track>
 {
     fn last_pc(&self) -> Option<u32> {
         None
@@ -324,14 +265,13 @@ impl<
 
     fn rewind(&self, _: u32) -> ResumeResult {
         let frame = self.debugger.frame();
-
-        self.debugger
-            .with_state(|state| ResumeResult::from_mips_frame(frame, &[], None, state))
+        
+        ResumeResult::from_risc_v_frame(frame, &[], None)
     }
 }
 
 impl<Mem: Memory> ExecutionRewindable
-    for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
+for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
 {
     fn last_pc(&self) -> Option<u32> {
         self.debugger
@@ -354,9 +294,7 @@ impl<Mem: Memory> ExecutionRewindable
             let Some(entry) = entry else {
                 let frame = self.debugger.frame();
 
-                return self
-                    .debugger
-                    .with_state(|state| ResumeResult::from_mips_frame(frame, &[], None, state));
+                return ResumeResult::from_risc_v_frame(frame, &[], None)
             };
 
             self.debugger.pause();
@@ -368,7 +306,6 @@ impl<Mem: Memory> ExecutionRewindable
 
         let frame = self.debugger.frame();
 
-        self.debugger
-            .with_state(|state| ResumeResult::from_mips_frame(frame, &[], None, state))
+        ResumeResult::from_risc_v_frame(frame, &[], None)
     }
 }

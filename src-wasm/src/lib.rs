@@ -6,14 +6,12 @@ mod time;
 use crate::console::WasmConsole;
 use crate::midi::WasmMidi;
 use crate::time::WasmTime;
-use num::FromPrimitive;
 use saturn_backend::build::{
     configure_keyboard, create_elf_state, get_binary_finished_pcs, get_elf_finished_pcs,
     AssemblerResult, TIME_TRAVEL_HISTORY_SIZE,
 };
 use saturn_backend::mips::device::{setup_state, state_from_binary, ExecutionState};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::mips::execution::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use std::cell::RefCell;
@@ -33,10 +31,10 @@ use titan::execution::trackers::empty::EmptyTracker;
 use titan::mips::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
-use titan::mips::assembler::registers::RegisterSlot;
 use wasm_bindgen::prelude::*;
 
 pub use events::EventHandler;
+use saturn_backend::device::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
 
 #[wasm_bindgen]
 pub fn initialize() {
@@ -175,15 +173,18 @@ impl Runner {
 
     pub fn last_display(&self) -> JsValue {
         let display_borrow = self.display.borrow();
-        let display = display_borrow.lock().unwrap();
+        let display = display_borrow.lock().unwrap().clone_data();
 
-        serde_wasm_bindgen::to_value(&*display).unwrap()
+        serde_wasm_bindgen::to_value(&display).unwrap()
     }
 
-    pub fn configure_display(&self, address: u32, register: Option<u8>, width: u32, height: u32) {
+    pub fn configure_display(&self, use_default_register: bool, address: u32, width: u32, height: u32) {
         *self.display.borrow_mut() = Arc::new(Mutex::new(FlushDisplayState {
-            address,
-            register,
+            target: if use_default_register {
+                ReadDisplayTarget::DefaultRegister
+            } else {
+                ReadDisplayTarget::Address(address)
+            },
             width,
             height,
             data: None,
@@ -347,13 +348,13 @@ impl Runner {
     pub fn read_display(
         &self,
         address: u32,
-        register: Option<u8>,
+        use_default_register: bool,
         width: u32,
         height: u32,
     ) -> Option<Vec<u8>> {
         if let Some(device) = &self.take_device() {
-            let target = if let Some(register) = register {
-                ReadDisplayTarget::Register(RegisterSlot::from_u8(register)?)
+            let target = if use_default_register {
+                ReadDisplayTarget::DefaultRegister
             } else {
                 ReadDisplayTarget::Address(address)
             };

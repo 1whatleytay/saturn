@@ -100,7 +100,6 @@ export interface ExecutionResult {
 }
 
 export interface LastDisplay {
-  address: number
   width: number
   height: number
   data: number[] | null

@@ -11,4 +11,6 @@ pub mod regions;
 pub mod shortcuts;
 pub mod syscall;
 pub mod mips;
-mod syscall_access;
+pub mod syscall_access;
+pub mod riscv;
+pub mod device;

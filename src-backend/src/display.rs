@@ -1,14 +1,18 @@
-use crate::mips::execution::ReadDisplayTarget;
-use num::FromPrimitive;
-use serde::Serialize;
 use std::sync::{Arc, Mutex};
-use titan::mips::cpu::{Memory, Registers, State};
-use titan::mips::unit::register::RegisterName;
+use serde::Serialize;
+use titan::cpu::Memory;
+use crate::device::ReadDisplayTarget;
 
 #[derive(Clone, Serialize)]
+pub struct DisplayData {
+    pub width: u32,
+    pub height: u32,
+    pub data: Option<Vec<u8>>,
+}
+
+#[derive(Clone)]
 pub struct FlushDisplayState {
-    pub address: u32,
-    pub register: Option<u8>,
+    pub target: ReadDisplayTarget,
     pub width: u32,
     pub height: u32,
     pub data: Option<Vec<u8>>, // flush should impact this
@@ -17,8 +21,7 @@ pub struct FlushDisplayState {
 impl Default for FlushDisplayState {
     fn default() -> FlushDisplayState {
         FlushDisplayState {
-            address: 0x10008000,
-            register: None,
+            target: ReadDisplayTarget::Address(0x10008000),
             width: 64,
             height: 64,
             data: None,
@@ -27,21 +30,16 @@ impl Default for FlushDisplayState {
 }
 
 impl FlushDisplayState {
-    fn get_target(&self) -> ReadDisplayTarget {
-        if let Some(register) = self
-            .register
-            .and_then(|register| RegisterName::from_u8(register))
-        {
-            ReadDisplayTarget::Register(register)
-        } else {
-            ReadDisplayTarget::Address(self.address)
-        }
+    pub fn flush(&mut self, data: Option<Vec<u8>>) {
+        self.data = data;
     }
-
-    pub fn flush<Mem: Memory, Reg: Registers>(&mut self, state: &mut State<Mem, Reg>) {
-        let address = self.get_target().to_address(&state.registers);
-
-        self.data = read_display(address, self.width, self.height, &mut state.memory);
+    
+    pub fn clone_data(&self) -> DisplayData {
+        DisplayData {
+            width: self.width,
+            height: self.height,
+            data: self.data.clone(),
+        }
     }
 }
 
