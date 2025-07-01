@@ -1,7 +1,7 @@
 use crate::state::DebuggerBody;
 use num::FromPrimitive;
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::execution::ReadDisplayTarget;
+use saturn_backend::mips::execution::ReadDisplayTarget;
 use tauri::http::method::Method;
 use tauri::http::{Request, Response};
 use tauri::{Manager, UriSchemeContext, Wry};

@@ -1,4 +1,4 @@
-use crate::execution::ReadDisplayTarget;
+use crate::mips::execution::ReadDisplayTarget;
 use num::FromPrimitive;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};

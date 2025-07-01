@@ -6,8 +6,8 @@ use saturn_backend::build::{
     get_elf_finished_pcs, AssemblerResult, DisassembleResult, PrintPayload,
     TIME_TRAVEL_HISTORY_SIZE,
 };
-use saturn_backend::device::{setup_state, state_from_binary, ExecutionState};
-use saturn_backend::execution::RewindableDevice;
+use saturn_backend::mips::device::{setup_state, state_from_binary, ExecutionState};
+use saturn_backend::mips::execution::RewindableDevice;
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::regions::{AssembleRegionsOptions, AssembledRegions};
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};

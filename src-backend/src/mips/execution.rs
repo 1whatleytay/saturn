@@ -1,4 +1,4 @@
-use crate::device::ExecutionState;
+use crate::mips::device::ExecutionState;
 use crate::display::{read_display, FlushDisplayBody};
 use crate::syscall::{SyscallDelegate, SyscallResult};
 use async_trait::async_trait;
@@ -174,6 +174,8 @@ pub trait ExecutionRewindable {
 }
 
 pub trait RewindableDevice: ExecutionDevice + ExecutionRewindable {}
+
+impl<T: ExecutionDevice + ExecutionRewindable> RewindableDevice for T { }
 
 #[derive(Debug, Clone)]
 pub struct BatchOptions {
@@ -437,16 +439,4 @@ impl<Mem: Memory> ExecutionRewindable
         self.debugger
             .with_state(|state| ResumeResult::from_frame(frame, &[], None, state))
     }
-}
-
-impl<
-        Listen: ListenResponder + Send,
-        Reg: Registers + Send,
-        Track: Tracker<State<SectionMemory<Listen>, Reg>> + Send,
-    > RewindableDevice for ExecutionState<SectionMemory<Listen>, Reg, Track>
-{
-}
-impl<Mem: Memory + Send> RewindableDevice
-    for ExecutionState<WatchedMemory<Mem>, WatchedRegisters, HistoryTracker>
-{
 }

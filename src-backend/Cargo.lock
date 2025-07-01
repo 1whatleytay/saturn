@@ -424,7 +424,7 @@ dependencies = [
 [[package]]
 name = "titan"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#1d06d9f7e218253eb5739dbfcc79f2094c887f3c"
+source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#735fc2b64bf28edfa2baf4ecd6f1907bba44994a"
 dependencies = [
  "titan_mips",
  "titan_riscv",
@@ -434,7 +434,7 @@ dependencies = [
 [[package]]
 name = "titan_mips"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#1d06d9f7e218253eb5739dbfcc79f2094c887f3c"
+source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#735fc2b64bf28edfa2baf4ecd6f1907bba44994a"
 dependencies = [
  "byteorder",
  "num",
@@ -449,7 +449,7 @@ dependencies = [
 [[package]]
 name = "titan_riscv"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#1d06d9f7e218253eb5739dbfcc79f2094c887f3c"
+source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#735fc2b64bf28edfa2baf4ecd6f1907bba44994a"
 dependencies = [
  "byteorder",
  "num",
@@ -463,7 +463,7 @@ dependencies = [
 [[package]]
 name = "titan_shared"
 version = "0.1.0"
-source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#1d06d9f7e218253eb5739dbfcc79f2094c887f3c"
+source = "git+https://github.com/1whatleytay/titan.git?branch=risc-v#735fc2b64bf28edfa2baf4ecd6f1907bba44994a"
 dependencies = [
  "bitflags",
  "byteorder",

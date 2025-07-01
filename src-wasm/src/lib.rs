@@ -11,9 +11,9 @@ use saturn_backend::build::{
     configure_keyboard, create_elf_state, get_binary_finished_pcs, get_elf_finished_pcs,
     AssemblerResult, TIME_TRAVEL_HISTORY_SIZE,
 };
-use saturn_backend::device::{setup_state, state_from_binary, ExecutionState};
+use saturn_backend::mips::device::{setup_state, state_from_binary, ExecutionState};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::execution::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
+use saturn_backend::mips::execution::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
 use saturn_backend::keyboard::KeyboardState;
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use std::cell::RefCell;
