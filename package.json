@@ -12,6 +12,7 @@
     "tauri": "tauri",
     "format": "prettier --write . && cd src-backend && cargo fmt && cd ../src-tauri && cargo fmt && cd ../src-wasm && cargo fmt",
     "format-check": "prettier --check . && cd src-backend && cargo fmt --check && cd ../src-tauri && cargo fmt --check && cd ../src-wasm && cargo fmt --check",
+    "cargo-clean": "cd src-backend && cargo clean && cd ../src-tauri && cargo clean && cd ../src-wasm && cargo clean",
     "cargo-bump": "cd src-backend && cargo update && cd ../src-tauri && cargo update && cd ../src-wasm && cargo update"
   },
   "dependencies": {

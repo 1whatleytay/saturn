@@ -4,6 +4,7 @@ use std::io::Cursor;
 use titan::elf::Elf;
 use titan::mips::execution::elf::detailed_inspection::{make_inspection_lines, InspectionLine};
 use titan::mips::unit::instruction::{InstructionDecoder, InstructionParameter};
+use crate::platforms::Platform;
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "value")]
@@ -36,19 +37,29 @@ fn parameter_to_item(parameter: InstructionParameter) -> ParameterItem {
     }
 }
 
-pub fn decode_instruction(pc: u32, instruction: u32) -> Option<InstructionDetails> {
-    let inst = InstructionDecoder::decode(pc, instruction)?;
+pub fn decode_instruction(pc: u32, instruction: u32, platform: Platform) -> Option<InstructionDetails> {
+    match platform {
+        Platform::Mips => {
+            let inst = InstructionDecoder::decode(pc, instruction)?;
 
-    Some(InstructionDetails {
-        pc,
-        instruction,
-        name: inst.name(),
-        parameters: inst
-            .parameters()
-            .into_iter()
-            .map(parameter_to_item)
-            .collect(),
-    })
+            Some(InstructionDetails {
+                pc,
+                instruction,
+                name: inst.name(),
+                parameters: inst
+                    .parameters()
+                    .into_iter()
+                    .map(parameter_to_item)
+                    .collect(),
+            })
+        }
+        Platform::RiscV => {
+            // TODO: Please implement this!
+            debug_assert!(false);
+            
+            None
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -60,23 +71,30 @@ pub enum InspectionItem {
     Label { name: String },
 }
 
-pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<Vec<InspectionItem>, String> {
-    let elf = Elf::read(&mut Cursor::new(bytes)).map_err(|e| e.to_string())?;
+pub fn detailed_disassemble(bytes: Vec<u8>, platform: Platform) -> Result<Vec<InspectionItem>, String> {
+    match platform {
+        Platform::Mips => {
+            let elf = Elf::read(&mut Cursor::new(bytes)).map_err(|e| e.to_string())?;
 
-    Ok(make_inspection_lines(&elf)
-        .into_iter()
-        .map(|line| match line {
-            InspectionLine::Instruction(inst) => InspectionItem::Instruction {
-                details: InstructionDetails {
-                    pc: inst.pc,
-                    instruction: inst.instruction,
-                    name: inst.name,
-                    parameters: inst.parameters.into_iter().map(parameter_to_item).collect(),
-                },
-            },
-            InspectionLine::Blank => InspectionItem::Blank,
-            InspectionLine::Comment(value) => InspectionItem::Comment { message: value },
-            InspectionLine::Label(value) => InspectionItem::Label { name: value },
-        })
-        .collect())
+            Ok(make_inspection_lines(&elf)
+                .into_iter()
+                .map(|line| match line {
+                    InspectionLine::Instruction(inst) => InspectionItem::Instruction {
+                        details: InstructionDetails {
+                            pc: inst.pc,
+                            instruction: inst.instruction,
+                            name: inst.name,
+                            parameters: inst.parameters.into_iter().map(parameter_to_item).collect(),
+                        },
+                    },
+                    InspectionLine::Blank => InspectionItem::Blank,
+                    InspectionLine::Comment(value) => InspectionItem::Comment { message: value },
+                    InspectionLine::Label(value) => InspectionItem::Label { name: value },
+                })
+                .collect())
+        }
+        Platform::RiscV => {
+            Err("RISC-V Detailed Disassemble is not yet supported.".to_string())
+        }
+    }
 }

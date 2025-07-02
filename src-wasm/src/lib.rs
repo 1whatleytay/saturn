@@ -7,35 +7,68 @@ use crate::console::WasmConsole;
 use crate::midi::WasmMidi;
 use crate::time::WasmTime;
 use saturn_backend::build::{
-    configure_keyboard, create_elf_state, get_binary_finished_pcs, get_elf_finished_pcs,
-    AssemblerResult, TIME_TRAVEL_HISTORY_SIZE,
+    get_binary_finished_pcs, get_elf_finished_pcs,
+    TIME_TRAVEL_HISTORY_SIZE,
 };
-use saturn_backend::mips::device::{setup_state, state_from_binary, ExecutionState};
 use saturn_backend::display::{FlushDisplayBody, FlushDisplayState};
-use saturn_backend::keyboard::KeyboardState;
+use saturn_backend::keyboard::{configure_keyboard, KeyboardState};
 use saturn_backend::syscall::{ConsoleHandler, MidiHandler, SyscallState, TimeHandler};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use js_sys::Atomics::add;
-use titan::mips::assembler::string::assemble_from;
 use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 use titan::cpu::memory::watched::WatchedMemory;
-use titan::mips::cpu::registers::registers::RawRegisters;
-use titan::mips::cpu::registers::WatchedRegisters;
-use titan::mips::cpu::{Memory, Registers, State};
+use titan::cpu::Memory;
 use titan::elf::Elf;
 use titan::execution::ExecutorMode;
 use titan::execution::trackers::empty::EmptyTracker;
-use titan::mips::execution::trackers::history::HistoryTracker;
 use titan::execution::trackers::Tracker;
 use titan::execution::Executor;
+
+use titan::mips::cpu::State as MipsState;
+use titan::mips::cpu::registers::registers::RawRegisters as MipsRawRegisters;
+use titan::mips::cpu::registers::WatchedRegisters as MipsWatchedRegisters;
+use titan::mips::execution::trackers::history::HistoryTracker as MipsHistoryTracker;
+use saturn_backend::mips::device::ExecutionState as MipsExecutionState;
+
+use titan::riscv::cpu::State as RiscVState;
+use titan::riscv::cpu::registers::registers::RawRegisters as RiscVRawRegisters;
+use titan::riscv::cpu::registers::WatchedRegisters as RiscVWatchedRegisters;
+use titan::riscv::execution::trackers::history::HistoryTracker as RiscVHistoryTracker;
+use saturn_backend::riscv::device::ExecutionState as RiscVExecutionState;
+
 use wasm_bindgen::prelude::*;
 
 pub use events::EventHandler;
 use saturn_backend::device::{BatchOptions, ReadDisplayTarget, ResumeOptions, RewindableDevice};
+use saturn_backend::platforms::Platform;
+
+#[wasm_bindgen]
+#[derive(Copy, Clone)]
+pub enum WasmPlatform {
+    Mips,
+    RiscV,
+}
+
+impl Into<Platform> for WasmPlatform {
+    fn into(self) -> Platform {
+        match self {
+            WasmPlatform::Mips => Platform::Mips,
+            WasmPlatform::RiscV => Platform::RiscV,
+        }
+    }
+}
+
+impl Into<WasmPlatform> for Platform {
+    fn into(self) -> WasmPlatform {
+        match self {
+            Platform::Mips => WasmPlatform::Mips,
+            Platform::RiscV => WasmPlatform::RiscV,
+        }
+    }
+}
 
 #[wasm_bindgen]
 pub fn initialize() {
@@ -45,10 +78,11 @@ pub fn initialize() {
 }
 
 #[wasm_bindgen]
-pub fn assemble_regions(text: &str, options: JsValue) -> JsValue {
+pub fn assemble_regions(text: &str, platform: WasmPlatform, options: JsValue) -> JsValue {
     let result = saturn_backend::regions::assemble_regions(
         text,
         None,
+        platform.into(),
         serde_wasm_bindgen::from_value(options).unwrap(),
     );
 
@@ -56,22 +90,22 @@ pub fn assemble_regions(text: &str, options: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn assemble_text(text: &str) -> JsValue {
-    let result = saturn_backend::build::assemble(text, None);
+pub fn assemble_text(text: &str, platform: WasmPlatform) -> JsValue {
+    let result = saturn_backend::build::assemble(text, None, platform.into());
 
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
 #[wasm_bindgen]
-pub fn assemble_binary(text: &str) -> JsValue {
-    let result = saturn_backend::build::assemble_binary(text, None);
+pub fn assemble_binary(text: &str, platform: WasmPlatform) -> JsValue {
+    let result = saturn_backend::build::assemble_binary(text, None, platform.into());
 
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
 #[wasm_bindgen]
-pub fn decode_instruction(pc: u32, instruction: u32) -> JsValue {
-    let result = saturn_backend::decode::decode_instruction(pc, instruction);
+pub fn decode_instruction(pc: u32, instruction: u32, platform: WasmPlatform) -> JsValue {
+    let result = saturn_backend::decode::decode_instruction(pc, instruction, platform.into());
 
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
@@ -84,8 +118,8 @@ pub fn disassemble(named: Option<String>, bytes: Vec<u8>) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn detailed_disassemble(bytes: Vec<u8>) -> Result<JsValue, String> {
-    let result = saturn_backend::decode::detailed_disassemble(bytes)?;
+pub fn detailed_disassemble(bytes: Vec<u8>, platform: WasmPlatform) -> Result<JsValue, String> {
+    let result = saturn_backend::decode::detailed_disassemble(bytes, platform.into())?;
 
     Ok(serde_wasm_bindgen::to_value(&result).unwrap())
 }
@@ -102,13 +136,13 @@ impl Runner {
         self.device.borrow().clone()
     }
 
-    pub fn swap<
+    pub fn swap_mips<
         Listen: ListenResponder + Send + 'static,
-        Reg: Registers + Send + 'static,
-        Track: Tracker<State<SectionMemory<Listen>, Reg>> + Send + 'static,
+        Reg: titan::mips::cpu::Registers + Send + 'static,
+        Track: Tracker<MipsState<SectionMemory<Listen>, Reg>> + Send + 'static,
     >(
         &self,
-        debugger: Executor<State<SectionMemory<Listen>, Reg>, Track>,
+        debugger: Executor<MipsState<SectionMemory<Listen>, Reg>, Track>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -122,7 +156,7 @@ impl Runner {
         let wrapped = Arc::new(debugger);
         let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
 
-        *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
+        *self.device.borrow_mut() = Some(Rc::new(MipsExecutionState {
             debugger: wrapped,
             keyboard,
             delegate,
@@ -130,9 +164,9 @@ impl Runner {
         }));
     }
 
-    pub fn swap_watched<Mem: Memory + Send + 'static>(
+    pub fn swap_mips_watched<Mem: Memory + Send + 'static>(
         &self,
-        debugger: Executor<State<WatchedMemory<Mem>, WatchedRegisters>, HistoryTracker>,
+        debugger: Executor<MipsState<WatchedMemory<Mem>, MipsWatchedRegisters>, MipsHistoryTracker>,
         finished_pcs: Vec<u32>,
         keyboard: Arc<Mutex<KeyboardState>>,
         console: Box<dyn ConsoleHandler + Send + Sync>,
@@ -146,7 +180,59 @@ impl Runner {
         let wrapped = Arc::new(debugger);
         let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
 
-        *self.device.borrow_mut() = Some(Rc::new(ExecutionState {
+        *self.device.borrow_mut() = Some(Rc::new(MipsExecutionState {
+            debugger: wrapped,
+            keyboard,
+            delegate,
+            finished_pcs,
+        }));
+    }
+
+    pub fn swap_risc_v<
+        Listen: ListenResponder + Send + 'static,
+        Reg: titan::riscv::cpu::Registers + Send + 'static,
+        Track: Tracker<RiscVState<SectionMemory<Listen>, Reg>> + Send + 'static,
+    >(
+        &self,
+        debugger: Executor<RiscVState<SectionMemory<Listen>, Reg>, Track>,
+        finished_pcs: Vec<u32>,
+        keyboard: Arc<Mutex<KeyboardState>>,
+        console: Box<dyn ConsoleHandler + Send + Sync>,
+        midi: Box<dyn MidiHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
+    ) {
+        if let Some(device) = &self.take_device() {
+            device.pause()
+        }
+
+        let wrapped = Arc::new(debugger);
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
+
+        *self.device.borrow_mut() = Some(Rc::new(RiscVExecutionState {
+            debugger: wrapped,
+            keyboard,
+            delegate,
+            finished_pcs,
+        }));
+    }
+
+    pub fn swap_risc_v_watched<Mem: Memory + Send + 'static>(
+        &self,
+        debugger: Executor<RiscVState<WatchedMemory<Mem>, RiscVWatchedRegisters>, RiscVHistoryTracker>,
+        finished_pcs: Vec<u32>,
+        keyboard: Arc<Mutex<KeyboardState>>,
+        console: Box<dyn ConsoleHandler + Send + Sync>,
+        midi: Box<dyn MidiHandler + Send + Sync>,
+        time: Arc<dyn TimeHandler + Send + Sync>,
+    ) {
+        if let Some(device) = &self.take_device() {
+            device.pause()
+        }
+
+        let wrapped = Arc::new(debugger);
+        let delegate = Arc::new(Mutex::new(SyscallState::new(console, midi, time, None)));
+
+        *self.device.borrow_mut() = Some(Rc::new(RiscVExecutionState {
             debugger: wrapped,
             keyboard,
             delegate,
@@ -188,9 +274,13 @@ impl Runner {
         }));
     }
 
-    pub fn configure_elf(&self, bytes: Vec<u8>, time_travel: bool) -> bool {
+    pub fn configure_elf(&self, bytes: Vec<u8>, time_travel: bool) -> Option<WasmPlatform> {
         let Ok(elf) = Elf::read(&mut Cursor::new(bytes)) else {
-            return false;
+            return None;
+        };
+        
+        let Ok(platform) = elf.header.cpu.try_into() else {
+            return None;
         };
 
         let finished_pcs = get_elf_finished_pcs(&elf);
@@ -202,48 +292,83 @@ impl Runner {
             events: self.events.clone(),
         });
         let time = Arc::new(WasmTime {});
-        let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
         let keyboard = configure_keyboard(&mut memory);
 
-        if time_travel {
-            let memory = WatchedMemory::new(memory);
+        match platform {
+            Platform::Mips => {
+                if time_travel {
+                    let history = MipsHistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
+                    
+                    let memory = WatchedMemory::new(memory);
 
-            let mut cpu_state =
-                create_elf_state(&elf, 0x100000, memory, WatchedRegisters::default());
-            setup_state(&mut cpu_state);
+                    let mut cpu_state =
+                        saturn_backend::mips::configuration::create_elf_state(&elf, 0x100000, memory, MipsWatchedRegisters::default());
+                    saturn_backend::mips::device::setup_state(&mut cpu_state);
 
-            self.swap_watched(
-                Executor::new(cpu_state, history),
-                finished_pcs,
-                keyboard,
-                console,
-                midi,
-                time,
-            );
-        } else {
-            let mut cpu_state = create_elf_state(&elf, 0x100000, memory, RawRegisters::default());
-            setup_state(&mut cpu_state);
+                    self.swap_mips_watched(
+                        Executor::new(cpu_state, history),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                } else {
+                    let mut cpu_state = saturn_backend::mips::configuration::create_elf_state(&elf, 0x100000, memory, MipsRawRegisters::default());
+                    saturn_backend::mips::device::setup_state(&mut cpu_state);
 
-            self.swap(
-                Executor::new(cpu_state, EmptyTracker {}),
-                finished_pcs,
-                keyboard,
-                console,
-                midi,
-                time,
-            );
+                    self.swap_mips(
+                        Executor::new(cpu_state, EmptyTracker {}),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                }
+            }
+            Platform::RiscV => {
+                if time_travel {
+                    let history = RiscVHistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
+
+                    let memory = WatchedMemory::new(memory);
+
+                    let mut cpu_state =
+                        saturn_backend::riscv::configuration::create_elf_state(&elf, 0x100000, memory, RiscVWatchedRegisters::default());
+                    saturn_backend::riscv::device::setup_state(&mut cpu_state);
+
+                    self.swap_risc_v_watched(
+                        Executor::new(cpu_state, history),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                } else {
+                    let mut cpu_state = saturn_backend::riscv::configuration::create_elf_state(&elf, 0x100000, memory, RiscVRawRegisters::default());
+                    saturn_backend::riscv::device::setup_state(&mut cpu_state);
+
+                    self.swap_risc_v(
+                        Executor::new(cpu_state, EmptyTracker {}),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                }
+            }
         }
 
-        true
+        Some(platform.into())
     }
 
-    pub fn configure_asm(&self, text: &str, time_travel: bool) -> JsValue {
-        let binary = assemble_from(text);
-
-        let (binary, result) = AssemblerResult::from_result_with_binary(binary, text);
-
+    pub fn configure_asm(&self, text: &str, time_travel: bool, platform: WasmPlatform) -> JsValue {
+        let (binary, result) = saturn_backend::build::assemble_text(text, None, platform.into());
+        
         let Some(binary) = binary else {
             return serde_wasm_bindgen::to_value(&result).unwrap();
         };
@@ -257,39 +382,77 @@ impl Runner {
             events: self.events.clone(),
         });
         let time = Arc::new(WasmTime {});
-        let history = HistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
         let mut memory = SectionMemory::new();
         let keyboard = configure_keyboard(&mut memory);
 
-        if time_travel {
-            let memory = WatchedMemory::new(memory);
+        match platform.into() {
+            Platform::Mips => {
+                if time_travel {
+                    let history = MipsHistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
 
-            let mut cpu_state =
-                state_from_binary(binary, 0x100000, memory, WatchedRegisters::default());
-            setup_state(&mut cpu_state);
+                    let memory = WatchedMemory::new(memory);
 
-            self.swap_watched(
-                Executor::new(cpu_state, history),
-                finished_pcs,
-                keyboard,
-                console,
-                midi,
-                time,
-            );
-        } else {
-            let mut cpu_state =
-                state_from_binary(binary, 0x100000, memory, RawRegisters::default());
-            setup_state(&mut cpu_state);
+                    let mut cpu_state =
+                        saturn_backend::mips::device::state_from_binary(binary, 0x100000, memory, MipsWatchedRegisters::default());
+                    saturn_backend::mips::device::setup_state(&mut cpu_state);
 
-            self.swap(
-                Executor::new(cpu_state, EmptyTracker {}),
-                finished_pcs,
-                keyboard,
-                console,
-                midi,
-                time,
-            );
+                    self.swap_mips_watched(
+                        Executor::new(cpu_state, history),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                } else {
+                    let mut cpu_state =
+                        saturn_backend::mips::device::state_from_binary(binary, 0x100000, memory, MipsRawRegisters::default());
+                    saturn_backend::mips::device::setup_state(&mut cpu_state);
+
+                    self.swap_mips(
+                        Executor::new(cpu_state, EmptyTracker {}),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                }
+            }
+            Platform::RiscV => {
+                if time_travel {
+                    let history = RiscVHistoryTracker::new(TIME_TRAVEL_HISTORY_SIZE);
+
+                    let memory = WatchedMemory::new(memory);
+
+                    let mut cpu_state =
+                        saturn_backend::riscv::device::state_from_binary(binary, 0x100000, memory, RiscVWatchedRegisters::default());
+                    saturn_backend::riscv::device::setup_state(&mut cpu_state);
+
+                    self.swap_risc_v_watched(
+                        Executor::new(cpu_state, history),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                } else {
+                    let mut cpu_state =
+                        saturn_backend::riscv::device::state_from_binary(binary, 0x100000, memory, RiscVRawRegisters::default());
+                    saturn_backend::riscv::device::setup_state(&mut cpu_state);
+
+                    self.swap_risc_v(
+                        Executor::new(cpu_state, EmptyTracker {}),
+                        finished_pcs,
+                        keyboard,
+                        console,
+                        midi,
+                        time,
+                    );
+                }
+            }
         }
 
         serde_wasm_bindgen::to_value(&result).unwrap()

@@ -4,6 +4,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use titan::assembler::binary::Binary;
 use titan::assembler::binary::{RawRegion, RegionFlags};
+use crate::platforms::Platform;
 
 #[derive(Serialize, Deserialize)]
 pub struct HexRegion {
@@ -110,10 +111,10 @@ fn export_regions(binary: &Binary, options: &AssembleRegionsOptions) -> Vec<HexR
 pub fn assemble_regions(
     text: &str,
     path: Option<&str>,
+    platform: Platform,
     options: AssembleRegionsOptions,
 ) -> (Option<AssembledRegions>, AssemblerResult) {
-    let result = assemble_text(text, path);
-    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+    let (binary, result) = assemble_text(text, path, platform);
 
     let Some(binary) = binary else {
         return (None, result);

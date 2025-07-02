@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use titan::cpu::error;
 use titan::cpu::error::Error::MemoryUnmapped;
-use titan::cpu::memory::section::ListenResponder;
+use titan::cpu::memory::section::{ListenResponder, SectionMemory};
 
 pub const KEYBOARD_ADDRESS: u32 = 0xFFFF0000;
 pub const KEYBOARD_HOLDING: u32 = 0xFFFF0080;
@@ -94,4 +94,20 @@ impl ListenResponder for KeyboardHandler {
     fn write(&mut self, address: u32, _: u8) -> error::Result<()> {
         Err(MemoryUnmapped(address))
     }
+}
+
+pub fn configure_keyboard(
+    memory: &mut SectionMemory<KeyboardHandler>,
+) -> Arc<Mutex<KeyboardState>> {
+    let handler = KeyboardHandler::new();
+    let keyboard = handler.state.clone();
+
+    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
+
+    // Mark heap as "Writable"
+    for selector in 0x1000..0x8000 {
+        memory.mount_writable(selector, 0xCC);
+    }
+
+    keyboard
 }

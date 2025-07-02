@@ -1,21 +1,16 @@
-use crate::keyboard::{KeyboardHandler, KeyboardState, KEYBOARD_SELECTOR};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use titan::assembler::binary::{Binary, RegionFlags};
+use titan::assembler::lexer::Location;
 use titan::assembler::line_details::LineDetails;
-use titan::cpu::memory::section::SectionMemory;
-use titan::cpu::memory::{Mountable, Region};
 use titan::elf::program::ProgramHeaderFlags;
 use titan::elf::Elf;
 use titan::execution::elf::inspection::Inspection;
-use titan::mips::assembler::registers::RegisterSlot::StackPointer;
-use titan::mips::assembler::string::{assemble_from, assemble_from_path, SourceError};
 use titan::mips::cpu::disassemble::MipsInspectionDisassembler;
-use titan::mips::cpu::registers::WhichRegister::Pc;
-use titan::mips::cpu::{Memory, Registers, State};
+use titan::riscv::cpu::disassemble::RiscVInspectionDisassembler;
+use crate::platforms::Platform;
 
 pub const TIME_TRAVEL_HISTORY_SIZE: usize = 1000;
 
@@ -62,8 +57,8 @@ pub fn get_binary_finished_pcs(binary: &Binary) -> Vec<u32> {
 }
 
 impl AssemblerResult {
-    pub fn from_result_with_binary(
-        result: Result<Binary, SourceError>,
+    pub fn from_result(
+        result: Result<Binary, (Option<Location>, String)>,
         source: &str,
     ) -> (Option<Binary>, AssemblerResult) {
         match result {
@@ -79,9 +74,8 @@ impl AssemblerResult {
 
                 (Some(binary), AssemblerResult::Success { breakpoints })
             }
-            Err(error) => {
-                let details = error
-                    .start()
+            Err((details, message)) => {
+                let details = details
                     .map(|location| LineDetails::from_offset(source, location.index));
 
                 let marker = details.as_ref().map(|details| LineMarker {
@@ -97,21 +91,37 @@ impl AssemblerResult {
                     None,
                     AssemblerResult::Error {
                         marker,
-                        message: format!("{}", error),
+                        message,
                         body,
                     },
                 )
             }
         }
     }
+    
+    pub fn from_mips_result(
+        result: Result<Binary, titan::mips::assembler::string::SourceError>,
+        source: &str,
+    ) -> (Option<Binary>, AssemblerResult) {
+        let result = result.map_err(|err| (err.start(), err.to_string()));
+        
+        AssemblerResult::from_result(result, source)
+    }
 
-    fn from_result(result: Result<Binary, SourceError>, source: &str) -> AssemblerResult {
-        Self::from_result_with_binary(result, source).1
+    pub fn from_risc_v_result(
+        result: Result<Binary, titan::riscv::assembler::string::SourceError>,
+        source: &str,
+    ) -> (Option<Binary>, AssemblerResult) {
+        let result = result.map_err(|err| (err.start(), err.to_string()));
+
+        AssemblerResult::from_result(result, source)   
     }
 }
 
 #[derive(Serialize)]
 pub struct DisassembleResult {
+    platform: Option<Platform>,
+    
     error: Option<String>,
 
     lines: Vec<String>,
@@ -124,64 +134,32 @@ pub struct PrintPayload<'a> {
     pub error: bool,
 }
 
-pub fn assemble_text(text: &str, path: Option<&str>) -> Result<Binary, SourceError> {
-    if let Some(path) = path {
-        assemble_from_path(text.to_string(), PathBuf::from(path))
-    } else {
-        assemble_from(text)
+pub fn assemble_text(text: &str, path: Option<&str>, platform: Platform) -> (Option<Binary>, AssemblerResult) {
+    match platform {
+        Platform::Mips => {
+            let result = if let Some(path) = path {
+                titan::mips::assembler::string::assemble_from_path(text.to_string(), PathBuf::from(path))
+            } else {
+                titan::mips::assembler::string::assemble_from(text)
+            };
+            
+            AssemblerResult::from_mips_result(result, text)
+        }
+        Platform::RiscV => {
+            let result = if let Some(path) = path {
+                titan::riscv::assembler::string::assemble_from_path(text.to_string(), PathBuf::from(path))
+            } else {
+                titan::riscv::assembler::string::assemble_from(text)
+            };
+
+            AssemblerResult::from_risc_v_result(result, text)
+        }
     }
 }
 
-pub fn create_elf_state<Mem: Memory + Mountable, Reg: Registers>(
-    elf: &Elf,
-    heap_size: u32,
-    mut memory: Mem,
-    mut registers: Reg,
-) -> State<Mem, Reg> {
-    for header in &elf.program_headers {
-        let region = Region {
-            start: header.virtual_address,
-            data: header.data.clone(),
-        };
 
-        memory.mount(region)
-    }
-
-    let heap_end = 0x7FFFFFFCu32;
-
-    let heap = Region {
-        start: heap_end - heap_size,
-        data: vec![0; heap_size as usize],
-    };
-
-    memory.mount(heap);
-
-    registers.set_l(StackPointer, heap_end);
-    registers.set(Pc, elf.header.program_entry);
-
-    State::new(registers, memory)
-}
-
-pub fn configure_keyboard(
-    memory: &mut SectionMemory<KeyboardHandler>,
-) -> Arc<Mutex<KeyboardState>> {
-    let handler = KeyboardHandler::new();
-    let keyboard = handler.state.clone();
-
-    memory.mount_listen(KEYBOARD_SELECTOR as usize, handler);
-
-    // Mark heap as "Writable"
-    for selector in 0x1000..0x8000 {
-        memory.mount_writable(selector, 0xCC);
-    }
-
-    keyboard
-}
-
-pub fn assemble(text: &str, path: Option<&str>) -> AssemblerResult {
-    let result = assemble_text(text, path);
-
-    AssemblerResult::from_result(result, text)
+pub fn assemble(text: &str, path: Option<&str>, platform: Platform) -> AssemblerResult {
+    assemble_text(text, path, platform).1
 }
 
 pub fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
@@ -189,25 +167,49 @@ pub fn disassemble(named: Option<&str>, bytes: Vec<u8>) -> DisassembleResult {
         Ok(elf) => elf,
         Err(error) => {
             return DisassembleResult {
+                platform: None,
                 error: Some(error.to_string()),
                 lines: vec![],
                 breakpoints: HashMap::new(),
             }
         }
     };
+    
+    if let Ok(platform) = elf.header.cpu.try_into() {
+        match platform {
+            Platform::Mips => {
+                let inspection = Inspection::new(named, &elf, &mut MipsInspectionDisassembler);
 
-    let inspection = Inspection::new(named, &elf, &mut MipsInspectionDisassembler);
+                DisassembleResult {
+                    error: None,
+                    platform: Some(Platform::Mips),
+                    lines: inspection.lines,
+                    breakpoints: inspection.breakpoints,
+                }
+            }
+            Platform::RiscV => {
+                let inspection = Inspection::new(named, &elf, &mut RiscVInspectionDisassembler);
 
-    DisassembleResult {
-        error: None,
-        lines: inspection.lines,
-        breakpoints: inspection.breakpoints,
+                DisassembleResult {
+                    error: None,
+                    platform: Some(Platform::RiscV),
+                    lines: inspection.lines,
+                    breakpoints: inspection.breakpoints,
+                }
+            }
+        }
+    } else {
+        DisassembleResult {
+            platform: None,
+            error: Some(format!("Unsupported ELF disassembly of {:?} ISA", elf.header.cpu)),
+            lines: vec![],
+            breakpoints: HashMap::new(),
+        }
     }
 }
 
-pub fn assemble_binary(text: &str, path: Option<&str>) -> (Option<Vec<u8>>, AssemblerResult) {
-    let result = assemble_text(text, path);
-    let (binary, result) = AssemblerResult::from_result_with_binary(result, text);
+pub fn assemble_binary(text: &str, path: Option<&str>, platform: Platform) -> (Option<Vec<u8>>, AssemblerResult) {
+    let (binary, result) = assemble_text(text, path, platform);
 
     let Some(binary) = binary else {
         return (None, result);

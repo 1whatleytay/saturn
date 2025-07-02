@@ -14,3 +14,4 @@ pub mod mips;
 pub mod syscall_access;
 pub mod riscv;
 pub mod device;
+pub mod platforms;

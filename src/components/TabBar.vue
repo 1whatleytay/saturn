@@ -14,7 +14,7 @@
     >
       <MenuButton v-if="shouldShowMenu" @create="create" />
 
-      <HostButton />
+      <HostButton v-if="shouldShowMenu" />
 
       <div class="no-scrollbar flex flex-grow items-start overflow-x-auto">
         <Tab
