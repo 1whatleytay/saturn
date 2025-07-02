@@ -142,6 +142,7 @@ export async function build() {
   const { result } = await backend.assembleWithBinary(
     current?.doc.toString() ?? '',
     current?.path ?? null,
+    settings.editor.language,
   )
 
   // if (binary !== null) {
@@ -196,6 +197,7 @@ export async function resume() {
       path,
       settings.execution.timeTravel,
       current.profile,
+      settings.editor.language,
     )
   }
 

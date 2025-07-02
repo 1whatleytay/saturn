@@ -14,6 +14,7 @@ import {
   MipsCallbacks,
   MipsExecution,
 } from './mips'
+import { type Platform } from '../platforms'
 import WasmWorker from './wasm-worker?worker'
 import { ExportRegionsOptions } from '../settings'
 import {
@@ -137,33 +138,38 @@ export class WasmBackend implements MipsBackend {
     text: string,
     path: string | null,
     options: ExportRegionsOptions,
+    platform: Platform,
   ): Promise<HexBinaryResult> {
     return await this.sendRequest<HexBinaryResult>({
       op: MessageOp.AssembleRegions,
       text,
       path,
       options,
+      platform,
     })
   }
 
   async assembleText(
     text: string,
     path: string | null,
+    platform: Platform,
   ): Promise<AssemblerResult> {
     return await this.sendRequest<AssemblerResult>({
       op: MessageOp.AssembleText,
       text,
       path,
+      platform,
     })
   }
 
   async assembleWithBinary(
     text: string,
     path: string | null,
+    platform: Platform,
   ): Promise<BinaryResult> {
     const [binary, assemblerResult] = await this.sendRequest<
       [number[] | null, AssemblerResult]
-    >({ op: MessageOp.AssembleBinary, text, path })
+    >({ op: MessageOp.AssembleBinary, text, path, platform })
 
     return {
       binary: binary ? Uint8Array.from(binary) : null,
@@ -174,11 +180,13 @@ export class WasmBackend implements MipsBackend {
   async decodeInstruction(
     pc: number,
     instruction: number,
+    platform: Platform,
   ): Promise<InstructionDetails | null> {
     return await this.sendRequest<InstructionDetails | null>({
       op: MessageOp.DecodeInstruction,
       pc,
       instruction,
+      platform,
     })
   }
 
@@ -193,10 +201,11 @@ export class WasmBackend implements MipsBackend {
     })
   }
 
-  async disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
+  async disassemblyDetails(bytes: ArrayBuffer, platform: Platform): Promise<InstructionLine[]> {
     return await this.sendRequest<InstructionLine[]>({
       op: MessageOp.DetailedDisassemble,
       bytes: new Uint8Array(bytes),
+      platform,
     })
   }
 
@@ -219,8 +228,9 @@ export class WasmBackend implements MipsBackend {
     path: string | null,
     timeTravel: boolean,
     profile: ExecutionProfile,
+    platform: Platform,
   ): Promise<MipsExecution> {
-    return new WasmExecution(this, text, path, timeTravel, profile)
+    return new WasmExecution(this, text, path, timeTravel, profile, platform)
   }
 
   constructor() {
@@ -254,13 +264,15 @@ export class WasmExecution implements MipsExecution {
           bytes[i] = text.charCodeAt(i)
         }
 
-        const result = await this.backend.sendRequest<boolean>({
+        const result = await this.backend.sendRequest<Platform | null>({
           op: MessageOp.ConfigureElf,
           bytes,
           timeTravel: this.timeTravel,
         })
 
-        return result
+        // TODO: Pass platform up!
+
+        return result !== null
           ? { status: 'Success', breakpoints: [] }
           : {
               status: 'Error',
@@ -275,6 +287,7 @@ export class WasmExecution implements MipsExecution {
           op: MessageOp.ConfigureAsm,
           text: this.text,
           timeTravel: this.timeTravel,
+          platform: this.platform,
         })
 
         if (result.status === 'Success') {
@@ -375,14 +388,14 @@ export class WasmExecution implements MipsExecution {
     width: number,
     height: number,
     address: number,
-    register: number | null,
+    useDefaultRegister: boolean,
   ): Promise<Uint8Array | null> {
     return this.backend.sendRequest<Uint8Array | null>({
       op: MessageOp.ReadDisplay,
       width,
       height,
       address,
-      register,
+      useDefaultRegister,
     })
   }
 
@@ -392,5 +405,6 @@ export class WasmExecution implements MipsExecution {
     public path: string | null,
     public timeTravel: boolean,
     public profile: ExecutionProfile,
+    public platform: Platform,
   ) {}
 }

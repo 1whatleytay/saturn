@@ -178,6 +178,7 @@ async function exportRegions() {
     current.doc,
     current.path,
     toRaw(state),
+    settings.editor.language,
   )
 
   if (result.regions) {

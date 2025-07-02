@@ -355,14 +355,14 @@ function renderOrdered(
 }
 
 async function renderFrameProtocol(context: CanvasRenderingContext2D) {
-  const { width, height, address, register } = config.value
+  const { width, height, address, useDefaultRegister } = config.value
 
   if (consoleData.execution) {
     const memory = await consoleData.execution.readDisplay(
       width,
       height,
       address,
-      register,
+      useDefaultRegister,
     )
 
     if (memory) {

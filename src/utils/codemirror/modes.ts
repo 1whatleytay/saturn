@@ -8,6 +8,7 @@ import { lex as mipslex } from '../languages/mips/lexer'
 import { lex as riscvlex } from '../languages/risc-v/lexer'
 import { lang as mipslang } from './mips'
 import { lang as riscvlang } from './riscv'
+import { Platform } from '../platforms'
 
 const vimCompartment = new Compartment()
 const minimapCompartment = new Compartment()
@@ -52,8 +53,14 @@ export const createIndentUnit = () => indentUnitCompartment.of([])
 const mips = [lexer.of(mipslex), mipslang];
 const riscv = [lexer.of(riscvlex), riscvlang];
 export const createDefaultLang = () => langCompartment.of(mips)
-export const setLang = (lang: 'mips' | 'riscv') =>
-  langCompartment.reconfigure(lang === 'mips' ? mips : riscv)
+export const setLang = (lang: Platform) => {
+  switch (lang) {
+    case Platform.Mips:
+      return langCompartment.reconfigure(mips)
+    case Platform.RiscV:
+      return langCompartment.reconfigure(riscv)
+  }
+}
 
 export const setIndentUnit = (unit: number) =>
   indentUnitCompartment.reconfigure([

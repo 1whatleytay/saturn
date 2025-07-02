@@ -1,8 +1,9 @@
 import { reactive, watch } from 'vue'
 import { BitmapConfig } from './mips/mips'
 import { backend } from '../state/backend'
+import { Platform } from './platforms'
 
-const settingsVersion = 7
+const settingsVersion = 8
 
 export interface ExportRegionsOptions {
   kind: 'plain' | 'hex_v3'
@@ -26,7 +27,7 @@ export interface EditorSettings {
   darkMode: boolean
   showMinimap: boolean
   vimMode: boolean
-  language: 'mips' | 'riscv'
+  language: Platform
 }
 
 export enum RegisterFormat {
@@ -74,7 +75,7 @@ function defaultSettings(): Settings {
       darkMode: true,
       showMinimap: true,
       vimMode: false,
-      language: "mips",
+      language: Platform.Mips,
     },
     bitmap: {
       displayWidth: 64,
@@ -117,7 +118,7 @@ function fromStorage(): Settings {
         object.editor.showMinimap = true
       }
       if (object.editor.language === undefined) {
-        object.editor.language = "mips"
+        object.editor.language = Platform.Mips
       }
       return object
     }
@@ -137,7 +138,7 @@ export function displayConfig(bitmap: BitmapSettings): BitmapConfig {
     width: Math.ceil(bitmap.displayWidth / bitmap.unitWidth),
     height: Math.ceil(bitmap.displayHeight / bitmap.unitHeight),
     address: bitmap.address,
-    register: bitmap.register ?? null,
+    useDefaultRegister: false,
   }
 }
 

@@ -2,7 +2,7 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { build, pause, postBuildMessage, resume, step, stop } from '../debug'
 import { watch } from 'vue'
 import { consoleData, ConsoleType, pushConsole } from '../../state/console-data'
-import { closeTab, tab, tabsState } from '../../state/state'
+import { closeTab, settings, tab, tabsState } from '../../state/state'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import {
   accessReadFile,
@@ -53,6 +53,7 @@ export async function exportBinary() {
     result = await backend.assembleWithBinary(
       current.doc.toString(),
       current.path,
+      settings.editor.language,
     )
 
     binary = result.binary

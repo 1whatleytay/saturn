@@ -1,5 +1,6 @@
 import { ExportRegionsOptions } from '../settings'
 import { MidiNote } from '../midi'
+import { type Platform } from '../platforms'
 
 export interface ElfExecutionProfile {
   kind: 'elf'
@@ -54,7 +55,7 @@ export interface BitmapConfig {
   width: number
   height: number
   address: number
-  register: number | null
+  useDefaultRegister: boolean
 }
 
 export enum ExecutionModeType {
@@ -236,21 +237,24 @@ export interface MipsBackend {
   decodeInstruction(
     pc: number,
     instruction: number,
+    platform: Platform,
   ): Promise<InstructionDetails | null>
-  disassemblyDetails(bytes: ArrayBufferLike): Promise<InstructionLine[]>
+  disassemblyDetails(bytes: ArrayBufferLike, platform: Platform): Promise<InstructionLine[]>
 
   disassembleElf(
     named: string,
     elf: ArrayBufferLike,
+    platform: Platform,
   ): Promise<DisassembleResult>
 
-  assembleText(text: string, path: string | null): Promise<AssemblerResult>
-  assembleWithBinary(text: string, path: string | null): Promise<BinaryResult>
+  assembleText(text: string, path: string | null, platform: Platform): Promise<AssemblerResult>
+  assembleWithBinary(text: string, path: string | null, platform: Platform): Promise<BinaryResult>
 
   assembleRegions(
     text: string,
     path: string | null,
     options: ExportRegionsOptions,
+    platform: Platform,
   ): Promise<HexBinaryResult>
 
   // Execution
@@ -264,6 +268,7 @@ export interface MipsBackend {
     path: string | null,
     timeTravel: boolean,
     profile: ExecutionProfile,
+    platform: Platform,
   ): Promise<MipsExecution>
 
   close(): void
@@ -298,6 +303,6 @@ export interface MipsExecution {
     width: number,
     height: number,
     address: number,
-    register: number | null,
+    useDefaultRegister: boolean,
   ): Promise<Uint8Array | null>
 }

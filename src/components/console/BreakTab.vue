@@ -148,6 +148,7 @@ import {
 import { setRegister, stepCount } from '../../utils/debug'
 import { ChevronRightIcon } from '@heroicons/vue/24/solid'
 import RegisterItem from './RegisterItem.vue'
+import { settings } from '../../state/state'
 
 const allowResume = computed(
   () =>
@@ -278,7 +279,7 @@ async function instructionAtAddress(
     return null
   }
 
-  return await backend.decodeInstruction(address, combine(data))
+  return await backend.decodeInstruction(address, combine(data), settings.editor.language)
 }
 
 interface CurrentInstructions {

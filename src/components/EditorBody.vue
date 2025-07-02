@@ -25,6 +25,7 @@ import {
 } from '../utils/codemirror/modes'
 import { Diagnostic, setDiagnostics } from '@codemirror/lint'
 import { hostYTab, setHostFn } from '../utils/codemirror/collab'
+import { Platform } from '../utils/platforms'
 
 const code = ref(null as HTMLElement | null)
 
@@ -89,7 +90,7 @@ onMounted(() => {
 
   watch(
     () => settings.editor.language,
-    (language: 'mips' | 'riscv') => view.dispatch({ effects: [setLang(language)] }),
+    (language: Platform) => view.dispatch({ effects: [setLang(language)] }),
   )
 
   watch(

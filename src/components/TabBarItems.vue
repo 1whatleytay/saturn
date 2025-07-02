@@ -86,14 +86,14 @@
 import { computed } from 'vue'
 import { consoleData } from '../state/console-data'
 import {
+  allowResume,
+  allowRewind,
   build,
   pause,
   resume,
-  step,
   rewind,
+  step,
   stop,
-  allowResume,
-  allowRewind,
 } from '../utils/debug'
 import { settings, tab } from '../state/state'
 
@@ -105,19 +105,27 @@ import {
   PlayIcon,
   StopIcon,
 } from '@heroicons/vue/24/solid'
+import { Platform } from '../utils/platforms'
 
 const profile = computed(() => tab()?.profile)
 
 function toggleAssemblyType() {
-  settings.editor.language = settings.editor.language === 'mips' ? 'riscv' : 'mips'
+  switch (settings.editor.language) {
+    case Platform.Mips:
+      settings.editor.language = Platform.RiscV
+      break
+    case Platform.RiscV:
+      settings.editor.language = Platform.Mips
+      break
+  }
 }
 
 const profileText = computed((): string | null => {
   switch (profile.value?.kind) {
     case 'asm':
-      if (settings.editor.language === 'mips') {
+      if (settings.editor.language === Platform.Mips) {
         return 'MIPS Assembly'
-      } else if (settings.editor.language === 'riscv') {
+      } else if (settings.editor.language === Platform.RiscV) {
         return 'RISC-V Assembly'
       }
       return 'Assembly'

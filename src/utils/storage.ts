@@ -3,6 +3,7 @@ import { EditorTab } from './tabs'
 import { Token } from './languages/language'
 import { HighlightsInterface } from './highlights'
 import { backend } from '../state/backend'
+import { settings } from '../state/state'
 
 export interface StorageState {
   highlights: Token[][]
@@ -28,6 +29,7 @@ export function useStorage(
     const result = await backend.assembleText(
       current?.doc.toString() ?? '',
       current?.path ?? null,
+      settings.editor.language,
     )
 
     if (result.status === 'Error' && result.marker) {

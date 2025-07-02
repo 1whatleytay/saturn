@@ -8,11 +8,11 @@ import { backend } from '../../state/backend'
 import {
   closeTab,
   createTab,
-  loadElf,
+  loadElf, settings,
   showExportRegionsDialog,
   showSettings,
   tab,
-  tabsState,
+  tabsState
 } from '../../state/state'
 import {
   AccessFile,
@@ -62,6 +62,7 @@ export async function assemble() {
   const result = await backend.assembleWithBinary(
     current?.state?.doc?.toString() ?? '',
     current?.path ?? null,
+    settings.editor.language,
   )
 
   if (result.binary) {

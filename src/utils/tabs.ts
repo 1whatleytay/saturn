@@ -35,7 +35,7 @@ import { saveTab } from './events/events'
 import { acceptCompletion, completionStatus } from '@codemirror/autocomplete'
 import { indentUnit } from '@codemirror/language'
 import * as Y from 'yjs'
-import { tabsState } from '../state/state'
+import { settings, tabsState } from '../state/state'
 
 export type CursorState = SelectionIndex & {
   highlight: SelectionIndex | null
@@ -422,7 +422,7 @@ export function useTabs(): TabsResult {
   }
 
   async function loadElf(named: string, elf: ArrayBufferLike) {
-    const value = await backend.disassembleElf(named, elf)
+    const value = await backend.disassembleElf(named, elf, settings.editor.language)
 
     const bytes = new Uint8Array(elf)
     let binary = ''

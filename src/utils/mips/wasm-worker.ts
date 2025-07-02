@@ -1,16 +1,18 @@
 import * as backend from './wasm/saturn_wasm'
+import { WasmPlatform } from './wasm'
 import {
-  ExecutionModeType,
   type AssembledRegions,
   type AssemblerResult,
   type BinaryResult,
   type DisassembleResult,
+  ExecutionModeType,
   type ExecutionResult,
   type HexBinaryResult,
   type InstructionDetails,
   type InstructionLine,
   type LastDisplay,
 } from './mips'
+import { Platform } from '../platforms'
 import {
   AssembleBinaryData,
   AssembleRegionsData,
@@ -40,6 +42,26 @@ import {
 } from './wasm-worker-message'
 import { type MidiNote } from '../midi'
 
+function toPlatform(platform: WasmPlatform): Platform {
+  switch (platform) {
+    default:
+    case WasmPlatform.Mips:
+      return Platform.Mips
+    case WasmPlatform.RiscV:
+      return Platform.RiscV
+  }
+}
+
+function toWasmPlatform(platform: Platform): WasmPlatform {
+  switch (platform) {
+    default:
+    case Platform.Mips:
+      return WasmPlatform.Mips
+    case Platform.RiscV:
+      return WasmPlatform.RiscV
+  }
+}
+
 function sendConsoleWrite(text: string, error: boolean) {
   postEvent({
     op: MessageEventOp.ConsoleWrite,
@@ -63,11 +85,13 @@ const runner = new backend.Runner(
 function assembleRegions({
   text,
   options,
+  platform,
 }: AssembleRegionsData): HexBinaryResult {
-  const [regions, result] = backend.assemble_regions(text, options) as [
-    AssembledRegions | null,
-    AssemblerResult,
-  ]
+  const [regions, result] = backend.assemble_regions(
+    text,
+    toWasmPlatform(platform),
+    options,
+  ) as [AssembledRegions | null, AssemblerResult]
 
   return {
     regions,
@@ -75,21 +99,23 @@ function assembleRegions({
   }
 }
 
-function assembleText({ text }: AssembleTextData): AssemblerResult {
-  return backend.assemble_text(text) as AssemblerResult
+function assembleText({ text, platform }: AssembleTextData): AssemblerResult {
+  return backend.assemble_text(text, toWasmPlatform(platform)) as AssemblerResult
 }
 
-function assembleBinary({ text }: AssembleBinaryData): BinaryResult {
-  return backend.assemble_binary(text) as BinaryResult
+function assembleBinary({ text, platform }: AssembleBinaryData): BinaryResult {
+  return backend.assemble_binary(text, toWasmPlatform(platform)) as BinaryResult
 }
 
 function decodeInstruction({
   pc,
   instruction,
+  platform,
 }: DecodeInstructionData): InstructionDetails | null {
   return backend.decode_instruction(
     pc,
     instruction,
+    toWasmPlatform(platform)
   ) as InstructionDetails | null
 }
 
@@ -99,14 +125,15 @@ function disassemble({ named, bytes }: DisassembleData): DisassembleResult {
 
 function detailedDisassemble({
   bytes,
+  platform,
 }: DetailedDisassembleData): InstructionLine[] {
-  return backend.detailed_disassemble(bytes) as InstructionLine[]
+  return backend.detailed_disassemble(bytes, toWasmPlatform(platform)) as InstructionLine[]
 }
 
 function configureDisplay({ config }: ConfigureDisplayData) {
   runner.configure_display(
+    config.useDefaultRegister,
     config.address,
-    config.register ?? undefined,
     config.width,
     config.height,
   )
@@ -116,12 +143,26 @@ function lastDisplay(): LastDisplay {
   return runner.last_display()
 }
 
-function configureElf({ bytes, timeTravel }: ConfigureElfData): boolean {
-  return runner.configure_elf(bytes, timeTravel)
+function configureElf({ bytes, timeTravel }: ConfigureElfData): Platform | null {
+  const result = runner.configure_elf(bytes, timeTravel)
+
+  if (result !== undefined) {
+    return toPlatform(result)
+  } else {
+    return null
+  }
 }
 
-function configureAsm({ text, timeTravel }: ConfigureAsmData): AssemblerResult {
-  return runner.configure_asm(text, timeTravel)
+function configureAsm({
+  text,
+  timeTravel,
+  platform,
+}: ConfigureAsmData): AssemblerResult {
+  return runner.configure_asm(
+    text,
+    timeTravel,
+    toWasmPlatform(platform),
+  )
 }
 
 // Thanks to Milo
@@ -230,8 +271,13 @@ function rewind({ count }: RewindData): ExecutionResult | null {
   return runner.rewind(count)
 }
 
-function readDisplay({ width, height, address, register }: ReadDisplayData) {
-  return runner.read_display(address, register ?? undefined, width, height)
+function readDisplay({
+  width,
+  height,
+  address,
+  useDefaultRegister,
+}: ReadDisplayData) {
+  return runner.read_display(address, useDefaultRegister, width, height)
 }
 
 async function dispatchOp(data: MessageData): Promise<any> {

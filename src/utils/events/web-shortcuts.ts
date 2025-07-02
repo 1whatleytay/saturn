@@ -10,7 +10,7 @@ import {
   toggleSettings,
 } from './events'
 import { build, pause, postBuildMessage, resume, step, stop } from '../debug'
-import { tab } from '../../state/state'
+import { settings, tab } from '../../state/state'
 import {
   accessWriteBinary,
   selectSaveDestination,
@@ -53,6 +53,7 @@ export async function exportBinary() {
     result = await backend.assembleWithBinary(
       current.doc.toString(),
       current.path,
+      settings.editor.language,
     )
 
     binary = result.binary

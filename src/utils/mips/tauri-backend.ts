@@ -171,13 +171,13 @@ export class TauriExecution implements MipsExecution {
     width: number,
     height: number,
     address: number,
-    register: number | null,
+    useDefaultRegister: boolean,
   ): Promise<Uint8Array | null> {
     const headers = {
       width: width.toString(),
       height: height.toString(),
       address: address.toString(),
-      ...(register != null ? { register: register.toString() } : {}),
+      'use-default-register': `${useDefaultRegister}`
     }
 
     const result = await fetch(this.protocol, {
@@ -299,7 +299,7 @@ export class TauriBackend implements MipsBackend {
       width: config.width,
       height: config.height,
       address: config.address,
-      register: config.register,
+      useDefaultRegister: config.useDefaultRegister,
     })
   }
 

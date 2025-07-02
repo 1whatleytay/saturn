@@ -1,5 +1,6 @@
 import { type ExportRegionsOptions } from '../settings'
 import { type BitmapConfig } from './mips'
+import { type Platform } from '../platforms'
 import { type MidiNote } from '../midi'
 
 export enum MessageOp {
@@ -34,6 +35,8 @@ export interface AssembleRegionsData {
   text: string
   path: string | null
   options: ExportRegionsOptions
+
+  platform: Platform
 }
 
 export interface AssembleTextData {
@@ -41,6 +44,8 @@ export interface AssembleTextData {
 
   text: string
   path: string | null
+
+  platform: Platform
 }
 
 export interface AssembleBinaryData {
@@ -48,6 +53,8 @@ export interface AssembleBinaryData {
 
   text: string
   path: string | null
+
+  platform: Platform
 }
 
 export interface DecodeInstructionData {
@@ -55,6 +62,8 @@ export interface DecodeInstructionData {
 
   pc: number
   instruction: number
+
+  platform: Platform
 }
 
 export interface DisassembleData {
@@ -68,6 +77,8 @@ export interface DetailedDisassembleData {
   op: MessageOp.DetailedDisassemble
 
   bytes: Uint8Array
+
+  platform: Platform
 }
 
 export interface ConfigureDisplayData {
@@ -92,6 +103,8 @@ export interface ConfigureAsmData {
 
   text: string
   timeTravel: boolean
+
+  platform: Platform
 }
 
 export interface ResumeData {
@@ -161,7 +174,7 @@ export interface ReadDisplayData {
   width: number
   height: number
   address: number
-  register: number | null
+  useDefaultRegister: boolean
 }
 
 export type MessageData =
