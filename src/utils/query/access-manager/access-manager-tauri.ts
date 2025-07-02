@@ -57,17 +57,17 @@ export async function accessWriteText(
   path: string,
   content: string,
 ): Promise<void> {
-  return await invoke('access_write_text', { path, content })
+  return await invoke('access_write_text', { pathRaw: path, content })
 }
 
 export async function accessReadText(path: string): Promise<string> {
-  return await invoke('access_read_text', { path })
+  return await invoke('access_read_text', { pathRaw: path })
 }
 
 export async function accessReadFile(
   path: string,
 ): Promise<AccessFile<string | Uint8Array>> {
-  const value = (await invoke('access_read_file', { path })) as AccessFile<
+  const value = (await invoke('access_read_file', { pathRaw:path })) as AccessFile<
     string | number[]
   >
 

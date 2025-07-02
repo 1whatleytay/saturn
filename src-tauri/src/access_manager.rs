@@ -11,8 +11,8 @@ use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tauri::Emitter;
 use tauri::{AppHandle, Manager, Wry};
+use tauri::{Emitter, Url};
 use tauri_plugin_dialog::{DialogExt, FileDialogBuilder};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::Sender;
@@ -29,18 +29,26 @@ pub enum FileContent {
 
 #[derive(Debug, Serialize)]
 pub enum AccessError {
-    NotFound(PathBuf),
-    AccessDenied(PathBuf),
+    NotFound(String),
+    AccessDenied(String),
+    InvalidUrl(String),
+    NoAppData,
 }
 
 impl Display for AccessError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             AccessError::NotFound(path) => {
-                write!(f, "Could not find file at {}.", path.to_string_lossy())
+                write!(f, "Could not find file at {}.", path)
             }
             AccessError::AccessDenied(path) => {
-                write!(f, "Access to file {} is denied.", path.to_string_lossy())
+                write!(f, "Access to file {} is denied.", path)
+            }
+            AccessError::InvalidUrl(url) => {
+                write!(f, "Invalid URL: {}.", url)
+            }
+            AccessError::NoAppData => {
+                write!(f, "No App Data directory found.")
             }
         }
     }
@@ -411,19 +419,56 @@ pub async fn access_select_save(
     }))
 }
 
+fn validate_url(
+    raw: &str,
+    state: &tauri::State<'_, AccessManager>,
+) -> Result<PathBuf, AccessError> {
+    let url = if raw.starts_with("/") {
+        Url::from_file_path(raw).map_err(|_| AccessError::InvalidUrl(raw.into()))?
+    } else {
+        Url::parse(raw).map_err(|_| AccessError::InvalidUrl(raw.into()))?
+    };
+    match url.scheme() {
+        "file" => {
+            let path = url
+                .to_file_path()
+                .map_err(|_| AccessError::InvalidUrl(raw.to_string()))?;
+
+            if !state.has_access(&path) {
+                return Err(AccessError::AccessDenied(raw.to_string()));
+            }
+
+            Ok(path)
+        }
+        "tmp" => {
+            let mut data_dir = state
+                .app
+                .path()
+                .app_data_dir()
+                .map_err(|_| AccessError::NoAppData)?;
+
+            let host = url
+                .host_str()
+                .ok_or_else(|| AccessError::InvalidUrl(raw.to_string()))?;
+            data_dir.push(host);
+
+            Ok(data_dir)
+        }
+        _ => Err(AccessError::InvalidUrl(url.into())),
+    }
+}
+
 #[tauri::command]
 pub fn access_write_text(
-    path: PathBuf,
+    path_raw: &str,
     content: &str,
     state: tauri::State<'_, AccessManager>,
 ) -> Result<(), AccessError> {
-    if !state.has_access(&path) {
-        return Err(AccessError::AccessDenied(path));
-    }
+    let path = validate_url(path_raw, &state)?;
 
     state.state.get_silent().dismiss.insert(path.clone());
 
-    fs::write(&path, content).map_err(|_| AccessError::NotFound(path.clone()))?;
+    fs::write(&path, content).map_err(|_| AccessError::NotFound(path_raw.to_string()))?;
 
     // Initial watch from select_open may fail because the file does not exist.
     state.watch(&path);
@@ -433,30 +478,26 @@ pub fn access_write_text(
 
 #[tauri::command]
 pub fn access_read_text(
-    path: PathBuf,
+    path_raw: &str,
     state: tauri::State<'_, AccessManager>,
 ) -> Result<String, AccessError> {
-    if !state.has_access(&path) {
-        return Err(AccessError::AccessDenied(path));
-    }
+    let path = validate_url(path_raw, &state)?;
 
-    fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path))
+    fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path_raw.to_string()))
 }
 
 #[tauri::command]
 pub fn access_read_file(
-    path: PathBuf,
+    path_raw: &str,
     state: tauri::State<'_, AccessManager>,
 ) -> Result<AccessFile<FileContent>, AccessError> {
-    if !state.has_access(&path) {
-        return Err(AccessError::AccessDenied(path));
-    }
+    let path = validate_url(path_raw, &state)?;
 
     let name = make_string(path.file_name());
     let extension = make_string(path.extension());
 
     if extension == Some("elf".to_string()) {
-        let data = fs::read(&path).map_err(|_| AccessError::NotFound(path.clone()))?;
+        let data = fs::read(&path).map_err(|_| AccessError::NotFound(path_raw.to_string()))?;
 
         Ok(AccessFile {
             name,
@@ -465,7 +506,8 @@ pub fn access_read_file(
             data: FileContent::Data(data),
         })
     } else {
-        let data = fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path.clone()))?;
+        let data =
+            fs::read_to_string(&path).map_err(|_| AccessError::NotFound(path_raw.to_string()))?;
 
         Ok(AccessFile {
             name,
